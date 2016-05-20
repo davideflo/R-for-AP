@@ -42,7 +42,18 @@ den$x[which(den$y == max(den$y))] ### mode of the distribution: 9.81, mean = med
 length(which(durata <= 12))/length(durata) ## 0.4375 
 
 
+B <- function(t, x, mu, sigma)
+{
+  v <- (1/sqrt(2*pi*t)*sigma)*exp(-((x - mu)^2)/(2*sigma^2*t))
+  return(v)
+}
 
+t <- seq(0.00001,1, 0.00001)
+x <- rnorm(length(t))
+mu <- 0 
+sigma <- 1
 
+b <- B(t,x,mu,sigma)
+plot(t,b,type="l")
 
 

@@ -56,43 +56,43 @@ total_sellings_per_components <- function(vendite, pm, listing)
       
       if(YEAR == "2016")
       {
-        qtmvc <- as.numeric(unlist(vendite[i, 11:22]))
-        cpr <- as.numeric(unlist(vendite[i, 23:34]))
-        grad <- as.numeric(unlist(vendite[i, 35:46]))
-        ccr <- as.numeric(unlist(vendite[i, 47:58]))
-        qtint <- as.numeric(unlist(vendite[i, 59:70]))
-        qtpsv <- as.numeric(unlist(vendite[i, 71:82]))
+        qtmvc <- as.numeric(unlist(vendite[i, 12:23]))
+        cpr <- as.numeric(unlist(vendite[i, 24:35]))
+        grad <- as.numeric(unlist(vendite[i, 36:47]))
+        ccr <- as.numeric(unlist(vendite[i, 48:59]))
+        qtint <- as.numeric(unlist(vendite[i, 60:71]))
+        qtpsv <- as.numeric(unlist(vendite[i, 72:83]))
         lg <- listing[1:12]
         
         
         if(vendite[i,8] == "S" & vendite[i,7] == "0")
         {
-          ccvdvar <- as.numeric(unlist(vendite[i, 95:106]))  
+          ccvdvar <- as.numeric(unlist(vendite[i, 96:107]))  
         }
         
         else if(vendite[i,8] == "0" & vendite[i,7] == "S")
         {
-          qvdvar <- as.numeric(unlist(vendite[i, 83:94]))
+          qvdvar <- as.numeric(unlist(vendite[i, 84:95]))
         }
       }
       else
       {
-        qtmvc <- as.numeric(unlist(vendite[i, 107:118]))
-        cpr <- as.numeric(unlist(vendite[i, 119:130]))
-        grad <- as.numeric(unlist(vendite[i, 131:142]))
-        ccr <- as.numeric(unlist(vendite[i, 143:154]))
-        qtint <- as.numeric(unlist(vendite[i, 155:166]))
-        qtpsv <- as.numeric(unlist(vendite[i, 167:178]))
+        qtmvc <- as.numeric(unlist(vendite[i, 108:119]))
+        cpr <- as.numeric(unlist(vendite[i, 120:131]))
+        grad <- as.numeric(unlist(vendite[i, 132:143]))
+        ccr <- as.numeric(unlist(vendite[i, 144:155]))
+        qtint <- as.numeric(unlist(vendite[i, 156:167]))
+        qtpsv <- as.numeric(unlist(vendite[i, 168:179]))
         lg <- listing[13:24]
         
         if(vendite[i,8] == "S" & vendite[i,7] == "0")
         {
-          ccvdvar <- as.numeric(unlist(vendite[i, 191:202]))
+          ccvdvar <- as.numeric(unlist(vendite[i, 192:203]))
         }
         
         else if(vendite[i,8] == "0" & vendite[i,7] == "S")
         {
-          qvdvar <- as.numeric(unlist(vendite[i, 179:190]))
+          qvdvar <- as.numeric(unlist(vendite[i, 178:191]))
         }
       }
       
@@ -111,7 +111,7 @@ total_sellings_per_components <- function(vendite, pm, listing)
        }
        else
        {
-         SPGas <- SPGas + ((P0 + (lg[MONTH] - Prif)) * profm[MONTH])/100
+         SPGas <- SPGas + ((P0/100 + (lg[MONTH] - Prif/100)) * profm[MONTH])
        }
     }
     

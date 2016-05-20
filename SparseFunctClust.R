@@ -51,7 +51,7 @@ FKMSparseClustering <- function(data, x, K, m, method=c('kmea','pam','hier'), ma
 	qualem <- pmatch(method,qualim)
 	w_old <- rep(1, length(x)) 
 	switch(qualem,{
-	 k_old <- kmeans(data, K)$cluster
+	 k_old <- kmeans(data, K,iter.max=maxiter)$cluster
 	},{
 	 k_old <- pam(data, K)$cluster
 	},{

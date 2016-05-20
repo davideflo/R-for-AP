@@ -37,6 +37,7 @@ ao <- ao[rows,]                                                                 
 #########################################################################################################
 ## aggrega i prodotti
 aggregati <- compute_combinations_DEF_val(ao)
+xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato.xlsx", row.names = FALSE, col.names = TRUE)
 #aggregati_AP <- compute_combinations_DEF(ao_AP)
 #aggregati_fissi <- compute_combinations_DEF(ap_fissi)
 
@@ -45,6 +46,13 @@ profili_consumo <- openxlsx::read.xlsx("profili.xlsx", sheet = 1, colNames = TRU
 pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 1, colNames = TRUE)
 prof_consumo <- data.frame(profili_consumo[2:nrow(profili_consumo),3:38])
 
+## scorciatoia:
+vendite <- openxlsx::read.xlsx("vendite_aggiornato.xlsx", sheet = 1, colNames = TRUE)
+head(vendite)
+
+vendite[is.na(vendite)] <- 0
+vendite[is.na(vendite)] <- 0
+aggregati <- vendite[,1:5]
 ## calcola le curve di consumo
 curve_profili <- compute_profiles_DEF(aggregati, prof_consumo)
 curve_profili_AP <- compute_profiles_DEF(aggregati_AP, prof_consumo)
@@ -102,7 +110,7 @@ head(vendite)
 vendite[is.na(vendite)] <- 0
 vendite[is.na(vendite)] <- 0
 TM <- total_sellings_per_components(vendite, pm, listing)
-
+#tm <- total_selling(vendite,pm,listing)
 TM <- data.frame(TM)
 
 ## calcolo del transfer price & consumo totale (meglio modficare il file per tenere solo TP --> suppongo di avere il file giusto)
@@ -115,62 +123,94 @@ plot(1:24, tp, type = "l", col="red", xlab = "tempo", ylab = "TP", main = "Andam
 # calcolo del TP solo per fissi axopower
 AP <- which(ao["SHIPPER"] == "0001808491-AXOPOWER SRL")
 zer <- which(ao["SHIPPER"] == "0") ## se gli NA sono stati sostituiti!!!
+NAP <- ao[-c(AP,zer),]
 AP <- ao[c(AP,zer),]
 
-pers_fissi <- c("LGP-BI-IVPR", "LGP-BI-PIUS", "LGP-BI-MITC")
-nf <- c()
-for(i in 1:nrow(AP))
+
+# pers_fissi <- c("LGP-BI-IVPR", "LGP-BI-PIUS", "LGP-BI-MITC")
+# nf <- c()
+# for(i in 1:nrow(AP))
+# {
+#   name <- AP[i,"CODICE_PRODOTTO"] 
+#   if(name %in% pers_fissi)
+#   {
+#     nf <- c(nf,i)
+#   }
+#   
+#   lorr <- stri_sub(name, 1, 1)
+#   forv <- stri_sub(name, 6, 6)
+#   if(forv == "F" & lorr != "R")
+#   {
+#     nf <- c(nf,i)
+#   }
+# }
+# apf <- AP[nf,]
+
+#apf2 <- anni_competenza(apf, "01/01/2016")
+#apf3 <- extract_relevant_val(apf2)
+nap <- extract_relevant_val(NAP)
+
+#fissi2 <- compute_combinations_DEF_val(apf3)
+enel <- compute_combinations_DEF_val(nap)
+#enel <- enel[c(1:5,10:32),]
+
+# nf2 <- c()
+# for(i in 1:nrow(fissi2))
+# {
+#   name <- fissi2[i,"prodotto"]
+#   if(name %in% pers_fissi)
+#   {
+#     nf2 <- c(nf2,i)
+#   }
+#   lorr <- stri_sub(name, 1, 1)
+#   forv <- stri_sub(name, 6, 6)
+#   if(forv == "F" & lorr != "R")
+#   {
+#     nf2 <- c(nf2,i)
+#   }
+# }
+# f2 <- fissi2[nf2,]
+# 
+# tpf <- compute_TP(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
+# tot_fap <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
+
+tot_enel <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(enel["prodotto"])),],pm)
+te <- cbind(TP[which(unlist(TP["prodotto"]) %in% unlist(enel["prodotto"])),"prodotto"],TOT_m3mat(TP[which(unlist(TP["prodotto"]) %in% unlist(enel["prodotto"])),],pm))
+
+prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
+             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11)
+
+AC <- data.frame(t(acq))
+colnames(AC) <- prodenel
+## acquisto da shipper terzi GIUSTO:
+mat_enel <- cbind(TP[which(unlist(TP["prodotto"]) %in% unlist(enel["prodotto"])),"prodotto"],TOT_m3mat(TP[which(unlist(TP["prodotto"]) %in% unlist(enel["prodotto"])),],pm))
+ME <- matrix(0,nrow=nrow(mat_enel),ncol=24)
+for(i in 1:nrow(mat_enel))
 {
-  name <- AP[i,"CODICE_PRODOTTO"] 
-  if(name %in% pers_fissi)
-  {
-    nf <- c(nf,i)
-  }
-  
-  lorr <- stri_sub(name, 1, 1)
-  forv <- stri_sub(name, 6, 6)
-  if(forv == "F" & lorr != "R")
-  {
-    nf <- c(nf,i)
-  }
+  x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
+  ME[i,] <- x
 }
-apf <- AP[nf,]
+ME <- ME/100
+terzi <- colSums(ME)
 
-apf2 <- anni_competenza(apf, "01/01/2016")
-apf3 <- extract_relevant_val(apf2)
+## solo AP
+ap2 <- extract_relevant_val(AP)
 
-fissi2 <- compute_combinations_DEF_val(apf3)
+ap3 <- compute_combinations_DEF_val(ap2)
 
-
-nf2 <- c()
-for(i in 1:nrow(fissi2))
-{
-  name <- fissi2[i,"prodotto"]
-  if(name %in% pers_fissi)
-  {
-    nf2 <- c(nf2,i)
-  }
-  lorr <- stri_sub(name, 1, 1)
-  forv <- stri_sub(name, 6, 6)
-  if(forv == "F" & lorr != "R")
-  {
-    nf2 <- c(nf2,i)
-  }
-}
-f2 <- fissi2[nf2,]
-
-tpf <- compute_TP(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
-tot_fap <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
+tp_ap <- compute_TP(TP[which(unlist(TP["prodotto"]) %in% unlist(ap3["prodotto"])),],pm) # solo AP shipper fissi
+tot_ap <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(ap3["prodotto"])),],pm) # solo AP shipper fissi
 
 
-## aggrego e esporto in excel -- calcolo open position
+## aggrego e esporto in excel -- calcolo open position -- nel bilancio forecast ci va l'open position calcolata su TUTTO il fabbisogno. NON solo AP fissi.
 x16 <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
 
 date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = TRUE)
-date <- as.Date(date[2,],origin = "1899-12-30")
+#date <- as.Date(date[2,],origin = "1899-12-30")
 
 c_stok <- c(21.875, 21.875, 21.875)
 
@@ -190,9 +230,11 @@ term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[
 
 mmkt2 <- c(as.numeric(tot_termine[,1]), 0,0,0,0,0,0,0,0,0)
 ST <- stokm + term
-op <- tot_fap - (mstok_prog + mmkt2)
+#op <- tot_fap - (mstok_prog + mmkt2)
+op <- tot_ap - (mstok_prog + mmkt2)
 
 #grafici
+plot(1:731, colSums(curve_profili), type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno totale, mercato a termine e stoccaggio")
 plot(1:731, totg, type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno, mercato a termine e stoccaggio")
 abline(h=0, col = "red", lwd=2)
 rect(0, 0, 31,pg[1]+(mstok_prog[1]/31), col = "grey")
@@ -206,7 +248,8 @@ lines(1:731, totg, type="l", lwd = 2)
 plot(1:24, op, type="l", lwd = 2, xlab="tempo", ylab="open position",main="open position")
 
 #mop <- c(sum_in_year(open_position, "2016"), sum_in_year(open_position, "2017"))
-totale_costi <- (op * listing/100) + terzi + (mstok_prog * c_stok/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 
+## per lo stoccaggio il prezzo = euro/MWh. Ecco da dove arriva la discrepanza. Bisogna o calcolare il prezzo al m3 o tenere in MWh l'unita di misura
+totale_costi <- (op * listing) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 
 
 tot_costi_supero_capacita <- -1.3 * tot/100
 ### tot gas venduto = tot gas acquistato = TOT_m3
@@ -215,23 +258,23 @@ tot_costi_supero_capacita <- -1.3 * tot/100
 ### tot costi TP:
 tot_TP <- tp*tot/100
 ## margine AxoPower:
-margine_ap <- TM[10,] - totale_costi
+margine_ap <- TM[10,] - totale_costi + tot_costi_supero_capacita
 ### margine energy management
-margine_EM <- tp*tot/100 - totale_costi
+margine_EM <- tot_TP - totale_costi
 ### margine commerciale:
-margine_comm <- TM[10,] - tot_TP[1:12]
+margine_comm <- TM[10,] - tot_TP
 ### prezzi unitari:
 ### prezzo di vendita unitario sui ricavi
-ric_unit <- TM[10,]/tot
+ric_unit <- (TM[10,]/tot)*100
 ### costo di approvvigionamento unitario sull'acquistato
-unit_approv <- totale_costi/tot
+unit_approv <- (totale_costi/tot)*100
 ### margine unitario commerciale
-unit_comm <- (margine_comm)/tot
+unit_comm <- (margine_comm/tot)*100
 
 df <- data.frame(rbind(terzi,
                        c(tot_termine[,2],0,0,0,0,0,0,0,0,0),
-                       op * listing/100,
-                       mstok_prog * c_stok/100,
+                       op * listing,
+                       (mstok_prog * c_stok*1.05275/100),
                        tot_costi_supero_capacita, 
                        tot_TP,
                        margine_ap,
@@ -243,20 +286,20 @@ df <- data.frame(rbind(terzi,
                        tot,
                        tot))
 
-TM <- rbind(TM, df)
+TM2 <- rbind(TM, df)
 
 
-colnames(TM) <- c("gennaio-2016", "febbraio-2016","marzo-2016","aprile-2016","maggio-2016","giugno-2016",
+colnames(TM2) <- c("gennaio-2016", "febbraio-2016","marzo-2016","aprile-2016","maggio-2016","giugno-2016",
                   "luglio-2016", "agosto-2016","settembre-2016","ottobre-2016","novembre-2016","dicembre-2016",
                   "gennaio-2017", "febbraio-2017","marzo-2017","aprile-2017","maggio-2017","giugno-2017",
                   "luglio-2017", "agosto-2017","settembre-2017","ottobre-2017","novembre-2017","dicembre-2017")
 
-rownames(TM) <- c("PGas", "qtmvc", "cpr", "grad", "ccr", "qtint", "qtpsv", "qvdvar", "ccvdvar", "total","acquisti da terzi", "mercato a termine", "mercato a pronti", "stoccaggio",
+rownames(TM2) <- c("PGas", "qtmvc", "cpr", "grad", "ccr", "qtint", "qtpsv", "qvdvar", "ccvdvar", "total","acquisti da terzi", "mercato a termine", "mercato a pronti", "stoccaggio",
                   "costi supero","tot costi TP","margine Axopower","margine EM","margine comm","prezzo di vendita unitario sui ricavi",
                   "costo di approvvigionamento unitario sull'acquistato", "margine unitario commerciale", "tot gas acq", "tot gas vend")
 
 
-xlsx::write.xlsx(TM,"estrazione_bilancio_forecast.xlsx", row.names = TRUE, col.names = TRUE)
+xlsx::write.xlsx(TM2,"estrazione_bilancio_forecast.xlsx", row.names = TRUE, col.names = TRUE)
 
 
 

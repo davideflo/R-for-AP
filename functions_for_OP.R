@@ -1180,6 +1180,7 @@ total_sellings <- function(vendite, pm, listing)
 TOT_m3 <- function(prod, pm)
 {
   tot_m3 <- rep(0, 24)
+  #totm <- matrix(0,nrow=nrow(prod), ncol=24)
   for(i in 14:37)
   {
     print(i)
@@ -1192,7 +1193,7 @@ TOT_m3 <- function(prod, pm)
       for(j in 1:nrow(nzp))
       {
         col <- which(colnames(pm) == nzp[j,"profilo"])
-        #print((pm[,col] * nzp[j,"consumo"]))
+        #(pm[,col] * nzp[j,"consumo"])
         tot_m3[(i-13)] <- tot_m3[(i-13)] + (pm[as.numeric(ds[2]),col] * nzp[j,"consumo"])
       }
     } 
@@ -1350,4 +1351,17 @@ TOT_m3g <- function(prod, pm)
   }
   
   return(tot_m3)
+}
+
+TOT_m3mat <- function(prod, pm)
+{
+  
+  totm <- matrix(0,nrow=nrow(prod), ncol=24)
+  for(i in 1:nrow(prod))
+  {
+    col <- which(colnames(pm) == prod[i,"profilo"])
+    c2y <- as.numeric(prod[i,14:37] > 0)
+    totm[i,] <- pm[,col] * prod[i,"consumo"] * c2y
+  }
+  return(totm)
 }
