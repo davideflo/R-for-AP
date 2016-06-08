@@ -342,7 +342,7 @@ compute_profiles_DEF <- function(M, prof_consumo)
   for(j in 1:length(products))
   {
     print(products[j])
-    rows <- which(M["prodotto"] == products[j])
+    rows <- which(M["prodotto"] == as.character(products[j]))
     x <- M[rows,]
     mat_per_prodotto <- matrix(0, nrow = nrow(prof_consumo), ncol = length(rows))
     for(i in 1:nrow(x))
@@ -352,7 +352,7 @@ compute_profiles_DEF <- function(M, prof_consumo)
       data_in_y <- unlist(y[2])
       data_fin_y <- unlist(y[3])
       prof_y <- unlist(y[4])
-      cons_y <- unlist(y[5])
+      cons_y <- as.numeric(as.character(unlist(y[5])))
       COL <- which(names(prof_consumo) == prof_y)
       if( compare_dates("01/01/2016", data_in_y)  & !compare_dates("31/12/2017", data_fin_y)) ## data inizio prima di genaio 2016 e data fine dopo dicembre 2017
       {
@@ -381,6 +381,69 @@ compute_profiles_DEF <- function(M, prof_consumo)
         len <- nrow(prof_consumo) - end
         res <- c(rep(0, start-1), cons_y * prof_consumo[(start):end,COL], rep(0, len))
         mat_per_prodotto[,i] <- res
+      }
+    }
+    somma_profili <- apply(mat_per_prodotto, 1,sum)
+    
+    res_per_prodotto[j,] <- somma_profili/100
+    colnames(res_per_prodotto) <-prof_consumo[,1]
+  }
+  return(res_per_prodotto)
+}
+###################################################################################################
+compute_profiles_DEF15 <- function(M, prof_consumo)
+{
+  products <- unique(unlist(M["prodotto"]))
+  res_per_prodotto <- matrix(0, nrow = length(products), ncol = length(prof_consumo[,1]))
+  
+  for(j in 1:length(products))
+  {
+    print(products[j])
+    rows <- which(M["prodotto"] == as.character(products[j]))
+    x <- M[rows,]
+    mat_per_prodotto <- matrix(0, nrow = nrow(prof_consumo), ncol = length(rows))
+    for(i in 1:nrow(x))
+    {
+      print(i)
+      y <- x[i,]
+      data_in_y <- unlist(y[2])
+      data_fin_y <- unlist(y[3])
+      prof_y <- unlist(y[4])
+      cons_y <- as.numeric(as.character(unlist(y[5])))
+      COL <- which(names(prof_consumo) == prof_y)
+      if( compare_dates("01/01/2015", data_in_y)  & !compare_dates("31/12/2016", data_fin_y)) ## data inizio prima di genaio 2015 e data fine dopo dicembre 2016
+      {
+        mat_per_prodotto[,i] <- cons_y * prof_consumo[,COL]
+      }
+      else if(!compare_dates("01/01/2015", data_in_y)  & !compare_dates("31/12/2016", data_fin_y)) ## data inizio dopo genaio 2015 e data fine dopo dicembre 2016
+      {
+        start <- which(prof_consumo[,1] == data_in_y)
+        if(length(start) > 0)
+        {
+          res <- c(rep(0, start-1), cons_y * prof_consumo[(start):nrow(prof_consumo),COL])
+          mat_per_prodotto[,i] <- res
+        }
+      }
+      else if(compare_dates("01/01/2015", data_in_y)  & compare_dates("31/12/2016", data_fin_y)) ## data inizio prima di genaio 2015 e data fine prima di dicembre 2016
+      {
+        end <- which(prof_consumo[,1] == data_fin_y)
+        if(length(end) > 0)
+        {
+          len <- nrow(prof_consumo) - end
+          res <- c( cons_y * prof_consumo[1:end,COL] , rep(0, len))
+          mat_per_prodotto[,i] <- res
+        }
+      }
+      else ## ## data inizio dopo genaio 2015 e data fine prima di dicembre 2016
+      {
+        start <- which(prof_consumo[,1] == data_in_y)
+        end <- which(prof_consumo[,1] == data_fin_y)
+        if(length(start) > 0 & length(end) > 0)
+        {
+          len <- nrow(prof_consumo) - end
+          res <- c(rep(0, start-1), cons_y * prof_consumo[(start):end,COL], rep(0, len))
+          mat_per_prodotto[,i] <- res
+        }
       }
     }
     somma_profili <- apply(mat_per_prodotto, 1,sum)
@@ -820,6 +883,20 @@ take_month <- function(month, year, res)
   return(index_list)
 }
 
+take_monthV <- function(month, year, res)
+{
+  #### res ha gia SOLO le colonne con le date
+  index_list <- c()
+  for(i in 1:length(names(res)))
+  {
+    name <- names(res)[i]
+    sdt <- split_date(name)
+    if(sdt[2] == month & sdt[3] == year) index_list <- c(index_list, i)
+  }
+  return(index_list)
+}
+
+
 take_month2 <- function(month, year, res)
 {
   index_list <- c()
@@ -1194,7 +1271,7 @@ TOT_m3 <- function(prod, pm)
       {
         col <- which(colnames(pm) == nzp[j,"profilo"])
         #(pm[,col] * nzp[j,"consumo"])
-        tot_m3[(i-13)] <- tot_m3[(i-13)] + (pm[as.numeric(ds[2]),col] * nzp[j,"consumo"])
+        tot_m3[(i-13)] <- tot_m3[(i-13)] + (pm[as.numeric(ds[2]),col] * as.numeric(nzp[j,"consumo"]))
       }
     } 
   }
@@ -1361,7 +1438,7 @@ TOT_m3mat <- function(prod, pm)
   {
     col <- which(colnames(pm) == prod[i,"profilo"])
     c2y <- as.numeric(prod[i,14:37] > 0)
-    totm[i,] <- pm[,col] * prod[i,"consumo"] * c2y
+    totm[i,] <- as.numeric(pm[,col]) * as.numeric(prod[i,"consumo"]) * c2y
   }
   return(totm)
 }

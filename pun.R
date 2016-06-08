@@ -1,14 +1,39 @@
-
-library(WriteXLS)
-library(rJava)
+########## forecast PUN orario ###
 library(openxlsx)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(stringi)
+library(xlsx)
+library(vioplot)
+library(fda)
+library(h2o)
 library(TSA)
+library(tseries)
+library(rnn)
+library(TDA)
 
-prices <- read.xlsx("Anno 2016_03.xlsx", sheet=1, colNames=TRUE)
+source("functions_for_PUN.R")
 
-pun <- unlist(prices["PUN"])
-pun
-typeof(pun)
-plot(1:length(pun), pun, type = "l")
-acf(pun)
-stl(pun)
+prices10 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2010.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices11 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2011.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices12 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2012.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices13 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2013.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices14 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2014.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices15 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2015.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2016_04.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+
+plot(1:length(unlist(prices10["PUN"])), unlist(prices10["PUN"]), type = "l", lwd=2, col="blue")
+acf(unlist(prices10["PUN"]), lag.max = 48)
+#plot(stl(ts(unlist(prices10["PUN"]),frequency=365),s.window=7))
+plot(stl(ts(unlist(prices10["PUN"]),frequency=24),s.window=7)) ## questo mi pare piu corretto dalla descrizione dell'help in R
+#plot(stl(ts(unlist(prices10["PUN"]),frequency=8760),s.window=7))
+
+test <- create_dataset(prices10, "ven")
+
+library(h2o)
+h2o.init(nthreads = -1)
+train <- as.h2o(test[1:7000,1:217])
+val <- as.h2o(test[7001:8737,1:217])
+
+
