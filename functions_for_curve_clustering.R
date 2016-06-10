@@ -919,5 +919,65 @@ V_shaped <- function(err_vec, areas)
   mod <- mode(err_vec)
   
 }
-
+######################################################
+take_max_permonth <- function(prof_consumo, COL)
+{
+  dates <- c(paste0("01/","0",1:9,"/",2015), paste0("01/",10:12,"/",2015), paste0("01/","0",1:9,"/",2016), paste0("01/",10:12,"/",2016))
+  vim <- rep(0, length(dates))
+  for(i in 1:length(dates))
+  {
+    month <- stri_sub(dates[i], from = 4, to = 5)
+    year <- stri_sub(dates[i], from = 7, to = 10)
+    
+    vm <- data.frame(t(unlist(prof_consumo[,COL])))
+    names(vm) <- prof_consumo[,1]
+    indeces <- take_month(month, year, vm)
+    vim[i] <- max(prof_consumo[indeces, COL])
+  }
+  return(vim)
+}
+#####################################################
+active <- function(di, df)
+{
+  dates <- c(paste0("01/","0",1:9,"/",2015), paste0("01/",10:12,"/",2015), paste0("01/","0",1:9,"/",2016), paste0("01/",10:12,"/",2016))
+  act <- rep(0, 24)
+  for(i in 1:24)
+  {
+    if(compare_dates(dates[i], di) & compare_dates(df, dates[i])) act[i] <- 1
+  }
+  return(act)
+}
+####################################################
+compute_max_prof <- function(M, prof_consumo)
+{
+  products <- unique(unlist(M["prodotto"]))
+  res_per_prodotto <- matrix(0, nrow = length(products), ncol = 24)
+  
+  for(j in 1:length(products))
+  {
+    print(products[j])
+    rows <- which(M["prodotto"] == as.character(products[j]))
+    x <- M[rows,]
+    mat_per_prodotto <- matrix(0, nrow = 24, ncol = length(rows))
+    for(i in 1:nrow(x))
+    {
+      print(i)
+      y <- x[i,]
+      data_in_y <- unlist(y[2])
+      data_fin_y <- unlist(y[3])
+      prof_y <- unlist(y[4])
+      cons_y <- as.numeric(as.character(unlist(y[5])))
+      COL <- which(names(prof_consumo) == prof_y)
+      mpm <- take_max_permonth(prof_consumo,COL)
+      act <- active(data_in_y, data_fin_y)
+      mat_per_prodotto[,i] <- as.matrix(cons_y * mpm * act)
+      
+    }
+    somma_profili <- apply(mat_per_prodotto, 1,sum)
+    
+    res_per_prodotto[j,] <- somma_profili/100
+    #colnames(res_per_prodotto) <-prof_consumo[,1]
+  }
+  return(res_per_prodotto)
+}
 

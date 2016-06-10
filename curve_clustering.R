@@ -359,7 +359,8 @@ mar16 <- openxlsx::read.xlsx("max_allocato.xlsx", sheet = "marzo 2016", colNames
 apr16 <- openxlsx::read.xlsx("max_allocato.xlsx", sheet = "aprile 2016", colNames = TRUE)
 
 dfs <- ls()[sapply(mget(ls(), .GlobalEnv), is.data.frame)]
-dfs <- dfs[c(1:13,17)]
+#dfs <- dfs[c(1:13,17)]
+dfs <- dfs[c(1:14)]
 
 remi_found <- c()
 for(df in dfs)
@@ -375,7 +376,7 @@ prof <- data.frame(profili_consumo[2:nrow(profili_consumo),3:38])
 
 diff_matrix <- matrix(0, nrow=length(remi_found), ncol = 24)
 rownames(diff_matrix) <- remi_found
-setwd("plot_remi")
+#setwd("plot_remi")
 for(rf in remi_found)
 {
   #re <- ver2[which(ver2["COD_REMI"] == rf),]
@@ -447,6 +448,138 @@ lines(1:24, curva_max, type="l", lwd=2,col="red")
 lines(1:24, curva_min, type="l", lwd=2,col="blue")
 lines(1:24, curva_up, type="l", lwd=2,col="pink")
 lines(1:24, curva_low, type="l", lwd=2,col="green")
+
+M <- matrix(0,nrow = length(remi_found), ncol = 48)
+## un remi per ogni riga e nelle colonne dispari ci sono le CG per mese j, mentre nelle colonne pari
+## ci sono i max allocati snam per mese j-1.
+rownames(M) <- remi_found
+for(rf in remi_found)
+{
+  re <- ver[which(ver["COD_REMI"] == rf),]
+  {
+    if(nrow(re) > 0)
+    {
+      cons <- rep(0, nrow(re))
+      for(i in 1:nrow(re)) cons[i] <- ifelse(re[i,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[i,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[i,"CONSUMO_CONTR_ANNUO"])))
+      agg <- data.frame(prodotto = re["CODICE_PRODOTTO"], data.inizio =re["D_VALIDO_DAL_T"], 
+                              data.fine = re["D_VALIDO_AL_T"], profilo= re["PROFILO_PRELIEVO"], 
+                              consumo = cons)
+      colnames(agg) <- c("prodotto", "data inizio", "data fine", "profilo", "consumo")
+      CG <- compute_max_prof(agg, prof)
+      max_rf <- rep(0, length(dfs))
+      for(j in 1:length(dfs))
+      {
+        if(rf %in% get(dfs[j])[,1]) max_rf[j] <- get(dfs[j])[which(get(dfs[j])[,1] == rf),2] 
+      }
+      names(max_rf) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
+                         "10/2015","11/2015","12/2015","01/2016","02/2016","03/2016","04/2016")
+      max_rf <- c(0,0,max_rf,rep(0,8))
+      index <- which(rownames(M) == rf)
+      for(j in 1:24)
+      {
+        M[index,j] <- CG[j]
+        M[index,(24+j)] <- max_rf[j]
+      }
+    }
+  }
+}
+
+
+F <- function(x)
+{
+  S <- P <- 0
+  M <- M[,c(6:24,30:48)]
+  for(i in 1:nrow(M))
+  {
+    for(j in 1:19)
+    {
+      y <- M[i,j]*((1.1)+x)
+      z <- unlist(M[i,j+19] - M[i,j]*(1.1))
+      z2 <- unlist(M[i,j+19] - y)[1]
+      if(z2 < 0)
+      {
+        print("entro z")
+        S <- S + 3*M[i,j]*(1+x) + 3.5*(abs(z2)); P <- P + M[i,j+19]
+      }
+      else
+      {
+        S <- S + 3*M[i,j]*(1+x) 
+      }
+      print(S)
+    }
+  }
+  print(P)
+  return(S)
+}
+
+Fr <- function(x)
+{
+  ### cambia Mo in M!!!!!
+  S <- 0
+  mat <- matrix(0, nrow = nrow(Mo), ncol = 19)
+  M <- Mo[,c(6:24,30:48)]
+  for(i in 1:nrow(M))
+  {
+    for(j in 1:19)
+    {
+      y <- M[i,j]*((1.1)+x)
+      z <- unlist(M[i,j+19] - M[i,j]*(1.1))
+      z2 <- unlist(M[i,j+19] - y)[1]
+      if(z2 < 0)
+      {
+        mat[i,j] <- 3*M[i,j]*(1+x) + 3.5*(abs(z2)); 
+      }
+      else
+      {
+        mat[i,j] <- 3*M[i,j]*(1+x) 
+      }
+    }
+  }
+  return(mat)
+}
+
+F_r <- function(x, remi)
+{
+  ### cambia Mo in M!!!!!
+  S <- 0
+  M <- Mo[which(rownames(Mo) == remi),c(6:24,30:48)]
+  for(j in 1:19)
+  {
+    y <- M[j]*((1.1)+x)
+    z <- unlist(M[j+19] - M[j]*(1.1))
+    z2 <- unlist(M[j+19] - y)[1]
+    if(z2 < y)
+    {
+     S <- S + 3*M[j]*(1+x) + 3.5*(z2); 
+    }
+    else
+    {
+      S <- S + 3*M[j]*(1+x) 
+    }
+    #print(paste("S mese", j+5, ":", S))
+  }
+  return(S)
+}
+
+xx <- seq(0,1, 0.0001)
+yy <- F(xx)
+plot(xx, yy, type="l",lwd=2)
+
+mm <- Fr(0.5)
+mm <- rbind(mm, colSums(mm))
+matplot(1:19, t(mm), type="l", lwd=2)
+
+s <- F_r(xx, "34952601")
+for(rf in sample(remi_found,size=4))
+{
+  s <- c()
+  for(x in xx)
+  {
+    s <- c(s,F_r(x, rf))
+  }
+  plot(xx,s,type="l",lwd=2,main=rf)
+}
+
 #################################################################################
 ####### costruzione database storico dei consumi ##########
 #################################################################################

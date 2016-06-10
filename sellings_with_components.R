@@ -34,8 +34,8 @@ total_sellings_per_components <- function(vendite, pm, listing)
     {
       P0 <- as.numeric(vendite[i,9])
       Prif <- 0 
-      fixed <- vendite[i,10]   
-      if (fixed != "brent") {Prif <- as.numeric(vendite[i,10])}
+      tipo <- vendite[i,"TIPO"]   
+      if (tipo == "VAR") {Prif <- as.numeric(vendite[i,10])}
       
       pc <- which(colnames(pm) == vendite[i,4])
       profm <- (as.numeric(vendite[i,5]) * pm[,pc])
@@ -105,7 +105,7 @@ total_sellings_per_components <- function(vendite, pm, listing)
        Sqvdvar <- Sqvdvar + profm[MONTH] * qvdvar[MONTH]/100 
        Sccvdvar <- Sccvdvar + profm[MONTH] * ccvdvar[MONTH]/100
       
-       if(fixed == "brent")
+       if(tipo == "FIX")
        {
          SPGas <- SPGas + (P0 * profm[MONTH])/100 
        }

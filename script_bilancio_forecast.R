@@ -67,7 +67,7 @@ terzi <- colSums(profilo_acquisti_shipper_terzi(btb))
 
 ## mercato a termine (carica il file): prima colonna = mercato a termine in volumi; seconda colonna = valore mercato a termine
 tot_termine <- openxlsx::read.xlsx("tot_mercato_termine.xlsx", sheet = 1)
-termine <- tot_termine[,1]
+termine <- tot_termine[,3]
 termine <- data.frame(t(termine))
 
 ## stoccaggio
@@ -195,7 +195,7 @@ index <- intersect(index, in5)
 TPe <- TP[which(TP["shipper"] == "ENEL TRADE"),]
 
 tot_enel <- TOT_m3(TPe,pm)
-te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
+#te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
              "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF")
@@ -246,9 +246,10 @@ mstok_prog <- c(sum_in_year(stok_prog, "2016"), sum_in_year(stok_prog, "2017"))
 
 
 stokm <- rep(mstok_prog/c(x16,x17), c(x16,x17))
-term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[5], 92), rep(pg[6], 90), rep(0, 275))
+#term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[5], 92), rep(pg[6], 90), rep(0, 275))
+term <- tt
 
-mmkt2 <- c(as.numeric(tot_termine[,1]), 0,0,0,0,0,0,0,0,0)
+mmkt2 <- c(as.numeric(tot_termine[,3]), 0,0,0,0,0,0,0,0,0)
 ST <- stokm + term
 #op <- tot_fap - (mstok_prog + mmkt2)
 op <- tot_ap - (mstok_prog + mmkt2)
