@@ -484,6 +484,12 @@ for(rf in remi_found)
   }
 }
 
+il <- c()
+for(i in 1:nrow(M))
+{
+  if(sum(M[i,]) != 0) il <- c(il, i)
+}
+M <- M[il,]
 
 F <- function(x)
 {
@@ -516,8 +522,8 @@ Fr <- function(x)
 {
   ### cambia Mo in M!!!!!
   S <- 0
-  mat <- matrix(0, nrow = nrow(Mo), ncol = 19)
-  M <- Mo[,c(6:24,30:48)]
+  mat <- matrix(0, nrow = nrow(M), ncol = 19)
+  M <- M[,c(6:24,30:48)]
   for(i in 1:nrow(M))
   {
     for(j in 1:19)
@@ -542,23 +548,56 @@ F_r <- function(x, remi)
 {
   ### cambia Mo in M!!!!!
   S <- 0
-  M <- Mo[which(rownames(Mo) == remi),c(6:24,30:48)]
-  for(j in 1:19)
+  Mo <- M[which(rownames(M) == remi),c(6:24,30:48)]
+  if(length(Mo) > 0)
   {
-    y <- M[j]*((1.1)+x)
-    z <- unlist(M[j+19] - M[j]*(1.1))
-    z2 <- unlist(M[j+19] - y)[1]
-    if(z2 < y)
+    for(j in 1:19)
     {
-     S <- S + 3*M[j]*(1+x) + 3.5*(z2); 
+      y <- Mo[j]*((1.1)+x)
+      z <- unlist(Mo[j+19] - Mo[j]*(1.1))
+      z2 <- unlist(Mo[j+19] - y)[1]
+      if(z2 < y)
+      {
+       S <- S + 3*Mo[j]*(1+x) + 3.5*(abs(z2)); 
+      }
+      else
+      {
+        S <- S + 3*Mo[j]*(1+x) 
+      }
+      #print(paste("S mese", j+5, ":", S))
     }
-    else
-    {
-      S <- S + 3*M[j]*(1+x) 
-    }
-    #print(paste("S mese", j+5, ":", S))
+    return(S)
   }
-  return(S)
+}
+
+F_r2 <- function(x, M, remi, snam)
+{
+  ### cambia Mo in M!!!!!
+  S <- 0
+  Mo <- M[which(rownames(M) == remi),6:24]
+  if(length(Mo) > 0)
+  {
+    for(j in 1:19)
+    {
+      y <- Mo[j]*((1.1)+x)
+      z <- unlist(snam - Mo[j]*(1.1))
+      z2 <- unlist(snam - y)
+      #print(paste("snam", snam))
+      #print(paste("Mo", Mo[j]))
+      #print(paste("y",y))
+      #print(paste("z2",z2))
+      if(z2 < y)
+      {
+        S <- S + 3*Mo[j]*(1+x) + 3.5*(abs(z2)); 
+      }
+      else
+      {
+        S <- S + 3*Mo[j]*(1+x) 
+      }
+      #print(paste("S mese", j+5, ":", S))
+    }
+    return(S)
+  }
 }
 
 xx <- seq(0,1, 0.0001)
@@ -569,16 +608,114 @@ mm <- Fr(0.5)
 mm <- rbind(mm, colSums(mm))
 matplot(1:19, t(mm), type="l", lwd=2)
 
-s <- F_r(xx, "34952601")
-for(rf in sample(remi_found,size=4))
+s <- F_r(xx[1], "34952601")
+#for(rf in sample(remi_found,size=10))
+S <- rep(0, length(xx))
+for(rf in rownames(M))  
 {
   s <- c()
   for(x in xx)
   {
     s <- c(s,F_r(x, rf))
   }
-  plot(xx,s,type="l",lwd=2,main=rf)
+  S <- S + s
 }
+plot(xx,S,type="l",lwd=2, xlab= "banda di sicurezza", ylab="euro")
+
+snam <- seq(0, 100, 10)
+res <- matrix(0, nrow=length(snam), ncol=length(xx))
+rf <- sample(rownames(M),size=1)
+for(i in 1:nrow(res))
+{
+  #print(i)
+  for(j in 1:ncol(res))
+  {
+    #print(j)
+    res[i,j] <- F_r2(xx[j], M[,1:24], rf,snam[i])
+  }
+}
+
+filled.contour(x=xx, y=snam, z=t(res), zlim = range(res, finite = TRUE),color.palette = cm.colors)
+contour(x=xx, y=snam, z=t(res))               
+image(x=xx, y=snam, z=t(res))
+
+cg_star <- matrix(0,nrow = nrow(M), ncol = 2)
+rownames(cg_star) <- rownames(M)
+for(i in 1:nrow(M))
+{
+  sol <- c()
+  for(x in xx)
+  {
+    sol <- c(sol, F_r(x, rownames(M)[i]))
+  }
+  print(paste("x*", xx[which.min(sol)]))
+  cg_star[i,1] <- mean(M[i,6:24]) *(1 + xx[which.min(sol)])
+  cg_star[i,2] <- mean(M[i,6:24]) *(xx[which.min(sol)])
+}
+
+
+###### errore e stima di x* con i consumi storici
+
+dfs2 <- c("cmar15", "capr15", "cmag15","cgiu15","clug15","cago15","cset15","cott15","cnov15","cdic15","cgen","cfeb","cmar","capr")
+es <- matrix(0, nrow=nrow(M),ncol=4)
+rownames(es) <- rownames(M)
+for(i in 1:nrow(M))
+{
+  re <- extract_relevant_val(ver[which(ver["COD_REMI"] == rownames(M)[i]),])
+  cg <- rep(0,14)
+  cont <- 0
+  if(nrow(re) > 0)
+  {
+    for(j in 1:nrow(re)) 
+    {
+      cons <- ifelse(re[j,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[j,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[j,"CONSUMO_CONTR_ANNUO"])))
+      prodotto <- as.character(re[j,"CODICE_PRODOTTO"]); data.inizio  <- as.character(re[j,"D_VALIDO_DAL_T"]); 
+      data.fine <- as.character(re[j,"D_VALIDO_AL_T"]); profilo <- as.character(re[j,"PROFILO_PRELIEVO"]) 
+      COL <- which(names(prof) == profilo)
+      mpm <- take_max_permonth(prof,COL)
+      act <- active(data.inizio, data.fine)
+      mat <- cons * mpm * act
+      pdrs <- unique(unlist(re["PDR"]))
+#      ii <- which(re["PDR"] == pdr)
+      for(ds in dfs2)
+      {
+        print(ds)
+        index <- which(dfs2 == ds)
+        print(paste("index qui:", index))
+        if(pdr %in% rownames(get(ds)))
+        {
+          cont <- cont + 1
+          D <- correct_obs(get(ds))
+          cg[index] <- cg[index] + max(D[which(rownames(D) == pdr),])
+          print(paste("index:", index))
+          print(paste("cg index:", cg[index]))
+        }
+        else
+        {
+          cg[index] <- cg[index] + mat[index]
+          print(paste("index:", index))
+          print(paste("cg index:", cg[index]))
+          print(paste("mat index:", mat[index]))
+        }
+      }
+  }
+  ms <- M[i, 27:40]
+  print(paste("ms:", ms))
+  error <- ms - 1.1*cg
+  print(paste("error:", error))
+  val <- sum(3*cg) + sum(as.numeric(error[4:14] < 0)*abs(mean(ms[4:14]) - 1.1*cg)*3.5)
+  print(paste("val:", val))
+  es[i,1] <- mean(error)
+  es[i,2] <- val
+  es[i,3] <- cont/(nrow(re)*11)
+  es[i,4] <- nrow(re)
+  }
+}
+
+xlsx::write.xlsx(data.frame(es), "errore_su_storico.xlsx", row.names=TRUE, col.names = TRUE)
+
+
+36 - (1.1*39.199035) + (9 - 1.1*59.116285)
 
 #################################################################################
 ####### costruzione database storico dei consumi ##########
