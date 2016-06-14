@@ -609,6 +609,7 @@ mm <- rbind(mm, colSums(mm))
 matplot(1:19, t(mm), type="l", lwd=2)
 
 s <- F_r(xx[1], "34952601")
+rf <- "34324201"
 #for(rf in sample(remi_found,size=10))
 S <- rep(0, length(xx))
 for(rf in rownames(M))  
@@ -648,16 +649,214 @@ for(i in 1:nrow(M))
   {
     sol <- c(sol, F_r(x, rownames(M)[i]))
   }
-  print(paste("x*", xx[which.min(sol)]))
+#  print(paste("x*", xx[which.min(sol)]))
   cg_star[i,1] <- mean(M[i,6:24]) *(1 + xx[which.min(sol)])
   cg_star[i,2] <- mean(M[i,6:24]) *(xx[which.min(sol)])
 }
 
 
+##############################################################
+############ grafici su storico #############################
+diff_matrix <- matrix(0, nrow=length(remi_found), ncol = 24)
+rownames(diff_matrix) <- remi_found
+#setwd("plot_remi")
+for(i in 1:nrow(M))
+{
+  #re <- ver2[which(ver2["COD_REMI"] == rf),]
+  re <- extract_relevant_val(ver[which(ver["COD_REMI"] == rownames(M)[i]),])
+  profili <- rep(0, 731)
+  cont <- 0
+  if(nrow(re) > 0)
+  {
+     for(k in 1:nrow(re))
+     {
+       profili_temp <- rep(0, 731)
+       cons <- rep(0, nrow(re))
+       pdr <- unique(unlist(re[k,"PDR"]))
+       cons <- ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
+       agg <- data_frame(prodotto = re[k,"CODICE_PRODOTTO"], data.inizio = as.character(re[k,"D_VALIDO_DAL_T"]), 
+                               data.fine = as.character(re[k,"D_VALIDO_AL_T"]), profilo= as.character(re[k,"PROFILO_PRELIEVO"]), 
+                               consumo = cons)
+       colnames(agg) <- c("prodotto", "data inizio", "data fine", "profilo", "consumo")
+       profili_temp <- data.frame(compute_profiles_DEF15(agg, prof))
+       colnames(profili_temp) <- prof[,1]
+       for(ds in dfs2)
+       {
+         if(pdr %in% rownames(get(ds)))
+         {
+           DF <- correct_obs(get(ds))
+           my <- get_month_year(ds)
+           month <- map_months(my[1])
+           index <- take_month(month, my[2], profili_temp)
+           index2 <- which(rownames(DF) == pdr)
+           profili_temp[,index] <- DF[index2,]
+         }
+       }
+      profili <- profili + profili_temp
+      }
+    max_rf <- rep(0, length(dfs))
+    for(j in 1:length(dfs))
+    {
+      rf <- rownames(M)[i]
+      if(rf %in% get(dfs[j])[,1]) max_rf[j] <- get(dfs[j])[which(get(dfs[j])[,1] == rf),2] 
+    }
+    names(max_rf) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
+                       "10/2015","11/2015","12/2015","01/2016","02/2016","03/2016","04/2016")
+    pb <- c(min(take_monthV("03", "2015", profili)),min(take_monthV("04", "2015", profili)), min(take_monthV("05", "2015", profili)),
+            min(take_monthV("06", "2015", profili)),min(take_monthV("07", "2015", profili)),min(take_monthV("08", "2015", profili)),
+            min(take_monthV("09", "2015", profili)),min(take_monthV("10", "2015", profili)),min(take_monthV("11", "2015", profili)),
+            min(take_monthV("12", "2015", profili)),min(take_monthV("01", "2016", profili)),min(take_monthV("02", "2016", profili)),
+            min(take_monthV("03", "2016", profili)),min(take_monthV("04", "2016", profili)))
+    mm <- max(max(max_rf),max(profili))
+    mypath <- paste0("C:/Users/d_floriello/Documents/plot_remi/plot_true_",rownames(M)[i], ".jpg")
+    jpeg(file=mypath, quality=100)
+    plot(1:length(profili), profili, type="l",ylim = c(0, mm+1),xlab="giorni", ylab="consumo",main = paste("fabbisogno per remi dati storici", rownames(M)[i], "con max allocazione mensile"))
+    #lines(c(90, 120, 151, 181, 212, 243, 273, 304, 334, 365, 396, 425, 456,486), max_rf, type="l",lwd=2,col="red")
+    lines(pb, max_rf, type="l",lwd=2,col="red")
+    abline(v = which(names(profili) == "01/03/2015"))
+    dev.off()
+    index <- which(rownames(diff_matrix) == rownames(M)[i])
+    diff_matrix[index,3] <- max(profili[take_monthV("03", "2015", profili)]) - max_rf[1]
+    diff_matrix[index,4] <- max(profili[take_monthV("04", "2015", profili)]) - max_rf[2]
+    diff_matrix[index,5] <- max(profili[take_monthV("05", "2015", profili)]) - max_rf[3]
+    diff_matrix[index,6] <- max(profili[take_monthV("06", "2015", profili)]) - max_rf[4]
+    diff_matrix[index,7] <- max(profili[take_monthV("07", "2015", profili)]) - max_rf[5]
+    diff_matrix[index,8] <- max(profili[take_monthV("08", "2015", profili)]) - max_rf[6]
+    diff_matrix[index,9] <- max(profili[take_monthV("09", "2015", profili)]) - max_rf[7]
+    diff_matrix[index,10] <- max(profili[take_monthV("10", "2015", profili)]) - max_rf[8]
+    diff_matrix[index,11] <- max(profili[take_monthV("11", "2015", profili)]) - max_rf[9]
+    diff_matrix[index,12] <- max(profili[take_monthV("12", "2015", profili)]) - max_rf[10]
+    diff_matrix[index,13] <- max(profili[take_monthV("01", "2015", profili)]) - max_rf[11]
+    diff_matrix[index,14] <- max(profili[take_monthV("02", "2015", profili)]) - max_rf[12]
+    diff_matrix[index,15] <- max(profili[take_monthV("03", "2015", profili)]) - max_rf[13]
+    diff_matrix[index,16] <- max(profili[take_monthV("04", "2015", profili)]) - max_rf[14]
+  }
+}
+
+xlsx::write.xlsx(data.frame(diff_matrix), paste0("C:/Users/d_floriello/Documents/plot_remi/differenze_dati_veri.xlsx"), row.names=TRUE, col.names = TRUE)
+
+matplot(1:24, t(diff_matrix), type="l",lwd=2, xlab="mesi", ylab="differenze", main="grafico differenze mensili curve storiche - allocato SNAM")
+lines(1:24, colMeans(diff_matrix), type="o", lwd=2)
+
+#####################################################################
+############## matrice M per l'ottimizzazione ###############
+#####################################################################
+M2 <- matrix(0,nrow = length(remi_found), ncol = 48)
+## un remi per ogni riga e nelle colonne dispari ci sono le CG per mese j, mentre nelle colonne pari
+## ci sono i max allocati snam per mese j-1.
+rownames(M2) <- remi_found
+for(rf in remi_found)
+{
+  re <- ver[which(ver["COD_REMI"] == rf),]
+  CG <- rep(0, 24)
+  {
+    if(nrow(re) > 0)
+    {
+      for(k in 1:nrow(re))
+      {
+        CG_temp <- rep(0, 24)
+        cons <- rep(0, nrow(re))
+        pdr <- unique(unlist(re[k,"PDR"]))
+        cons <- ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
+        agg <- data_frame(prodotto = re[k,"CODICE_PRODOTTO"], data.inizio = as.character(re[k,"D_VALIDO_DAL_T"]), 
+                          data.fine = as.character(re[k,"D_VALIDO_AL_T"]), profilo= as.character(re[k,"PROFILO_PRELIEVO"]), 
+                          consumo = cons)
+        colnames(agg) <- c("prodotto", "data inizio", "data fine", "profilo", "consumo")
+        #profili_temp <- data.frame(compute_profiles_DEF15(agg, prof))
+        CG_temp <- compute_max_prof(agg, prof)
+        #colnames(profili_temp) <- prof[,1]
+        for(ds in dfs2)
+        {
+          if(pdr %in% rownames(get(ds)))
+          {
+            DF <- correct_obs(get(ds))
+            my <- get_month_year(ds)
+            month <- map_months(my[1])
+            #index <- take_month(month, my[2], profili_temp)
+            index <- which(dfs2 == ds)
+            index2 <- which(rownames(DF) == pdr)
+            CG_temp[index+2] <- max(DF[index2,])
+          }
+        }
+        CG <- CG + CG_temp
+      }
+      max_rf <- rep(0, length(dfs))
+      for(j in 1:length(dfs))
+      {
+        if(rf %in% get(dfs[j])[,1]) max_rf[j] <- get(dfs[j])[which(get(dfs[j])[,1] == rf),2] 
+      }
+      names(max_rf) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
+                         "10/2015","11/2015","12/2015","01/2016","02/2016","03/2016","04/2016")
+      max_rf <- c(0,0,max_rf,rep(0,8))
+      index <- which(rownames(M) == rf)
+      for(j in 1:24)
+      {
+        M2[index,j] <- CG[j]
+        M2[index,(24+j)] <- max_rf[j]
+      }
+    }
+  }
+}
+
+il <- c()
+for(i in 1:nrow(M))
+{
+  if(sum(M2[i,]) != 0) il <- c(il, i)
+}
+M2 <- M2[il,]
+
+####################################################################################
+####### ottimizzazione banda di sicurezza su database storico #############
+####################################################################################
+
+Fh <- function(x, remi, M2)
+{
+  S <- 0
+  M2 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
+  if(length(M2) > 0)
+  {
+    for(j in 1:19)
+    {
+      y <- M2[j]*((1.1)+x)
+#      y2 <- M2[j]*(1+x)
+#      y <- M2[j]*(0.9 - x)
+      z <- unlist(M2[j+19] - M2[j]*(1.1))
+      z2 <- unlist(M2[j+19] - y)[1]
+      if(z2 < y)
+      {
+        S <- S + 0.03*M2[j]*(1+x) + 3.5*(abs(z2) - 0.03*M2[j]*(1+x));
+#        S <- S + 0.03*M2[j]*(1+x) + 3.5*(abs(z2))
+      }
+      else
+      {
+        S <- S + 0.03*M2[j]*(1+x) 
+      }
+    }
+    return(S)
+  }
+}
+
+xx <- seq(0, 1, 0.0001)
+
+S <- rep(0, length(xx))
+for(rf in rownames(M2))  
+{
+  s <- c()
+  for(x in xx)
+  {
+    s <- c(s,Fh(x, rf, M2))
+  }
+  plot(xx,s,type="l",lwd=2, col="blue",xlab= "banda di sicurezza", ylab="euro", main=rf)
+  #S <- S + s
+}
+
+
+
+
 ###### errore e stima di x* con i consumi storici
 
 dfs2 <- c("cmar15", "capr15", "cmag15","cgiu15","clug15","cago15","cset15","cott15","cnov15","cdic15","cgen","cfeb","cmar","capr")
-es <- matrix(0, nrow=nrow(M),ncol=4)
+es <- matrix(0, nrow=nrow(M),ncol=6)
 rownames(es) <- rownames(M)
 for(i in 1:nrow(M))
 {
@@ -674,48 +873,51 @@ for(i in 1:nrow(M))
       COL <- which(names(prof) == profilo)
       mpm <- take_max_permonth(prof,COL)
       act <- active(data.inizio, data.fine)
-      mat <- cons * mpm * act
-      pdrs <- unique(unlist(re["PDR"]))
+      mat <- cons * (mpm/100) * act
+      pdr <- as.character(re[j,"PDR"])
 #      ii <- which(re["PDR"] == pdr)
       for(ds in dfs2)
       {
-        print(ds)
+#        print(ds)
         index <- which(dfs2 == ds)
-        print(paste("index qui:", index))
+#        print(paste("index qui:", index))
         if(pdr %in% rownames(get(ds)))
         {
           cont <- cont + 1
           D <- correct_obs(get(ds))
           cg[index] <- cg[index] + max(D[which(rownames(D) == pdr),])
-          print(paste("index:", index))
-          print(paste("cg index:", cg[index]))
+#          print(paste("index:", index))
+#          print(paste("cg index:", cg[index]))
         }
         else
         {
           cg[index] <- cg[index] + mat[index]
-          print(paste("index:", index))
-          print(paste("cg index:", cg[index]))
-          print(paste("mat index:", mat[index]))
+#          print(paste("index:", index))
+#          print(paste("cg index:", cg[index]))
+#          print(paste("mat index:", mat[index]))
         }
       }
   }
   ms <- M[i, 27:40]
-  print(paste("ms:", ms))
+  cgs <- cg_star[which(rownames(cg_star) == rownames(M)[i]),1]
+#  print(paste("ms:", ms))
   error <- ms - 1.1*cg
-  print(paste("error:", error))
-  val <- sum(3*cg) + sum(as.numeric(error[4:14] < 0)*abs(mean(ms[4:14]) - 1.1*cg)*3.5)
-  print(paste("val:", val))
+#  print(paste("error:", error))
+  val <- sum(3*cg) + sum(as.numeric(error[4:14] < 0)*abs(ms[4:14] - 1.1*cg[4:14])*3.5)
+#  print(paste("val:", val))
   es[i,1] <- mean(error)
   es[i,2] <- val
-  es[i,3] <- cont/(nrow(re)*11)
-  es[i,4] <- nrow(re)
+  es[i,3] <- mean(ms - 1.1*cgs)
+  es[i,4] <- sum(3*cgs) + sum(as.numeric(error[4:14] < 0)*abs(ms[4:14] - 1.1*cgs)*3.5)
+  es[i,5] <- cont/(nrow(re)*11)
+  es[i,6] <- nrow(re)
   }
 }
 
 xlsx::write.xlsx(data.frame(es), "errore_su_storico.xlsx", row.names=TRUE, col.names = TRUE)
 
 
-36 - (1.1*39.199035) + (9 - 1.1*59.116285)
+
 
 #################################################################################
 ####### costruzione database storico dei consumi ##########
