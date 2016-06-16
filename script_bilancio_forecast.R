@@ -208,8 +208,12 @@ mat_enel <- cbind(TPe["prodotto"],TOT_m3mat(TPe,pm))
 ME <- matrix(0,nrow=nrow(mat_enel),ncol=24)
 for(i in 1:nrow(mat_enel))
 {
+  print(i)
+#  if(i != 2)
+#  {
   x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
   ME[i,] <- x
+#  }
 }
 ME <- ME/100
 terzi <- colSums(ME)

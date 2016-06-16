@@ -333,6 +333,11 @@ for(remi in REMI)
   profil[[remi]] <- unlist(ver[which(ver2["COD_REMI"] == remi),"PROFILO_PRELIEVO"])
   lens <- c(lens, length(unique(unlist(ver2[which(ver["COD_REMI"] == remi),"PDR"]))))
 }
+############### distribuzioni pdr per remi ###########################################
+hist(lens, breaks = seq(0,120, 5), xlab="numero pdr per remi", main="istogramma di numero pdr per remi")
+br <- c(1  , 2  , 3 ,  4  , 5 ,  6  , 7 ,  8  , 9 , 10  ,11 , 12  ,13 , 14  ,15  ,16  ,17,  18,  19,  20  ,21 , 22  ,23 , 25,  39,  45  ,48 , 74  ,86 , 94 ,111)
+plot(br, sort(cumsum(table(lens)/sum(table(lens)))), type="o",col="red", xlab="numero pdr per remi", ylab="percentuale cumulata")
+######################################################################################
 
 pdrl <- list()
 for(df in dfs)
@@ -466,6 +471,7 @@ for(rf in remi_found)
                               consumo = cons)
       colnames(agg) <- c("prodotto", "data inizio", "data fine", "profilo", "consumo")
       CG <- compute_max_prof(agg, prof)
+      CG <- colSums(CG)
       max_rf <- rep(0, length(dfs))
       for(j in 1:length(dfs))
       {
@@ -544,31 +550,38 @@ Fr <- function(x)
   return(mat)
 }
 
-F_r <- function(x, remi)
+F_r <- function(M, remi)
 {
-  ### cambia Mo in M!!!!!
-  S <- 0
+  xx <- seq(0,1,0.001)
   Mo <- M[which(rownames(M) == remi),c(6:24,30:48)]
+  mm <- max(Mo)
+  f <- c()
   if(length(Mo) > 0)
   {
-    for(j in 1:19)
+    for( x in xx)
     {
-      y <- Mo[j]*((1.1)+x)
-      z <- unlist(Mo[j+19] - Mo[j]*(1.1))
-      z2 <- unlist(Mo[j+19] - y)[1]
-      if(z2 < y)
+      S <- 0
+      for(j in 1:19)
       {
-       S <- S + 3*Mo[j]*(1+x) + 3.5*(abs(z2)); 
+        y <- mm*(1+x)
+        z2 <- (Mo[j+19] - 1.1*y)
+        if(z2 > 0)
+        {
+         S <- S + 3/12*mm*(1+x) + 3.5*(abs(z2)); 
+        }
+        else
+        {
+          S <- S + 3*mm*(1+x) 
+        }
+        #print(paste("S mese", j+5, ":", S))
       }
-      else
-      {
-        S <- S + 3*Mo[j]*(1+x) 
-      }
-      #print(paste("S mese", j+5, ":", S))
+      f <- c(f,S)
     }
-    return(S)
+  plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
+  return(S)
   }
 }
+
 
 F_r2 <- function(x, M, remi, snam)
 {
@@ -657,13 +670,16 @@ for(i in 1:nrow(M))
 
 ##############################################################
 ############ grafici su storico #############################
+dfs2 <- c("cmar15", "capr15", "cmag15","cgiu15","clug15","cago15","cset15","cott15","cnov15","cdic15","cgen","cfeb","cmar","capr")
+
 diff_matrix <- matrix(0, nrow=length(remi_found), ncol = 24)
 rownames(diff_matrix) <- remi_found
 #setwd("plot_remi")
-for(i in 1:nrow(M))
+for(i in 1:length(remi_found))
 {
+  rf <- remi_found[i]
   #re <- ver2[which(ver2["COD_REMI"] == rf),]
-  re <- extract_relevant_val(ver[which(ver["COD_REMI"] == rownames(M)[i]),])
+  re <- extract_relevant_val(ver[which(ver["COD_REMI"] == rf),])
   profili <- rep(0, 731)
   cont <- 0
   if(nrow(re) > 0)
@@ -697,7 +713,7 @@ for(i in 1:nrow(M))
     max_rf <- rep(0, length(dfs))
     for(j in 1:length(dfs))
     {
-      rf <- rownames(M)[i]
+      #rf <- rownames(M)[i]
       if(rf %in% get(dfs[j])[,1]) max_rf[j] <- get(dfs[j])[which(get(dfs[j])[,1] == rf),2] 
     }
     names(max_rf) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
@@ -708,14 +724,14 @@ for(i in 1:nrow(M))
             min(take_monthV("12", "2015", profili)),min(take_monthV("01", "2016", profili)),min(take_monthV("02", "2016", profili)),
             min(take_monthV("03", "2016", profili)),min(take_monthV("04", "2016", profili)))
     mm <- max(max(max_rf),max(profili))
-    mypath <- paste0("C:/Users/d_floriello/Documents/plot_remi/plot_true_",rownames(M)[i], ".jpg")
+    mypath <- paste0("C:/Users/d_floriello/Documents/plot_remi/plot_true_",rf, ".jpg")
     jpeg(file=mypath, quality=100)
-    plot(1:length(profili), profili, type="l",ylim = c(0, mm+1),xlab="giorni", ylab="consumo",main = paste("fabbisogno per remi dati storici", rownames(M)[i], "con max allocazione mensile"))
+    plot(1:length(profili), profili, type="l",ylim = c(0, mm+1),xlab="giorni", ylab="consumo",main = paste("fabbisogno per remi dati storici", rf, "con max allocazione mensile"))
     #lines(c(90, 120, 151, 181, 212, 243, 273, 304, 334, 365, 396, 425, 456,486), max_rf, type="l",lwd=2,col="red")
     lines(pb, max_rf, type="l",lwd=2,col="red")
     abline(v = which(names(profili) == "01/03/2015"))
     dev.off()
-    index <- which(rownames(diff_matrix) == rownames(M)[i])
+    index <- which(rownames(diff_matrix) == rf)
     diff_matrix[index,3] <- max(profili[take_monthV("03", "2015", profili)]) - max_rf[1]
     diff_matrix[index,4] <- max(profili[take_monthV("04", "2015", profili)]) - max_rf[2]
     diff_matrix[index,5] <- max(profili[take_monthV("05", "2015", profili)]) - max_rf[3]
@@ -755,7 +771,6 @@ for(rf in remi_found)
       for(k in 1:nrow(re))
       {
         CG_temp <- rep(0, 24)
-        cons <- rep(0, nrow(re))
         pdr <- unique(unlist(re[k,"PDR"]))
         cons <- ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
         agg <- data_frame(prodotto = re[k,"CODICE_PRODOTTO"], data.inizio = as.character(re[k,"D_VALIDO_DAL_T"]), 
@@ -778,6 +793,7 @@ for(rf in remi_found)
             CG_temp[index+2] <- max(DF[index2,])
           }
         }
+        CG_temp <- CG_temp*active(agg$`data inizio`, agg$`data fine`)
         CG <- CG + CG_temp
       }
       max_rf <- rep(0, length(dfs))
@@ -788,7 +804,7 @@ for(rf in remi_found)
       names(max_rf) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
                          "10/2015","11/2015","12/2015","01/2016","02/2016","03/2016","04/2016")
       max_rf <- c(0,0,max_rf,rep(0,8))
-      index <- which(rownames(M) == rf)
+      index <- which(rownames(M2) == rf)
       for(j in 1:24)
       {
         M2[index,j] <- CG[j]
@@ -799,7 +815,7 @@ for(rf in remi_found)
 }
 
 il <- c()
-for(i in 1:nrow(M))
+for(i in 1:nrow(M2))
 {
   if(sum(M2[i,]) != 0) il <- c(il, i)
 }
@@ -818,11 +834,11 @@ Fh <- function(x, remi, M2)
     for(j in 1:19)
     {
       y <- M2[j]*((1.1)+x)
-#      y2 <- M2[j]*(1+x)
+      y2 <- M2[j]*(1+x)
 #      y <- M2[j]*(0.9 - x)
       z <- unlist(M2[j+19] - M2[j]*(1.1))
-      z2 <- unlist(M2[j+19] - y)[1]
-      if(z2 < y)
+      z2 <- unlist(M2[j+19] - y)
+      if(z2 > 0.1*y)
       {
         S <- S + 0.03*M2[j]*(1+x) + 3.5*(abs(z2) - 0.03*M2[j]*(1+x));
 #        S <- S + 0.03*M2[j]*(1+x) + 3.5*(abs(z2))
@@ -836,17 +852,94 @@ Fh <- function(x, remi, M2)
   }
 }
 
-xx <- seq(0, 1, 0.0001)
+Fhabs <- function(remi, M2)
+{
+  M2 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
+  xx <- seq(0, 2*max(unlist(M2)), 10)
+  f <- c()
+  if(length(M2) > 0)
+  {
+    for(x in 1:length(xx))
+    {
+      S <- 0
+      for(dx in x:length(xx))
+      {
+        for(j in 1:19)
+        {
+          y <- xx[x]
+          z <- unlist(M2[j+19] - y)
+          if(-z > 0.1*y)
+          {
+            S <- S + 0.03*xx[x] + 3.5*(abs(z) - 0.03*(xx[dx] - xx[x]))
+          }
+          else
+          {
+            S <- S + 0.03*xx[x] + 0.03*(xx[dx] - xx[x])
+          }
+        }
+      }
+      f <- c(f, S)
+    }
+  }
+  plot(xx,f,type="l",lwd=2, col="blue",xlab= "capacita' in m3", ylab="euro", main=rf)
+  return(f)
+}
 
-S <- rep(0, length(xx))
+
+Fhd <- function(remi, M2)
+{
+  xx <- seq(0, 1, 0.001)
+  M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
+  mm <- max(M3[1:18])
+  f <- c()
+  if(length(M3) > 0)
+  {
+    for(x in xx)
+    {
+      S <- 0
+      #index <- which(xx == x)
+      for(j in 1:19)
+      {
+        y <- mm*(1+x)
+        z <- M3[j+19] - 1.1*y
+        #if(z > 0.1*y)
+        if(z > 0)
+        {
+          S <- S + 3/12*mm*(1+x) + 3.5*(abs(z))
+        }
+        else
+        {
+          S <- S + 3/12*mm*(1+x) 
+        }
+      }
+      f <- c(f, S)
+    }
+  }
+  plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
+  return(c(f,mm))
+}
+
+
+
+xx <- seq(0, 1, 0.001)
+
+sol <- matrix(0, nrow = nrow(M2), ncol = 3)
+rownames(sol) <- rownames(M2)
+colnames(sol) <- c("% ottima", "capacita ottima", "minimo costo")
 for(rf in rownames(M2))  
 {
-  s <- c()
-  for(x in xx)
-  {
-    s <- c(s,Fh(x, rf, M2))
-  }
-  plot(xx,s,type="l",lwd=2, col="blue",xlab= "banda di sicurezza", ylab="euro", main=rf)
+  i <- which(rownames(sol) == rf)
+  s <- Fhd(rf, M2)
+  sol[i,1] <- xx[which.min(s[1:(length(s)-1)])]
+  sol[i,2] <- s[length(s)]*(1+sol[i,1])
+  sol[i,3] <- min(s[1:(length(s)-1)])
+ # for(x in xx)
+ # {
+    #s <- c(s,Fh(x, rf, M2))
+    #Fhabs(rf, M2)
+    
+#  }
+#  plot(xx,s,type="l",lwd=2, col="blue",xlab= "banda di sicurezza", ylab="euro", main=rf)
   #S <- S + s
 }
 
@@ -855,7 +948,6 @@ for(rf in rownames(M2))
 
 ###### errore e stima di x* con i consumi storici
 
-dfs2 <- c("cmar15", "capr15", "cmag15","cgiu15","clug15","cago15","cset15","cott15","cnov15","cdic15","cgen","cfeb","cmar","capr")
 es <- matrix(0, nrow=nrow(M),ncol=6)
 rownames(es) <- rownames(M)
 for(i in 1:nrow(M))

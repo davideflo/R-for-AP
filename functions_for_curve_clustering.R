@@ -970,12 +970,12 @@ compute_max_prof <- function(M, prof_consumo)
       COL <- which(names(prof_consumo) == prof_y)
       mpm <- take_max_permonth(prof_consumo,COL)
       act <- active(data_in_y, data_fin_y)
-      mat_per_prodotto[,i] <- as.matrix(cons_y * mpm * act)
+      mat_per_prodotto[,i] <- as.matrix(cons_y * mpm/100 * act)
       
     }
     somma_profili <- apply(mat_per_prodotto, 1,sum)
     
-    res_per_prodotto[j,] <- somma_profili/100
+    res_per_prodotto[j,] <- somma_profili
     #colnames(res_per_prodotto) <-prof_consumo[,1]
   }
   return(res_per_prodotto)
