@@ -936,6 +936,23 @@ take_max_permonth <- function(prof_consumo, COL)
   }
   return(vim)
 }
+######################################################
+take_sum_permonth <- function(prof_consumo, COL)
+{
+  dates <- c(paste0("01/","0",1:9,"/",2015), paste0("01/",10:12,"/",2015), paste0("01/","0",1:9,"/",2016), paste0("01/",10:12,"/",2016))
+  vim <- rep(0, length(dates))
+  for(i in 1:length(dates))
+  {
+    month <- stri_sub(dates[i], from = 4, to = 5)
+    year <- stri_sub(dates[i], from = 7, to = 10)
+    
+    vm <- data.frame(t(unlist(prof_consumo[,COL])))
+    names(vm) <- prof_consumo[,1]
+    indeces <- take_month(month, year, vm)
+    vim[i] <- sum(prof_consumo[indeces, COL])
+  }
+  return(vim)
+}
 #####################################################
 active <- function(di, df)
 {
@@ -950,35 +967,79 @@ active <- function(di, df)
 ####################################################
 compute_max_prof <- function(M, prof_consumo)
 {
-  products <- unique(unlist(M["prodotto"]))
-  res_per_prodotto <- matrix(0, nrow = length(products), ncol = 24)
-  
-  for(j in 1:length(products))
-  {
-    print(products[j])
-    rows <- which(M["prodotto"] == as.character(products[j]))
-    x <- M[rows,]
-    mat_per_prodotto <- matrix(0, nrow = 24, ncol = length(rows))
-    for(i in 1:nrow(x))
-    {
-      print(i)
-      y <- x[i,]
-      data_in_y <- unlist(y[2])
-      data_fin_y <- unlist(y[3])
-      prof_y <- unlist(y[4])
-      cons_y <- as.numeric(as.character(unlist(y[5])))
-      COL <- which(names(prof_consumo) == prof_y)
-      mpm <- take_max_permonth(prof_consumo,COL)
-      act <- active(data_in_y, data_fin_y)
-      mat_per_prodotto[,i] <- as.matrix(cons_y * mpm/100 * act)
-      
-    }
-    somma_profili <- apply(mat_per_prodotto, 1,sum)
-    
-    res_per_prodotto[j,] <- somma_profili
-    #colnames(res_per_prodotto) <-prof_consumo[,1]
-  }
-  return(res_per_prodotto)
+  data_in_y <- unlist(M[2])
+  data_fin_y <- unlist(M[3])
+  prof_y <- unlist(M[4])
+  cons_y <- as.numeric(as.character(unlist(M[5])))
+  COL <- which(names(prof_consumo) == prof_y)
+  mpm <- take_max_permonth(prof_consumo,COL)
+  spm <- take_sum_permonth(prof_consumo,COL)
+  rcpm <- mpm/spm
+  act <- active(data_in_y, data_fin_y)
+  res <- cons_y * mpm/100 * act
+  return(res)
 }
 ######################################################################
-
+compute_max_prof_riconciliazione <- function(M, prof_consumo)
+{
+  data_in_y <- unlist(M[2])
+  data_fin_y <- unlist(M[3])
+  prof_y <- unlist(M[4])
+  cons_y <- as.numeric(as.character(unlist(M[5])))
+  COL <- which(names(prof_consumo) == prof_y)
+  mpm <- take_max_permonth(prof_consumo,COL)
+  spm <- take_sum_permonth(prof_consumo,COL)
+  rcpm <- mpm/spm
+  act <- active(data_in_y, data_fin_y)
+  res <- cons_y * rcpm * act
+  return(res)
+}
+########################################################################
+compute_max_prof_hp <- function(M, prof_consumo, snam, sum_remi)
+{
+  data_in_y <- unlist(M[2])
+  data_fin_y <- unlist(M[3])
+  prof_y <- unlist(M[4])
+  cons_y <- as.numeric(as.character(unlist(M[5])))
+  COL <- which(names(prof_consumo) == prof_y)
+  mpm <- take_max_permonth(prof_consumo,COL)
+  spm <- take_sum_permonth(prof_consumo,COL)
+  rcpm <- mpm/spm
+  act <- active(data_in_y, data_fin_y)
+  CM <- (snam * c(31,29,31,30,31,30,31,31,30,31,30,31,31,29,31,30,31,30,31,31,30,31,30,31)/1.3)
+  res <- sum(CM[3:14] * (cons_y/sum_remi)) * mpm * act
+  return(res)
+}
+######################################################################
+compute_max_prof_riconciliazione_hp <- function(M, prof_consumo,snam,sum_remi)
+{
+  data_in_y <- unlist(M[2])
+  data_fin_y <- unlist(M[3])
+  prof_y <- unlist(M[4])
+  cons_y <- as.numeric(as.character(unlist(M[5])))
+  COL <- which(names(prof_consumo) == prof_y)
+  mpm <- take_max_permonth(prof_consumo,COL)
+  spm <- take_sum_permonth(prof_consumo,COL)
+  rcpm <- mpm/spm
+  act <- active(data_in_y, data_fin_y)
+  CM <- (snam * c(31,29,31,30,31,30,31,31,30,31,30,31,31,29,31,30,31,30,31,31,30,31,30,31)/1.3)
+  res <- CM * (cons_y/sum_remi) * rcpm * act
+  
+  
+  return(res)
+}
+#########################################################################
+compute_sum_remi <- function(re)
+{
+  sum_remi <- 0
+  for(k in 1:nrow(re))
+  {
+    sum_remi <- sum_remi + ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
+  }
+  return(sum_remi)
+}
+#####################################################################
+return_num_days <- function(m)
+{
+  if(m %in% c(1,13,3,15,5,17,7,19,8,20,10,22,12,24)) return(31)
+}

@@ -578,7 +578,7 @@ F_r <- function(M, remi)
       f <- c(f,S)
     }
   plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
-  return(S)
+  return(f)
   }
 }
 
@@ -943,7 +943,127 @@ for(rf in rownames(M2))
   #S <- S + s
 }
 
+#####################################################################################
+####### ottimizzazione remi-wise con anche effetto di riconciliazione ##############
+#####################################################################################
+M3 <- matrix(0,nrow = nrow(M2), ncol = 48)
+rownames(M3) <- rownames(M2)
+M4 <- matrix(0,nrow = nrow(M2), ncol = 48)
+rownames(M3) <- rownames(M2)
+M5 <- matrix(0,nrow = nrow(M2), ncol = 48)
+rownames(M5) <- rownames(M2)
+M6 <- matrix(0,nrow = nrow(M2), ncol = 48)
+rownames(M5) <- rownames(M2)
 
+for(rf in rownames(M2))
+{
+  re <- ver[which(ver["COD_REMI"] == rf),]
+  CG <- CG_hp <- CGr <- CGrhp <- rep(0, 24)
+  {
+    if(nrow(re) > 0)
+    {
+      max_rf2 <- rep(0, length(dfs))
+      for(j in 1:length(dfs))
+      {
+        if(rf %in% get(dfs[j])[,1]) max_rf2[j] <- get(dfs[j])[which(get(dfs[j])[,1] == rf),2] 
+      }
+      names(max_rf2) <- c("03/2015","04/2015","05/2015","06/2015","07/2015","08/2015","09/2015",
+                         "10/2015","11/2015","12/2015","01/2016","02/2016","03/2016","04/2016")
+      max_rf <- c(0,0,max_rf2,rep(0,8))
+      
+      sum_remi <- compute_sum_remi(re)
+      
+      for(k in 1:nrow(re))
+      {
+        CG_temp <-  CG_temp_hp <- CGr_temp <- CGrhp_temp <- rep(0, 24)
+        pdr <- unique(unlist(re[k,"PDR"]))
+        cons <- ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
+        agg <- data_frame(prodotto = re[k,"CODICE_PRODOTTO"], data.inizio = as.character(re[k,"D_VALIDO_DAL_T"]), 
+                          data.fine = as.character(re[k,"D_VALIDO_AL_T"]), profilo= as.character(re[k,"PROFILO_PRELIEVO"]), 
+                          consumo = cons)
+        colnames(agg) <- c("prodotto", "data inizio", "data fine", "profilo", "consumo")
+        #profili_temp <- data.frame(compute_profiles_DEF15(agg, prof))
+        CG_temp <- compute_max_prof(agg, prof)
+        CG_temp_hp <- compute_max_prof_hp(agg,prof,max_rf,sum_remi)
+        #colnames(profili_temp) <- prof[,1]
+        CGr_temp <- compute_max_prof_riconciliazione(agg, prof)
+        CGrhp_temp <- compute_max_prof_riconciliazione_hp(agg,prof,max_rf,sum_remi)
+        for(ds in dfs2)
+        {
+          if(pdr %in% rownames(get(ds)))
+          {
+            DF <- correct_obs(get(ds))
+            my <- get_month_year(ds)
+            month <- map_months(my[1])
+            #index <- take_month(month, my[2], profili_temp)
+            index <- which(dfs2 == ds)
+            index2 <- which(rownames(DF) == pdr)
+            CG_temp[index+2] <- max(DF[index2,])
+            CG_temp_hp[index+2] <- max(DF[index2,])
+            CGr_temp[index+2] <- max(DF[index2,])
+            CGrhp_temp[index+2] <- max(DF[index2,])
+          }
+        }
+        CG_temp <- CG_temp*active(agg$`data inizio`, agg$`data fine`)
+        CG_temp_hp <- CG_temp_hp*active(agg$`data inizio`, agg$`data fine`)
+        CGr_temp <- CGr_temp*active(agg$`data inizio`, agg$`data fine`)
+        CGrhp_temp <- CGrhp_temp*active(agg$`data inizio`, agg$`data fine`)
+        
+        print(CG_temp);print(CG_temp_hp);print(CGr_temp);print(CGrhp_temp);
+        
+        CG <- CG + CG_temp
+        CG_hp <- CG_hp + CG_temp_hp
+        CGr <- CGr + CGr_temp
+        CGrhp <- CGrhp + CGrhp_temp
+      }
+      
+      index6 <- which(rownames(M6) == rf)
+      index3 <- which(rownames(M3) == rf)
+      index4 <- which(rownames(M4) == rf)
+      index5 <- which(rownames(M5) == rf)
+      for(j in 1:24)
+      {
+        M6[index6,j] <- CG[j]
+        M6[index6,(24+j)] <- max_rf[j]
+        M3[index3,j] <- CG_hp[j]
+        M3[index3,(24+j)] <- max_rf[j]
+        M4[index4,j] <- CGr[j]
+        M4[index4,(24+j)] <- max_rf[j]
+        M5[index5,j] <- CGrhp[j]
+        M5[index5,(24+j)] <- max_rf[j]
+      }
+    }
+  }
+}
+
+Sol <- matrix(0,nrow = nrow(M2), ncol = 12)
+rownames(Sol) <- rownames(M2)
+colnames(Sol) <- c("% ottima CA teorico", "capacita ottima CA teorico", "minimo costo CA teorico",
+                   "% ottima CA stima", "capacita ottima CA stima", "minimo costo CA stima",
+                   "% ottima RIC teorico", "capacita ottima RIC teorico", "minimo costo RIC teorico",
+                   "% ottima RIC stima", "capacita ottima RIC stima", "minimo costo RIC stima")
+xx <- seq(0, 1, 0.001)
+for(rf in rownames(M2))  
+{
+  i <- which(rownames(Sol) == rf)
+  s1 <- Fhd(rf, M6); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
+  
+  Sol[i,1] <- xx[which.min(s1[1:(length(s1)-1)])]
+  Sol[i,2] <- s1[length(s1)]*(1+Sol[i,1])
+  Sol[i,3] <- min(s1[1:(length(s1)-1)])
+  
+  Sol[i,4] <- xx[which.min(s2[1:(length(s2)-1)])]
+  Sol[i,5] <- s2[length(s2)]*(1+Sol[i,4])
+  Sol[i,6] <- min(s2[1:(length(s2)-1)])
+  
+  Sol[i,7] <- xx[which.min(s3[1:(length(s3)-1)])]
+  Sol[i,8] <- s3[length(s3)]*(1+Sol[i,7])
+  Sol[i,9] <- min(s3[1:(length(s3)-1)])
+  
+  Sol[i,10] <- xx[which.min(s4[1:(length(s4)-1)])]
+  Sol[i,11] <- s4[length(s4)]*(1+Sol[i,10])
+  Sol[i,12] <- min(s4[1:(length(s4)-1)])
+}
 
 
 ###### errore e stima di x* con i consumi storici

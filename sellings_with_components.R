@@ -111,7 +111,7 @@ total_sellings_per_components <- function(vendite, pm, listing)
        }
        else
        {
-         SPGas <- SPGas + ((P0/100 + (lg[MONTH] - Prif/100)) * profm[MONTH])
+         SPGas <- SPGas + ((P0 + (lg[MONTH] - Prif))/100 * profm[MONTH])
        }
     }
     

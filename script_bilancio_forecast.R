@@ -274,7 +274,7 @@ plot(1:24, op, type="l", lwd = 2, xlab="tempo", ylab="open position",main="open 
 
 #mop <- c(sum_in_year(open_position, "2016"), sum_in_year(open_position, "2017"))
 ## per lo stoccaggio il prezzo = euro/MWh. Ecco da dove arriva la discrepanza. Bisogna o calcolare il prezzo al m3 o tenere in MWh l'unita di misura
-totale_costi <- (op * listing) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 
+totale_costi <- (op * listing/100) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 
 
 tot_costi_supero_capacita <- -1.3 * tot/100
 ### tot gas venduto = tot gas acquistato = TOT_m3
@@ -298,7 +298,7 @@ unit_comm <- (margine_comm/tot)*100
 
 df <- data.frame(rbind(terzi,
                        c(tot_termine[,2],0,0,0,0,0,0,0,0,0),
-                       op * listing,
+                       op * listing/100,
                        (mstok_prog * c_stok*1.05275/100),
                        tot_costi_supero_capacita, 
                        tot_TP,
