@@ -326,7 +326,7 @@ ver2 <- extract_relevant_val(ver)
 remil <- list()
 profil <- list()
 lens <- c()
-REMI <- unique(unlist(ver2["COD_REMI"]))
+REMI <- unique(unlist(ver["COD_REMI"]))
 for(remi in REMI)
 {
   remil[[remi]] <- unique(unlist(ver2[which(ver["COD_REMI"] == remi),"PDR"]))
@@ -949,11 +949,11 @@ for(rf in rownames(M2))
 M3 <- matrix(0,nrow = nrow(M2), ncol = 48)
 rownames(M3) <- rownames(M2)
 M4 <- matrix(0,nrow = nrow(M2), ncol = 48)
-rownames(M3) <- rownames(M2)
+rownames(M4) <- rownames(M2)
 M5 <- matrix(0,nrow = nrow(M2), ncol = 48)
 rownames(M5) <- rownames(M2)
 M6 <- matrix(0,nrow = nrow(M2), ncol = 48)
-rownames(M5) <- rownames(M2)
+rownames(M6) <- rownames(M2)
 
 for(rf in rownames(M2))
 {
@@ -1009,7 +1009,7 @@ for(rf in rownames(M2))
         CGr_temp <- CGr_temp*active(agg$`data inizio`, agg$`data fine`)
         CGrhp_temp <- CGrhp_temp*active(agg$`data inizio`, agg$`data fine`)
         
-        print(CG_temp);print(CG_temp_hp);print(CGr_temp);print(CGrhp_temp);
+        #print(CG_temp);print(CG_temp_hp);print(CGr_temp);print(CGrhp_temp);
         
         CG <- CG + CG_temp
         CG_hp <- CG_hp + CG_temp_hp
@@ -1035,6 +1035,12 @@ for(rf in rownames(M2))
     }
   }
 }
+
+xlsx::write.xlsx(data.frame(M2), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_CA_vero.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(M3), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_CA_stima.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(M4), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_vero.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(M5), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_stima.xlsx"), row.names=TRUE, col.names = TRUE)
+
 
 Sol <- matrix(0,nrow = nrow(M2), ncol = 12)
 rownames(Sol) <- rownames(M2)
@@ -1065,6 +1071,86 @@ for(rf in rownames(M2))
   Sol[i,12] <- min(s4[1:(length(s4)-1)])
 }
 
+perc_ott <- Sol[,1]
+perc_ric <- Sol[,10]
+
+hist(perc_ott, main = "istogramma percentuale sicurezza ottima CA")
+hist(perc_ric, main = "istogramma percentuale sicurezza ottima RIC")
+
+mean(perc_ott[perc_ott > 0])
+mean(perc_ric[perc_ric > 0])
+median(perc_ott[perc_ott > 0])
+median(perc_ric[perc_ric > 0])
+
+
+length(which(perc_ott != 0))
+length(which(perc_ric != 0))
+
+confronto <- Sol[,c(1,4,7,10)]
+
+r1 <- which(confronto[,1] > 0)
+r2 <- which(confronto[,4] > 0)
+
+both <- confronto[intersect(r1, r2),c(1,4)]
+
+remi_CA <- rownames(confronto[which(confronto[,1] > 0),])
+remi_RIC <- rownames(confronto[which(confronto[,4] > 0),])
+
+pdr_ca <- c()
+for(r in remi_CA)
+{
+  pdr_ca <- c(pdr_ca, length(unique(unlist(ver2[which(ver["COD_REMI"] == r),"PDR"]))))
+}
+
+pdr_ric <- c()
+for(r in remi_RIC)
+{
+  pdr_ric <- c(pdr_ric, length(unique(unlist(ver2[which(ver["COD_REMI"] == r),"PDR"]))))
+}
+
+mean(pdr_ric)
+mean(pdr_ca)
+median(pdr_ric)
+median(pdr_ca)
+var(pdr_ric)
+var(pdr_ca)
+
+hist(pdr_ric)
+hist(pdr_ca)
+
+magg_ca <- rownames(both[which(both[,1] >= both[,2]),])
+magg_ric <- rownames(both[which(both[,1] < both[,2]),])
+
+#### grandezza remi su cui PREVALE l'effetto RIC su CA (quindi ci devono essere entrambi)
+p_ric <- c()
+for(r in magg_ric)
+{
+  p_ric <- c(p_ric, length(unique(unlist(ver2[which(ver["COD_REMI"] == r),"PDR"]))))
+}
+
+mean(p_ric)
+median(p_ric)
+var(p_ric)
+### grandezza remi su cui PREVALE CA
+p_ca <- c()
+for(r in magg_ca)
+{
+  p_ca <- c(p_ca, length(unique(unlist(ver2[which(ver["COD_REMI"] == r),"PDR"]))))
+}
+
+mean(p_ca)
+median(p_ca)
+var(p_ca)
+######################################################################################
+############### ottimizzazione con clusterizzazione ##################################
+######################################################################################
+
+f10 <- cluster_by_and_optimise(ver2, M6, from = 0, to = 11)
+f10_ric <- cluster_by_and_optimise(ver2, M5, from = 0, to = 11)
+f30 <- cluster_by_and_optimise(ver2, M6, from = 11, to = 31)
+f30_ric <- cluster_by_and_optimise(ver2, M5, from = 11, to = 31)
+finf <- cluster_by_and_optimise(ver2, M6, from = 31, to = 150)
+finf_ric <- cluster_by_and_optimise(ver2, M5, from = 31, to = 150)
 
 ###### errore e stima di x* con i consumi storici
 

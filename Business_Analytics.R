@@ -123,4 +123,45 @@ hist(as.numeric(as.character(more[,3])),breaks = seq(0,7000,100))
 hist(as.numeric(as.character(less[,4])),breaks = seq(0,45,5))
 hist(as.numeric(as.character(more[,4])),breaks = seq(0,45,5))
 
+#################################################################################################
+#################################################################################################
 
+nomi <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = "Agenti", colNames = FALSE)
+
+D <- data_frame()
+for(i in 4:70)
+{
+    data <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = i, colNames = TRUE)
+    data[is.na(data)] <- 0
+    data <- create_dataset_BA(data)
+    df <- data.frame(IRG_vs_edl(data),agenzia = nomi[i-3,1])
+    D <- rbind.data.frame(D, df)
+    
+    act <- active(data)
+    gdp <- get_duration_processes(act)
+    
+    mm <- max(c(max(abs(gdp[[1]])),max(abs(gdp[[2]])), max(abs(gdp[[3]]))))
+    
+    plot(1:48, gdp[[1]], type="o",lwd=2,col="blue",ylim=c(-mm,mm),xlab="mesi",ylab="numero clienti", main=nomi[i-3,1])
+    lines(1:48, gdp[[2]], type="o",lwd=2,col="green")
+    lines(1:48, gdp[[3]], type="o",lwd=2,col="red")
+
+}
+
+a <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, y = as.numeric(as.character(unlist(D["IRG"]))),
+                                           col = (D["agenzia"])))
+a <- a + geom_point(size = 3)
+a <- a + xlab("Energia media annua in GWh") + ylab("IRG") + ggtitle("IRG vs energia media annua")  + scale_color_discrete(name = "agenzia")
+a
+
+a2 <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, y = as.numeric(as.character(unlist(D["durata"]))),
+                          col = (D["agenzia"])))
+a2 <- a2 + geom_point(size = 3)
+a2 <- a2 + xlab("Energia media annua in GWh") + ylab("durata in mesi") + ggtitle("durata vs energia media annua")  + scale_color_discrete(name = "agenzia")
+a2
+
+a3 <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, y = as.numeric(as.character(unlist(D["IRG"]))),
+                          col = (D["listino"])))
+a3 <- a3 + geom_point(size = 3)
+a3 <- a3 + xlab("Energia media annua in GWh") + ylab("IRG") + ggtitle("IRG vs energia media annua")  + scale_color_discrete(name = "listino")
+a3

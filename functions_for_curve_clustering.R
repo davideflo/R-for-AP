@@ -1043,3 +1043,55 @@ return_num_days <- function(m)
 {
   if(m %in% c(1,13,3,15,5,17,7,19,8,20,10,22,12,24)) return(31)
 }
+#####################################################################
+Fhd2 <- function(M)
+{
+  xx <- seq(0, 1, 0.001)
+  ftot <- rep(0, length(xx))
+  for(remi in rownames(M))
+  {
+    M3 <- M[which(rownames(M) == remi),c(6:24,30:48)]
+    mm <- max(M3[1:18])
+    f <- c()
+    for(x in xx)
+    {
+      S <- 0
+      #index <- which(xx == x)
+      for(j in 1:19)
+      {
+        y <- mm*(1+x)
+        z <- M3[j+19] - 1.1*y
+        #if(z > 0.1*y)
+        if(z > 0)
+        {
+          S <- S + 3/12*mm*(1+x) + 3.5*(abs(z))
+        }
+        else
+        {
+          S <- S + 3/12*mm*(1+x) 
+        }
+      }
+      f <- c(f, S)
+    }
+    ftot <- ftot + f
+  }
+  return(ftot)
+}
+#####################################################################
+cluster_by_and_optimise <- function(ver2, M, from, to)
+{
+  rl <- c()
+  for(i in 1:nrow(M))
+  {
+    len <- length(unique(unlist(ver2[which(ver["COD_REMI"] == rownames(M)[i]),"PDR"])))
+    if(len >= from & len < to) rl <- c(rl, i)
+  }
+  Mloc <- M[rl,]
+  opt <- Fhd2(Mloc)
+  xx <- seq(0, 1, 0.001)
+  plot(xx,opt,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=paste("remi con numero pdr >", from, "e < di", to))
+  return(opt)
+}
+
+
+
