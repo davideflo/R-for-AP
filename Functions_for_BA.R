@@ -99,14 +99,38 @@ get_duration_processes <- function(act)
   for(i in 1:nrow(act))
   {
     cs <- cumsum(act[i,])
-    for(j in 1:(length(cs)-5))
+    count <- min(which(cs == max(cs)))
+    for(j in 1:(length(cs)-1))
     {
-      if(cs[j] == 1) Nt[j] <- Nt[j] + 1
-      else if(cs[j] != 0 & cs[j+1] > cs[j]) At[j] <- At[j] + 1
-      else if(cs[j] != 0 & cs[j+1] == cs[j]) {Rt[j] <- Rt[j] + 1; At[j+1] <- At[j+1] - 1}
+      #print(j)
+      bool <- j < count
+      #print(bool)
+      if(bool)
+      {
+        #print(paste("cond:", cs[j] != 0 & cs[j+1] == cs[j]))
+        if(cs[j] == 1) Nt[j] <- Nt[j] + 1
+        else if(cs[j] != 0 & cs[j+1] > cs[j]) At[j] <- At[j] + 1
+        else if(cs[j] != 0 & cs[j+1] == cs[j]) {Rt[j] <- (Rt[j] + 1) ; At[j] <- At[j] + 1;} #At[j+1] <- At[j] - 1}
+      }
+      else
+      {
+        if(cs[j] == 1) Nt[j] <- Nt[j] + 1
+        else if(cs[j] != 0 & cs[j+1] > cs[j]) At[j] <- At[j] + 1
+        #else if(cs[j] != 0 & cs[j+1] == cs[j]) {At[j+1] <- At[j] - Rt[j]}
+      }
     }
   }
   return(list(Nt,At,Rt))
+}
+####################################################################
+get_duration_statistics <- function(Nt,Rt,At)
+{
+  Tt <- rep(0, length(At))
+  for(i in 1:length(At))
+  {
+    if(At[i] != 0) Tt[i] <- (Nt[i] + Rt[i])/At[i]
+  }
+  return(Tt)
 }
 ###############################################################
 rolling_clienti_pod <- function(ag)
@@ -158,6 +182,12 @@ marginality_ratio <- function(ag)
   return(mag/(mag+map))
 }
 ###########################################################################
+marginality_ratio_finale <- function(ag)
+{
+  ag1 <- ag[which(ag[,"Stato"] == "IN FORNITURA"),]
+  return(marginality_ratio(ag1))
+}
+###########################################################################
 pod_attivi_at <- function(ag, y, m)
 {
   pods <- unique(unlist(ag["Codice.POD"]))
@@ -191,7 +221,27 @@ monthwise_marginality_ratio <- function(ag)
   }
   return(ratio)
 }
-
+############################################################################
+weigthing_coin <- function(ag)
+{
+  pods <- unique(unlist(ag["Codice.POD"]))
+  mat <- matrix(0, nrow=length(pods), ncol=4)
+  rownames(mat) <- pods
+  colnames(mat) <- c("gettone_per_ricorrente","gettone_per_margine","gettone_per_ric_unit","energia_media_annua")
+  for(pod in pods)
+  {
+    i <- which(rownames(mat) == pod)
+    l <- length(which(ag["Codice.POD"] == pod))
+    csg <- cumsum(as.numeric(ag[which(ag["Codice.POD"] == pod),"Gettone"]))
+    csric <- cumsum(as.numeric(ag[which(ag["Codice.POD"] == pod),"Ricorrente_per_listino"]))
+    csmag <- cumsum(as.numeric(ag[which(ag["Codice.POD"] == pod),"Gettone+Ricorrente"]))
+    mat[i,1] <- csg[length(csg)]/csric[length(csric)]
+    mat[i,2] <- csg[length(csg)]/csmag[length(csmag)]
+    mat[i,3] <- csg[length(csg)]/csric[1]
+    mat[i,4] <- ((sum(unlist(as.numeric(ag[which(ag["Codice.POD"] == pod),"Energia.(incl..perdite)"])))/1000)/l)*12
+  }
+  return(data.frame(mat))
+}
 
 
 

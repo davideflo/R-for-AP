@@ -125,29 +125,74 @@ hist(as.numeric(as.character(more[,4])),breaks = seq(0,45,5))
 
 #################################################################################################
 #################################################################################################
+library(jpeg)
 
 nomi <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = "Agenti", colNames = FALSE)
 
 D <- data_frame()
+DW <- data_frame()
+rpa <-rpa2 <- pgm <- mr <- rep(0, 67)
+names(rpa) <- names(rpa2) <- names(pgm) <- names(mr) <- nomi[,1]
 for(i in 4:70)
 {
     data <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = i, colNames = TRUE)
     data[is.na(data)] <- 0
     data <- create_dataset_BA(data)
     df <- data.frame(IRG_vs_edl(data),agenzia = nomi[i-3,1])
+    dfw <- data.frame(weigthing_coin(data), agenzia = nomi[i-3,1])
     D <- rbind.data.frame(D, df)
+    DW <- rbind.data.frame(DW, dfw)
     
     act <- active(data)
     gdp <- get_duration_processes(act)
+    Tt <- get_duration_statistics(gdp[[1]],gdp[[3]],gdp[[2]])
+    
+    rpa[i-3] <- mean(Tt)
+    pgm[i-3] <- mean(dfw[,2])
+    rpa2[i-3] <- rolling_clienti_pod(data)[1]
+    mr[i-3] <- marginality_ratio_finale(data)
     
     mm <- max(c(max(abs(gdp[[1]])),max(abs(gdp[[2]])), max(abs(gdp[[3]]))))
-    
+    mypath <- paste0("C:/Users/d_floriello/Documents/Business Analysis/plot_",nomi[i-3,1],".jpg")
+    jpeg(file=mypath, quality=100)
     plot(1:48, gdp[[1]], type="o",lwd=2,col="blue",ylim=c(-mm,mm),xlab="mesi",ylab="numero clienti", main=nomi[i-3,1])
     lines(1:48, gdp[[2]], type="o",lwd=2,col="green")
     lines(1:48, gdp[[3]], type="o",lwd=2,col="red")
-
+    lines(1:48, Tt, type="o",lwd=2,col="black")
+    dev.off()
 }
+colnames(DW) <- c("gettone_per_ricorrente","gettone_per_margine","gettone_per_ric_unit","energia_media_annua","agenzia")
 
+########## grafici ###############
+### peso gettone vs rolling pod
+bb <- data.frame(rpa2,pgm)
+bb[is.na(bb)] <- 0
+
+bb <- bb[which(bb[,2] > 0 & bb[,1] > 0),]
+
+fit <- lm(rpa2~pgm)
+summary(fit)
+
+b <- ggplot(data = bb, aes(x = as.numeric(as.character(unlist(bb["rpa2"]))), y = as.numeric(as.character(unlist(bb["pgm"]))),
+                          col = (rownames(bb))))
+b <- b + geom_point(size = 3) + geom_smooth(method="lm", formula = as.numeric(as.character(unlist(bb["pgm"])))~as.numeric(as.character(unlist(bb["rpa2"])))) 
+b <- b + xlab("rolling medio per agenzia") + ylab("peso del gettone") + ggtitle("peso del gettone vs rolling pod")  + scale_color_discrete(name = "agenzia")
+b
+
+ggplot(bb, aes(x=(bb[,2]), y=bb[,1])) + geom_point() + geom_smooth(method=lm) + ylab("rolling medio per agenzia") + xlab("peso del gettone") + ggtitle("peso del gettone vs rolling pod")  + scale_color_discrete(name = "agenzia")
+
+### peso gettone vs marginalita'
+bb1 <- data.frame(mr,pgm)
+bb1[is.na(bb1)] <- 0
+bb1 <- bb1[which(bb1[,2] > 0 & bb1[,1] > 0),]
+
+b1 <- ggplot(data = bb1, aes(x = bb1["mr"], y = bb1["pgm"],col =rownames(bb1)))
+b1 <- b1 + geom_point(size = 3) 
+b1 <- b1 + xlab("rapporto marginalita'") + ylab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")  + scale_color_discrete(name = "agenzia")
+b1
+
+ggplot(bb1, aes(x=(bb1[,2]), y=bb1[,1])) + geom_point() + geom_smooth(method=lm) + ylab("rapporto marginalita'") + xlab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")
+###########
 a <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, y = as.numeric(as.character(unlist(D["IRG"]))),
                                            col = (D["agenzia"])))
 a <- a + geom_point(size = 3)
@@ -165,3 +210,29 @@ a3 <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.a
 a3 <- a3 + geom_point(size = 3)
 a3 <- a3 + xlab("Energia media annua in GWh") + ylab("IRG") + ggtitle("IRG vs energia media annua")  + scale_color_discrete(name = "listino")
 a3
+
+a4 <- ggplot(data = DW, aes(x = as.numeric(as.character(unlist(DW["energia_media_annua"])))/1000, y = as.numeric(as.character(unlist(DW["gettone_per_margine"]))),
+                           col = (DW["agenzia"])))
+a4 <- a4 + geom_point(size = 3)
+a4 <- a4 + xlab("Energia media annua in GWh") + ylab("gettone/margine agenzia") + ggtitle("peso del gettone sul margine agenzia vs energia media annua")  + scale_color_discrete(name = "agenzia")
+a4
+
+D2 <- data.frame(D["IRG"],DW["gettone_per_margine"],DW["agenzia"])
+
+a5 <- ggplot(data = D2, aes(x = as.numeric(as.character(unlist(D2["IRG"]))), y = as.numeric(as.character(unlist(D2["gettone_per_margine"]))),
+                           col = (D2["agenzia"])))
+a5 <- a5 + geom_point(size = 3)
+a5 <- a5 + xlab("IRG") + ylab("gettone/margine agenzia") + ggtitle("peso del gettone sul margine agenzia vs IRG")  + scale_color_discrete(name = "agenzia")
+a5
+
+library(plot3D)
+scatter3D(x = as.numeric(as.character(unlist(D2["IRG"]))), y = as.numeric(as.character(unlist(D2["gettone_per_margine"]))),
+          z=as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, pch = 20, phi = 45, bty ="g", colvar = as.numeric(as.character(unlist(D2["IRG"]))),
+          xlab = "IRG",
+          ylab ="gettone/margine agenzia", zlab = "energia media annua")
+#######################################
+
+
+
+
+
