@@ -163,6 +163,20 @@ for(i in 4:70)
 }
 colnames(DW) <- c("gettone_per_ricorrente","gettone_per_margine","gettone_per_ric_unit","energia_media_annua","agenzia")
 
+### prova di smoothing processo At ###
+At <- gdp[[2]]
+for(i in 1:length(At))
+{
+  argvals = seq(0,1,len=length(At))
+  nbasis = 20
+  basisobj = create.bspline.basis(c(0,1),nbasis)
+  Ys = smooth.basis(argvals=argvals, y=At, fdParobj=basisobj,returnMatrix=TRUE)
+  plot(Ys)
+  lines(argvals, At,type="l", col = "blue")
+}
+
+dYs <- deriv.fd(as.fd(Ys), Lfdobj = int2Lfd(1),returnMatrix = TRUE)
+plot(dYs)
 ########## grafici ###############
 ### peso gettone vs rolling pod
 bb <- data.frame(rpa2,pgm)
@@ -170,7 +184,8 @@ bb[is.na(bb)] <- 0
 
 bb <- bb[which(bb[,2] > 0 & bb[,1] > 0),]
 
-fit <- lm(rpa2~pgm)
+#fit <- lm(rpa2~I(pgm - 0.4))
+fit <- lm(bb[,1]~I(bb[,2] - 0.4))
 summary(fit)
 
 b <- ggplot(data = bb, aes(x = as.numeric(as.character(unlist(bb["rpa2"]))), y = as.numeric(as.character(unlist(bb["pgm"]))),
@@ -186,12 +201,28 @@ bb1 <- data.frame(mr,pgm)
 bb1[is.na(bb1)] <- 0
 bb1 <- bb1[which(bb1[,2] > 0 & bb1[,1] > 0),]
 
+fit2 <- lm(mr~I(pgm - 0.4))
+summary(fit2)
+
 b1 <- ggplot(data = bb1, aes(x = bb1["mr"], y = bb1["pgm"],col =rownames(bb1)))
 b1 <- b1 + geom_point(size = 3) 
 b1 <- b1 + xlab("rapporto marginalita'") + ylab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")  + scale_color_discrete(name = "agenzia")
 b1
 
 ggplot(bb1, aes(x=(bb1[,2]), y=bb1[,1])) + geom_point() + geom_smooth(method=lm) + ylab("rapporto marginalita'") + xlab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")
+
+### peso del gettone vs marginalita' by listino
+bb2 <- data.frame(D["IRG"],DW["gettone_per_margine"],D["listino"])
+which(is.na(bb2["gettone_per_margine"]))
+bb2 <- bb2[which(!is.na(bb2["gettone_per_margine"])),]
+
+b2 <- ggplot(data = bb2, aes(x = bb2["gettone_per_margine"], y = bb2["IRG"],col =bb2["listino"]))
+b2 <- b2 + geom_point(size = 3) 
+b2 <- b2 + xlab("peso del gettone") + ylab("IRG") + ggtitle("peso del gettone vs IRG")  + scale_color_discrete(name = "listino")
+b2
+
+ggplot(bb1, aes(x=(bb1[,2]), y=bb1[,1])) + geom_point() + geom_smooth(method=lm) + ylab("rapporto marginalita'") + xlab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")
+
 ###########
 a <- ggplot(data = D, aes(x = as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, y = as.numeric(as.character(unlist(D["IRG"]))),
                                            col = (D["agenzia"])))
@@ -231,8 +262,8 @@ scatter3D(x = as.numeric(as.character(unlist(D2["IRG"]))), y = as.numeric(as.cha
           xlab = "IRG",
           ylab ="gettone/margine agenzia", zlab = "energia media annua")
 #######################################
-
-
+hc_ema <- hclust(dist(D$Energia.media.annua))
+plot(hc_ema)
 
 
 

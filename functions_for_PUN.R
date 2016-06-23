@@ -156,7 +156,7 @@ create_dataset <- function(pun, first_day)
     {
       p <- c(p, pun[j,"PUN"]); aus <- c(aus, pun[j,"AUST"]); cors <- c(cors, pun[j,"CORS"])
       fran <- c(fran, pun[j,"FRAN"]); grec <- c(grec, pun[j,"GREC"]); slov <- c(slov, pun[j,"SLOV"])
-      sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,"Ora.Hour"]); dat <- c(dat, pun[j,"Data/Date.(YYYYMMDD)"]) 
+      sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,"Ora"]); dat <- c(dat, pun[j,"Data/Date"]) 
     }
     y <- c(y, pun[(i+24),"PUN"])
     day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
@@ -175,7 +175,14 @@ create_dataset <- function(pun, first_day)
   colnames(d_f) <- Names
   return(d_f)
 }
-
+######################################################
+sign_process <- function(Pt)
+{
+  St <- rep(0, (length(Pt)-1))
+  for(i in 1:length(St)) {print(i);St[i] <- sign(Pt[i+1] - Pt[i])}
+  
+  return(St)
+}
 
 
 

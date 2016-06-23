@@ -31,12 +31,13 @@ plot(stl(ts(unlist(prices10["PUN"]),frequency=24),s.window=7)) ## questo mi pare
 
 test <- create_dataset(prices10, "ven")
 
-#library(h2o)
-#h2o.init(nthreads = -1)
+library(h2o)
+h2o.init(nthreads = -1)
+
 train <- as.h2o(test[1:7000,1:217])
 val <- as.h2o(test[7001:8737,1:217])
 dl <- h2o.deeplearning(names(train)[1:216], "y", training_frame = train, validation_frame = val, activation = "Tanh",
-                       hidden = c(365, 52, 12, 4), epochs = 100)
+                       hidden = c(8760, 365, 52, 12, 4), epochs = 100)
 pred <- h2o.predict(dl, val)
 
 plot(a, type="l",col="blue")
@@ -49,3 +50,17 @@ a <- as.matrix(a)
 diff <- test[7001:8737,"y"] - a
 plot(1:1736,diff[1:1736,1],type="l",lwd=2,col="red")
 abline(h =  1.481189, lwd=2, col="black")
+
+#### test with forecast
+fit_ts <- arfima(test$y)
+
+Yt <- sign_process(test$y)
+
+fr <- forecast(fit_ts, h = 24)
+
+testy <- test[,c(1:216)]
+
+fit_ari <- auto.arima(test$y, xreg = testy)
+summary(fit_ari)
+
+
