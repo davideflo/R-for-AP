@@ -38,6 +38,20 @@ IRG <- function(ag, pod)
   return(tau)
 }
 ###########################################################
+IRG_agenzia <- function(ag)
+{
+  tau <- c()
+  pods <- unique(unlist(ag["Codice.POD"]))
+  
+  for(pod in pods)
+  {
+    tau <- c(tau, IRG(ag,pod))
+    taup <- tau[tau > 0]
+    taun <- tau[tau <= 0]
+  }
+  return(c(mean(taup), mean(taun)))
+}
+###########################################################
 IRG_vs_edl <- function(ag)
 {
   pods <- unique(unlist(ag["Codice.POD"]))
@@ -54,6 +68,26 @@ IRG_vs_edl <- function(ag)
 #  an <- data.frame(an)
   colnames(an) <- c("POD", "IRG", "Energia media annua", "durata", "listino")
   return(an)
+}
+##########################################################
+EM_agenzia <- function(ag)
+{
+  energy <- c()
+  pods <- unique(unlist(ag["Codice.POD"]))
+  
+  for(pod in pods) {l <- length(which(ag["Codice.POD"] == pod));energy <- c(energy, 
+                               as.numeric(as.character(((sum(unlist(as.numeric(ag[which(ag["Codice.POD"] == pod),"Energia.(incl..perdite)"])))/1000)/l)*12)))
+  }
+  return(mean(energy))
+}
+##########################################################
+DM_agenzia <- function(ag)
+{
+  dur <- c()
+  pods <- unique(unlist(ag["Codice.POD"]))
+  
+  for(pod in pods) dur <- c(dur,length(which(ag["Codice.POD"] == pod)))
+  return(mean(dur))
 }
 ##########################################################
 UEM_process <- function(ag, pod)

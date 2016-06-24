@@ -131,8 +131,8 @@ nomi <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MA
 
 D <- data_frame()
 DW <- data_frame()
-rpa <-rpa2 <- pgm <- mr <- rep(0, 67)
-names(rpa) <- names(rpa2) <- names(pgm) <- names(mr) <- nomi[,1]
+rpa <-rpa2 <- pgm <- mr <- taup <- taun <- energy <- dur <- rep(0, 67)
+names(rpa) <- names(rpa2) <- names(pgm) <- names(mr) <- names(taup) <- names(taun) <- names(energy) <- names(dur) <- nomi[,1]
 for(i in 4:70)
 {
     data <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = i, colNames = TRUE)
@@ -151,6 +151,12 @@ for(i in 4:70)
     pgm[i-3] <- mean(dfw[,2])
     rpa2[i-3] <- rolling_clienti_pod(data)[1]
     mr[i-3] <- marginality_ratio_finale(data)
+    energy[i-3] <- EM_agenzia(data)
+    dur[i-3] <- DM_agenzia(data)
+    tau_ag <- IRG_agenzia(data)
+    
+    taup[i-3] <- tau_ag[1]
+    taun[i-3] <- tau_ag[2]
     
     mm <- max(c(max(abs(gdp[[1]])),max(abs(gdp[[2]])), max(abs(gdp[[3]]))))
     mypath <- paste0("C:/Users/d_floriello/Documents/Business Analysis/plot_",nomi[i-3,1],".jpg")
@@ -211,6 +217,104 @@ b1
 
 ggplot(bb1, aes(x=(bb1[,2]), y=bb1[,1])) + geom_point() + geom_smooth(method=lm) + ylab("rapporto marginalita'") + xlab("peso del gettone") + ggtitle("peso del gettone vs rapporto marginalita'")
 
+### peso gettone vs IRG agenzia
+bb2 <- data.frame(taup,pgm)
+bb2[is.na(bb2)] <- 0
+bb2 <- bb2[which(bb2[,2] > 0 & bb2[,1] > 0),]
+
+fit3 <- lm(bb2[,1]~I(bb2[,2] - 0.4))
+summary(fit3)
+
+b2 <- ggplot(data = bb2, aes(x = bb2["pgm"], y = bb2["taup"],col =rownames(bb2)))
+b2 <- b2 + geom_point(size = 3) 
+b2 <- b2 + xlab("peso del gettone") + ylab("IRG") + ggtitle("IRG vs peso del gettone")  + scale_color_discrete(name = "agenzia")
+b2
+
+ggplot(bb2, aes(x=(bb2[,2]), y=bb2[,1])) + geom_point() + geom_smooth(method=lm) + ylab("IRG") + xlab("peso del gettone") + ggtitle("IRG vs peso del gettone")
+
+### rapporto marginalita' vs IRG agenzia
+bb3 <- data.frame(taup,mr)
+bb3[is.na(bb3)] <- 0
+bb3 <- bb3[which(bb3[,2] > 0 & bb3[,1] > 0),]
+
+fit4 <- lm(bb3[,1]~I(bb3[,2]))
+summary(fit4)
+
+b3 <- ggplot(data = bb3, aes(x = bb3["mr"], y = bb3["taup"],col =rownames(bb3)))
+b3 <- b3 + geom_point(size = 3) 
+b3 <- b3 + xlab("rapporto marginalita'") + ylab("IRG") + ggtitle("IRG vs rapporto marginalita'")  + scale_color_discrete(name = "agenzia")
+b3
+
+ggplot(bb3, aes(x=(bb3[,2]), y=bb3[,1])) + geom_point() + geom_smooth(method=lm) + geom_text(aes(label=rownames(bb3)),hjust=0, vjust=1) + ylab("IRG") + xlab("rapporto marginalita'") + ggtitle("IRG vs rapporto marginalita'")
+
+### energia media agenzia vs IRG agenzia
+bb4 <- data.frame(taup,energy)
+bb4[is.na(bb4)] <- 0
+bb4 <- bb4[which(bb4[,1] > 0),]
+
+fit5 <- lm(bb4[,1]~I(bb4[,2]))
+summary(fit5)
+
+b4 <- ggplot(data = bb4, aes(x = bb4["energy"], y = bb4["taup"],col =rownames(bb4)))
+b4 <- b4 + geom_point(size = 3) 
+b4 <- b4 + xlab("energia media annua") + ylab("IRG") + ggtitle("IRG vs energia media annua")  + scale_color_discrete(name = "agenzia")
+b4
+
+ggplot(bb4, aes(x=(bb4[,2]), y=bb4[,1])) + geom_point() + geom_smooth(method=lm) + geom_text(aes(label=rownames(bb4)),hjust=0, vjust=1) + ylab("IRG") + xlab("energia media annua") + ggtitle("IRG vs energia media annua")
+
+### durata media agenzia vs IRG agenzia
+bb5 <- data.frame(taup,dur)
+bb5[is.na(bb5)] <- 0
+bb5 <- bb5[which(bb5[,1] > 0 & bb5[,1] < 20 & bb5[,2] > 12),]
+#bb5 <- bb5[which(bb5[,1] > 0 & bb5[,1] < 20),]
+
+
+fit6 <- lm(bb5[,1]~I(bb5[,2]))
+summary(fit6)
+
+b5 <- ggplot(data = bb5, aes(x = bb5["dur"], y = bb5["taup"],col =rownames(bb5)))
+b5 <- b5 + geom_point(size = 3) 
+b5 <- b5 + xlab("durata media agenzia") + ylab("IRG") + ggtitle("IRG vs durata media agenzia")  + scale_color_discrete(name = "agenzia")
+b5
+
+### durata media agenzia vs energia media agenzia
+bb6 <- data.frame(energy,dur)
+bb6[is.na(bb6)] <- 0
+bb6 <- bb6[which(bb6[,1] > 0 & bb6[,2] > 12),]
+
+
+b6 <- ggplot(data = bb6, aes(x = bb6["dur"], y = bb6["energy"],col =rownames(bb6)))
+b6 <- b6 + geom_point(size = 3) 
+b6 <- b6 + xlab("durata media agenzia") + ylab("energia media annua") + ggtitle("energia media annua vs durata media agenzia")  + scale_color_discrete(name = "agenzia")
+b6
+
+### durata media agenzia vs rapporto agenzia agenzia
+bb7 <- data.frame(mr,dur)
+bb7[is.na(bb7)] <- 0
+bb7 <- bb7[which(bb7[,1] > 0),]
+
+fit8 <- lm(bb7[,1]~I(bb7[,2]))
+summary(fit7)
+
+b7 <- ggplot(data = bb7, aes(x = bb7["mr"], y = bb7["dur"],col =rownames(bb7)))
+b7 <- b7 + geom_point(size = 3) 
+b7 <- b7 + xlab("rapporto marginalita'") + ylab("durata media energia") + ggtitle("rapporto marginalita' vs durata media agenzia")  + scale_color_discrete(name = "agenzia")
+b7
+
+### IRG agenzia vs rapporto agenzia
+bb8 <- data.frame(dur,pgm)
+bb8[is.na(bb8)] <- 0
+bb8 <- bb8[which(bb8[,2] > 0),]
+
+fit9 <- lm(bb8[,1]~I(bb8[,2]))
+summary(fit8)
+
+b8 <- ggplot(data = bb8, aes(x = bb8["pgm"], y = bb8["dur"],col = rownames(bb8)))
+b8 <- b8 + geom_point(size = 3) 
+b8 <- b8 + xlab("peso del gettone") + ylab("durata media agenzia") + ggtitle("durata media vs peso del gettone")  + scale_color_discrete(name = "agenzia")
+b8
+
+
 ### peso del gettone vs marginalita' by listino
 bb2 <- data.frame(D["IRG"],DW["gettone_per_margine"],D["listino"])
 which(is.na(bb2["gettone_per_margine"]))
@@ -261,6 +365,12 @@ scatter3D(x = as.numeric(as.character(unlist(D2["IRG"]))), y = as.numeric(as.cha
           z=as.numeric(as.character(unlist(D["Energia.media.annua"])))/1000, pch = 20, phi = 45, bty ="g", colvar = as.numeric(as.character(unlist(D2["IRG"]))),
           xlab = "IRG",
           ylab ="gettone/margine agenzia", zlab = "energia media annua")
+
+scatter3D(x = taup, y = mr,
+          z=dur, pch = 20, phi = 30, bty ="g", colvar = taup,
+          xlab = "IRG",
+          ylab ="rapporto marginalita'", zlab = "durata media agenzia")
+
 #######################################
 hc_ema <- hclust(dist(D$Energia.media.annua))
 plot(hc_ema)
