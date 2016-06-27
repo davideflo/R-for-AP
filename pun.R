@@ -32,6 +32,8 @@ plot(stl(ts(unlist(prices10["PUN"]),frequency=24),s.window=7)) ## questo mi pare
 test <- create_dataset(prices10, "ven")
 
 library(h2o)
+##### NOTA BENE: se h2o non parte, vai in C:\Users\d_floriello\Downloads\h2o-3.8.2.3\R\h2o\inst\java e fai partire il JAR file!!!!!
+## http://localhost:54321/flow/index.html ## flow
 h2o.init(nthreads = -1)
 
 train <- as.h2o(test[1:7000,1:217])
