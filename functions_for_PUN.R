@@ -7,7 +7,7 @@ library(stringi)
 library(xlsx)
 library(vioplot)
 library(fda)
-library(h2o)
+#library(h2o)
 library(TSA)
 library(tseries)
 library(rnn)
@@ -171,6 +171,38 @@ create_dataset <- function(pun, first_day)
     
     d_f <- bind_rows(d_f, adf)
 #    d_f %>% map_if(is.factor, as.character) -> d_f
+  }
+  colnames(d_f) <- Names
+  return(d_f)
+}
+######################################################
+create_dataset23 <- function(pun, first_day)
+{
+  d_f <- data_frame()
+  Names <- c(paste0("pun-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
+             paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1), "y",paste0("day-",23:1))
+  for(i in 1:(nrow(pun)-22))
+  {
+    #print(i)
+    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- dat <- c()
+    for(j in i:(i+23))
+    {
+      p <- c(p, pun[j,"PUN"]); aus <- c(aus, pun[j,"AUST"]); cors <- c(cors, pun[j,"CORS"])
+      fran <- c(fran, pun[j,"FRAN"]); grec <- c(grec, pun[j,"GREC"]); slov <- c(slov, pun[j,"SLOV"])
+      sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,"Ora"]); dat <- c(dat, pun[j,"Data/Date"]) 
+    }
+    y <- c(y, pun[(i+24),"PUN"])
+    day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
+    #print(day)
+    ds <- dates(dat)
+    hol <- add_holidays(ds)
+    vdays <- associate_days(ora, day)
+    vdays2 <- maply(1:23, function(n) as.character(vdays[n]))
+    aday <- maply(1:23, function(n) convert_day_to_angle(vdays2[n]))
+    adf <- data.frame(t(p), t(aus), t(cors), t(fran), t(grec), t(slov), t(sviz), t(aday), t(hol), y, t(vdays), stringsAsFactors = FALSE)
+    colnames(adf) <- Names
+    
+    d_f <- bind_rows(d_f, adf)
   }
   colnames(d_f) <- Names
   return(d_f)
