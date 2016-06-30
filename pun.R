@@ -49,7 +49,7 @@ h2o.init(nthreads = -1)
 train <- as.h2o(test[1:7000,1:217])
 val <- as.h2o(test[7001:8736,1:217])
 dl <- h2o.deeplearning(names(train)[1:216], "y", training_frame = train, validation_frame = val, activation = "Tanh",
-                       hidden = c(365, 52, 12, 4), epochs = 100)
+                       hidden = c(8736, 365, 52, 12, 4), epochs = 100)
 pred <- h2o.predict(dl, val)
 
 plot(dl) 
