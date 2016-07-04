@@ -276,7 +276,65 @@ weigthing_coin <- function(ag)
   }
   return(data.frame(mat))
 }
-
+############################################################################
+in_fornitura <- function(ag)
+{
+  pods <- unique(unlist(ag["Codice.POD"]))
+  pods_in_fornitura <- pods_esauriti <- c()
+  for(pod in pods)
+  {
+    if(ag[which(ag["Codice.POD"] == pod),"Stato"] == "IN FORNITURA") pods_in_fornitura <- c(pods_in_fornitura, pod)
+    else pods_esauriti <- c(pods_esauriti, pod)
+  }
+  return(list(pods_in_fornitura, pods_esauriti))
+}
+############################################################################
+energy_margin_per_pod <- function(ag, pod)
+{
+  cust <- ag[which(ag["Codice.POD"] == pod),]
+  n <- nrow(cust)
+  s <- sum(as.numeric(cust[2:n,"Gettone+Ricorrente"]))
+  en_mar_tot <- no_gett <- m_en_mar_tot <- m_no_gett <- diff <- diff_m <- mar_m <- mar_m_no <-diff_mar <- 0
+  if(s > 0 & !is.na(s) & n > 1)
+  {
+    en_mar_tot <- sum(as.numeric(cust[,"Energia.(incl..perdite)"]))/sum(as.numeric(cust[,"Gettone+Ricorrente"]))
+    no_gett <- sum(as.numeric(cust[2:n,"Energia.(incl..perdite)"]))/s
+    m_en_mar_tot <- mean(as.numeric(cust[,"Energia.(incl..perdite)"]))/mean(as.numeric(cust[,"Gettone+Ricorrente"]))
+    m_no_gett <- mean(as.numeric(cust[2:n,"Energia.(incl..perdite)"]))/mean(as.numeric(cust[2:n,"Gettone+Ricorrente"]))
+    diff <- en_mar_tot - no_gett
+    diff_m <- m_en_mar_tot - m_no_gett
+    mar_m <- mean(as.numeric(cust[,"Gettone+Ricorrente"]))
+    mar_m_no <- mean(as.numeric(cust[2:n,"Gettone+Ricorrente"]))
+    diff_mar <- as.numeric(cust[1,"Gettone+Ricorrente"]) - mar_m_no
+  }
+  return( c(en_mar_tot, no_gett, m_en_mar_tot, m_no_gett, diff, diff_m, mar_m, mar_m_no, diff_mar) )
+}
+############################################################################
+energy_margin_ratio <- function(ag)
+{
+  pods <- in_fornitura(ag)
+  Infornitura <- pods[[1]]
+  Noninfornitura <- pods[[2]]
+  mat <- matrix(0, nrow=(length(Infornitura)+length(Noninfornitura)),ncol=10)
+  rownames(mat) <- c(Infornitura,Noninfornitura)
+  for(pod in Infornitura)
+  {
+    #print(pod)
+    i <- which(rownames(mat) == pod)
+    mat[i,] <- c(energy_margin_per_pod(ag,pod), 1)
+  }
+  for(pod in Noninfornitura)
+  {
+    #print(pod)
+    i <- which(rownames(mat) == pod)
+    mat[i,] <- c(energy_margin_per_pod(ag,pod), 0)
+  }
+  mat <- data.frame(mat)
+  colnames(mat) <- c("en_tot/marg_tot", "en_tot/marg_tot.no.gettone", "rapporto_medio", 
+                     "rapporto_medio.no.gettone", "diff_rapporti", "diff_rapporti_medi",
+                     "margine_medio","margine_medio.no.gettone", "diff_margini","in_fornitura")
+  return(mat)
+}
 
 
 

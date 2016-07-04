@@ -13,6 +13,8 @@ library(tseries)
 library(rnn)
 library(ggplot2)
 
+library(e1071)
+
 source("Functions_for_BA.R")
 data <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/TestP.xlsx", sheet = 2, colNames = TRUE)
 data[is.na(data)] <- 0; data[is.null(data)] <- 0
@@ -129,8 +131,11 @@ library(jpeg)
 
 nomi <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/Business Analysis/MAG16.xlsm", sheet = "Agenti", colNames = FALSE)
 
+bVerbose <- FALSE
+
 D <- data_frame()
 DW <- data_frame()
+DR <- data_frame()
 rpa <-rpa2 <- pgm <- mr <- taup <- taun <- energy <- dur <- rep(0, 67)
 names(rpa) <- names(rpa2) <- names(pgm) <- names(mr) <- names(taup) <- names(taun) <- names(energy) <- names(dur) <- nomi[,1]
 for(i in 4:70)
@@ -158,14 +163,19 @@ for(i in 4:70)
     taup[i-3] <- tau_ag[1]
     taun[i-3] <- tau_ag[2]
     
-    mm <- max(c(max(abs(gdp[[1]])),max(abs(gdp[[2]])), max(abs(gdp[[3]]))))
-    mypath <- paste0("C:/Users/d_floriello/Documents/Business Analysis/plot_",nomi[i-3,1],".jpg")
-    jpeg(file=mypath, quality=100)
-    plot(1:48, gdp[[1]], type="o",lwd=2,col="blue",ylim=c(-mm,mm),xlab="mesi",ylab="numero clienti", main=nomi[i-3,1])
-    lines(1:48, gdp[[2]], type="o",lwd=2,col="green")
-    lines(1:48, gdp[[3]], type="o",lwd=2,col="red")
-    lines(1:48, Tt, type="o",lwd=2,col="black")
-    dev.off()
+    DR <- bind_rows(DR, energy_margin_ratio(data))
+    
+    if(bVerbose)
+    {
+      mm <- max(c(max(abs(gdp[[1]])),max(abs(gdp[[2]])), max(abs(gdp[[3]]))))
+      mypath <- paste0("C:/Users/d_floriello/Documents/Business Analysis/plot_",nomi[i-3,1],".jpg")
+      jpeg(file=mypath, quality=100)
+      plot(1:48, gdp[[1]], type="o",lwd=2,col="blue",ylim=c(-mm,mm),xlab="mesi",ylab="numero clienti", main=nomi[i-3,1])
+      lines(1:48, gdp[[2]], type="o",lwd=2,col="green")
+      lines(1:48, gdp[[3]], type="o",lwd=2,col="red")
+      lines(1:48, Tt, type="o",lwd=2,col="black")
+      dev.off()
+      }
 }
 colnames(DW) <- c("gettone_per_ricorrente","gettone_per_margine","gettone_per_ric_unit","energia_media_annua","agenzia")
 
@@ -402,7 +412,74 @@ scatter3D(x = taup, y = mr,
           z=dur, pch = 20, phi = 30, bty ="g", colvar = taup,
           xlab = "IRG",
           ylab ="rapporto marginalita'", zlab = "durata media agenzia")
+#########################################################
+############### ratios plots ############################
 
+a6 <- ggplot(data = DR, aes(x = as.numeric(as.character(unlist(DR["rapporto_medio"]))), y = as.numeric(as.character(unlist(DR["margine_medio"]))),
+                            col = as.factor(unlist(DR["in_fornitura"]))))
+a6 <- a6 + geom_point(size = 3)
+a6 <- a6 + xlab("rapporto medio en/margine") + ylab("margine medio agenzia") + ggtitle("rapporto medio en/marg vs margine medio")  + scale_color_discrete(name = "in fornitura")
+a6
+
+a7 <- ggplot(data = DR, aes(x = as.numeric(as.character(unlist(DR["rapporto_medio"]))), y = as.numeric(as.character(unlist(DR["diff_margini"]))),
+                            col = as.factor(unlist(DR["in_fornitura"]))))
+a7 <- a7 + geom_point(size = 3)
+a7 <- a7 + xlab("rapporto medio en/margine") + ylab("differenza margini") + ggtitle("rapporto medio en/marg vs dfifferenza margini")  + scale_color_discrete(name = "in fornitura")
+a7
+
+a8 <- ggplot(data = DR, aes(x = as.numeric(as.character(unlist(DR["rapporto_medio.no.gettone"]))), y = as.numeric(as.character(unlist(DR["diff_margini"]))),
+                            col = as.factor(unlist(DR["in_fornitura"]))))
+a8 <- a8 + geom_point(size = 3)
+a8 <- a8 + xlab("rapporto medio en/margine senza gettone") + ylab("differenza margini") + ggtitle("rapporto medio en/marg (senza gettone) vs dfifferenza margini")  + scale_color_discrete(name = "in fornitura")
+a8
+
+a9 <- ggplot(data = DR, aes(x = as.numeric(as.character(unlist(DR["margine_medio.no.gettone"]))), y = as.numeric(as.character(unlist(DR["diff_margini"]))),
+                            col = as.factor(unlist(DR["in_fornitura"]))))
+a9 <- a9 + geom_point(size = 3)
+a9 <- a9 + xlab("margine medio senza gettone") + ylab("differenza margini") + ggtitle("margine medio(senza gettone) vs dfifferenza margini")  + scale_color_discrete(name = "in fornitura")
+a9
+
+a9b <- ggplot(data = cnif, aes(x = as.numeric(as.character(unlist(cnif["margine_medio.no.gettone"]))), y = as.numeric(as.character(unlist(cnif["diff_margini"])))))
+#                            col = as.factor(unlist(cnif["in_fornitura"]))))
+a9b <- a9b + geom_point(size = 3)
+a9b <- a9b + xlab("margine medio senza gettone") + ylab("differenza margini") + ggtitle("margine medio(senza gettone) vs dfifferenza margini NON IN FORNITURA")  + scale_color_discrete(name = "in fornitura")
+a9b
+
+a9t <- ggplot(data = cif, aes(x = as.numeric(as.character(unlist(cif["margine_medio.no.gettone"]))), y = as.numeric(as.character(unlist(cif["diff_margini"])))))
+#                            col = as.factor(unlist(cnif["in_fornitura"]))))
+a9t <- a9t + geom_point(size = 3)
+a9t <- a9t + xlab("margine medio senza gettone") + ylab("differenza margini") + ggtitle("margine medio(senza gettone) vs dfifferenza margini IN FORNITURA")  + scale_color_discrete(name = "in fornitura")
+a9t
+
+
+cif <- DR[which(DR[,"in_fornitura"] == 1),]
+cnif <- DR[which(DR[,"in_fornitura"] == 0),]
+par(mfrow=c(1,2))
+hist(cif$diff_margini)
+hist(cnif$diff_margini)
+hist(cif$rapporto_medio)
+hist(cnif$rapporto_medio)
+plot(density(cif$rapporto_medio.no.gettone))
+plot(density(cnif$rapporto_medio.no.gettone))
+
+plot(density(cif$rapporto_medio))
+plot(density(cnif$rapporto_medio))
+plot(density(cif$rapporto_medio.no.gettone))
+plot(density(cnif$rapporto_medio.no.gettone))
+
+
+### can I classify with a SVM?
+y <- as.factor(DR$in_fornitura)
+tx <- DR[1:6000,]
+vx <- DR[6001:6476,]
+tuning <- tune(svm,train.x = tx, train.y = y[1:6000], validation.x = vx, validation.y = y[6001:6476])
+
+fit_svm <- svm(x = tx, y = y[1:6000], kernel = "radial", type= "C-classification", gamma = 0.1, cost = 1)
+summary(fit_svm)
+
+pred_svm <- predict(fit_svm, vx)
+err <- mean(abs(as.numeric(as.character(pred_svm)) - as.numeric(as.character(y[6001:6476]))))
+table(pred_svm,y[6001:6476])
 #######################################
 hc_ema <- hclust(dist(D$Energia.media.annua))
 plot(hc_ema)
