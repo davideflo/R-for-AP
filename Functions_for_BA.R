@@ -7,7 +7,7 @@ library(dplyr)
 library(xlsx)
 library(vioplot)
 library(fda)
-library(h2o)
+#library(h2o)
 library(TSA)
 library(tseries)
 library(rnn)
@@ -70,6 +70,12 @@ IRG_vs_edl <- function(ag)
   return(an)
 }
 ##########################################################
+mean_energy <- function(ag, pod)
+{
+  l <- length(which(ag["Codice.POD"] == pod))
+  return(as.numeric(as.character(((sum(unlist(as.numeric(ag[which(ag["Codice.POD"] == pod),"Energia.(incl..perdite)"])))/1000)/l)*12)))
+}
+#########################################################
 EM_agenzia <- function(ag)
 {
   energy <- c()
@@ -335,6 +341,46 @@ energy_margin_ratio <- function(ag)
                      "margine_medio","margine_medio.no.gettone", "diff_margini","in_fornitura")
   return(mat)
 }
-
-
+#############################################################################
+dataset_for_classification <- function(ag)
+{
+  pods <- unique(unlist(ag["Codice.POD"]))
+  res <- matrix(0, nrow = length(pods), ncol = 13)
+  rownames(res) <- pods
+  for(pod in pods)
+  {
+    en <- energy_margin_per_pod(ag,pod)
+    i <- which(rownames(res) == pod)
+    cust <- ag[which(ag["Codice.POD"] == pod),]
+    mag <- sum(as.numeric(as.character(cust[,"Gettone+Ricorrente"])))
+    map <- sum(as.numeric(as.character(cust[,"Margine_listino+PCV+Pereq"])))
+    res[i,] <- c(IRG(ag, pod), nrow(cust), mean_energy(ag, pod), map,
+                 mag, as.numeric(cust[1,"Gettone"])/sum(as.numeric(as.character(cust[,"Gettone+Ricorrente"]))),
+                 mag/map, en[1],
+                 en[2],
+                 -en[9],
+                 mean(as.numeric(unlist(cust["Margine.Unitario"]))), mean(as.numeric(unlist(cust["Ricorrente_per_listino"]))),
+                 ifelse(as.character(cust[nrow(cust),"Stato"]) == "IN FORNITURA", 1, 0))
+  }
+  res <- data.frame(res)
+  colnames(res) <- c("IRG", "durata", "energia_media_annua", "margine_AP", "margine_AG", "peso_gettone", "rapporto_marg.", "en/marg",
+                     "en/marg.no.gett", "diff_margini", "mean_margine_unitario","mean_ricorrente","Stato")
+  return(res)
+}
+###########################################################################
+surv_ds <- function(ag)
+{
+  pods <- unique(unlist(ag["Codice.POD"]))
+  res <- matrix(0, nrow = length(pods), ncol = 2)
+  rownames(res) <- pods
+  for(pod in pods)
+  {
+    i <- which(rownames(res) == pod)
+    cust <- ag[which(ag["Codice.POD"] == pod),]
+    res[i,] <- c(nrow(cust), ifelse(as.character(cust[nrow(cust),"Stato"]) == "IN FORNITURA", 1, 0))
+  }
+  res <- data.frame(res)
+  colnames(res) <- c("time", "status")
+  return(res)
+}
 

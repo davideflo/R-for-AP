@@ -136,6 +136,7 @@ bVerbose <- FALSE
 D <- data_frame()
 DW <- data_frame()
 DR <- data_frame()
+DC <- data_frame()
 rpa <-rpa2 <- pgm <- mr <- taup <- taun <- energy <- dur <- rep(0, 67)
 names(rpa) <- names(rpa2) <- names(pgm) <- names(mr) <- names(taup) <- names(taun) <- names(energy) <- names(dur) <- nomi[,1]
 for(i in 4:70)
@@ -147,6 +148,8 @@ for(i in 4:70)
     dfw <- data.frame(weigthing_coin(data), agenzia = nomi[i-3,1])
     D <- rbind.data.frame(D, df)
     DW <- rbind.data.frame(DW, dfw)
+    dc <- dataset_for_classification(data)
+    DC <- bind_rows(DC, dc)
     
     act <- active(data)
     gdp <- get_duration_processes(act)
@@ -178,6 +181,8 @@ for(i in 4:70)
       }
 }
 colnames(DW) <- c("gettone_per_ricorrente","gettone_per_margine","gettone_per_ric_unit","energia_media_annua","agenzia")
+colnames(DC) <- c("IRG", "durata", "energia_media_annua", "margine_AP", "margine_AG", "peso_gettone", "rapporto_marg.", "en/marg",
+                  "en/marg.no.gett", "diff_margini", "mean_margine_unitario","mean_ricorrente","stato")
 
 ### prova di smoothing processo At ###
 At <- gdp[[2]]
@@ -484,5 +489,53 @@ table(pred_svm,y[6001:6476])
 hc_ema <- hclust(dist(D$Energia.media.annua))
 plot(hc_ema)
 
+#######################################
+####### trying to predict duration ####
+#######################################
 
+DCe <- DC[which(DC["stato"] == 0),2:12]
+DCe[is.na(DCe)] <- 0
+DCe[which(!is.finite(unlist(DCe[,7]))),7] <- 0
+
+DCe <- DCe[which(DCe[,6] > 0 & DCe[,7] > 0),]
+
+# for(i in 1:13)
+# {
+#   print(paste("colonna", i, ":", which(!is.finite(unlist(DCe[,i])))))
+# }
+
+simplefit <- lm(DCe$durata ~ ., data=DCe)
+summary(simplefit)
+plot(simplefit)
+
+DCi <- DC[which(DC["stato"] == 1),2:12]
+DCi[is.na(DCi)] <- 0
+DCi[which(!is.finite(unlist(DCi[,7]))),7] <- 0
+
+DCi <- DCi[which(DCi[,6] > 0 & DCi[,7] > 0),]
+durata_in <- DCi$durata
+DCi <- DCi[,2:11]
+pred_i <- predict(simplefit, DCi)
+
+diff_durata <- pred_i - durata_in
+length(diff_durata[diff_durata > 0])/length(diff_durata)
+plot(diff_durata)
+
+plot(unlist(DCe["margine_AP"]), log(1+unlist(DCe["durata"])), pch=16)
+
+with(data, plot(data$`Margine_listino+PCV+Pereq`, type="h"))
+library(survival)
+sds <- surv_ds(data)
+
+survfit = survfit(Surv(sds$time, status == 0) ~ 1, data=sds) ### <- giusto: status == 0 e' quando avviene l'evento che mi interessa
+survfit2 = survfit(Surv(sds$time) ~ 0, data=sds)
+summary(survfit)
+plot(survfit, xlab = "Time (months)", ylab="Proportion surviving", conf.int=TRUE, main="Survival in ")
+summary(survfit2)
+plot(survfit2, col = "blue", xlab = "Time (months)", ylab="Proportion surviving", conf.int=TRUE, main="Survival in ")
+
+sds2 <- surv_ds(data)
+survfit3 = survfit(Surv(sds2$time, status == 0) ~ 1, data=sds2)
+summary(survfit3)
+plot(survfit3, col="red", xlab = "Time (months)", ylab="Proportion surviving", conf.int=TRUE, main="Survival in ")
 
