@@ -23,6 +23,11 @@ convert_day_to_angle <- function(day)
   return(cos(ang*pi/7))
 }
 #############################################################
+convert_hour_to_angle <- function(ora)
+{
+  return(sin(ora*pi/24))
+}
+#############################################################
 numeric_days <- function(vec)
 {
   nd <- rep(0,length(vec))
@@ -129,6 +134,64 @@ add_holidays <- function(vd)
   return(holidays)
 }
 #########################################################################################
+data_successiva <- function(date)
+{
+  d <- strsplit(date, "/")
+  
+  day <- as.numeric(d[1])
+  month <- as.numeric(d[2])
+  year <- as.numeric(d[3])
+  
+  leap_year <- year %% 4
+  
+  new_day <- 0
+  new_month <- month
+  new_year <- year
+  
+  df31 <- c(1,2,4,6,8,9,11)
+  df30 <- c(5,7,10,12)
+  
+  if(month %in% df31 & day == 31) {new_day <- 1; new_month <- month + 1}
+  else if(month %in% df30 & day == 30) {new_day <- 1; new_month <- month + 1}
+  else if(month == 2 & leap_year != 0 & day == 28) {new_day <- 1; new_month <- month + 1}
+  else if(month == 2 & leap_year == 0 & day == 29) {new_day <- 1; new_month <- month + 1}
+  else new_day <- day + 1
+  
+  if(new_month == 13) new_month <- 1
+  
+  if(month == 12 & day == 31) new_year <- year + 1
+  
+  if(new_month < 10) new_month <- paste0("0", new_month)
+  
+  if(new_day < 10) new_day <- paste0("0", new_day)
+  
+  new_date <- paste0(new_day, "/", new_month, "/", new_year)
+  
+  return(new_date)
+}
+#########################################################################################
+associate_meteo_ora <- function(data, meteo, meteovar)
+{
+  vm <- rep(0, length(data))
+  for(d in 1:length(data))
+  {
+    ir <- which(meteo["Data"] == data[d])
+    vm[d] <- as.numeric(meteo[ir,meteovar])
+    
+  }
+  return(vm)
+}
+#########################################################################################
+trova_date_mancanti <- function(date, meteo)
+{
+  dm <- c()
+  for(d in date)
+  {
+    if(length( which(meteo[,1] == d) ) == 0 ) dm <- c(dm,d)
+  }
+  return(dm)
+}
+#########################################################################################
 associate_days <- function(ora, day)
 {
   vdays <- rep(day, 24)
@@ -166,6 +229,7 @@ create_dataset <- function(pun, first_day)
     vdays <- associate_days(ora, day)
     vdays2 <- maply(1:24, function(n) as.character(vdays[n]))
     aday <- maply(1:24, function(n) convert_day_to_angle(vdays2[n]))
+    
     adf <- data.frame(t(p), t(aus), t(cors), t(fran), t(grec), t(slov), t(sviz), t(aday), t(hol), y, t(vdays), stringsAsFactors = FALSE)
     colnames(adf) <- Names
     
@@ -176,36 +240,48 @@ create_dataset <- function(pun, first_day)
   return(d_f)
 }
 ######################################################
-create_dataset23 <- function(pun, first_day)
+create_dataset23 <- function(pun, first_day, varn, meteo)
 {
   d_f <- data_frame()
-  Names <- c(paste0("pun-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
-             paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1), "y",paste0("day-",23:1))
-  for(i in 1:(nrow(pun)-22))
+  Names <- c(paste0(varn,"-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
+             paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1), "y",
+             paste0("angleora-",23:1),
+             paste0("tmin-",23:1), paste0("tmax-",23:1), paste0("tmed-",23:1), paste0("rain-",23:1), paste0("vento-",23:1), 
+             paste0("day-",23:1))
+  for(i in 1:(nrow(pun)-23))
   {
     #print(i)
     y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- dat <- c()
-    for(j in i:(i+23))
+    for(j in i:(i+22))
     {
-      p <- c(p, pun[j,"PUN"]); aus <- c(aus, pun[j,"AUST"]); cors <- c(cors, pun[j,"CORS"])
+      p <- c(p, pun[j,varn]); aus <- c(aus, pun[j,"AUST"]); cors <- c(cors, pun[j,"CORS"])
       fran <- c(fran, pun[j,"FRAN"]); grec <- c(grec, pun[j,"GREC"]); slov <- c(slov, pun[j,"SLOV"])
       sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,"Ora"]); dat <- c(dat, pun[j,"Data/Date"]) 
     }
-    y <- c(y, pun[(i+24),"PUN"])
+    y <- c(y, pun[(i+23),varn])
     day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
     #print(day)
     ds <- dates(dat)
     hol <- add_holidays(ds)
     vdays <- associate_days(ora, day)
-    vdays2 <- maply(1:23, function(n) as.character(vdays[n]))
-    aday <- maply(1:23, function(n) convert_day_to_angle(vdays2[n]))
-    adf <- data.frame(t(p), t(aus), t(cors), t(fran), t(grec), t(slov), t(sviz), t(aday), t(hol), y, t(vdays), stringsAsFactors = FALSE)
+    vdays2 <- maply(1:24, function(n) as.character(vdays[n]))
+    aday <- maply(1:24, function(n) convert_day_to_angle(vdays2[n]))
+    ahour <- convert_hour_to_angle(ora)
+    ## togli vdays e metti variabili meteo
+    tmin <- associate_meteo_ora(ds, meteo, "Tmin")
+    tmax <- associate_meteo_ora(ds, meteo, "Tmax")
+    tmed <- associate_meteo_ora(ds, meteo, "Tmedia")
+    rain <- associate_meteo_ora(ds, meteo, "Pioggia")
+    vm <- associate_meteo_ora(ds, meteo, "Vento_media")
+    ### transpose the vectors as they are column vectors in R
+    adf <- data.frame(t(p), t(aus), t(cors), t(fran), t(grec), t(slov), t(sviz), t(aday[1:23]), t(hol[1:23]), y, t(ahour[1:23]),
+                      t(tmin[1:23]), t(tmax[1:23]), t(tmed[1:23]), t(rain[1:23]), t(vm[1:23]), t(vdays[1:23]), stringsAsFactors = FALSE)
     colnames(adf) <- Names
     
     d_f <- bind_rows(d_f, adf)
   }
   colnames(d_f) <- Names
-  return(d_f)
+  return(d_f[,1:346])
 }
 ######################################################
 sign_process <- function(Pt)
@@ -215,6 +291,10 @@ sign_process <- function(Pt)
   
   return(St)
 }
-
-
+######################################################
+percentage_greater_than <- function(x, p)
+{
+  return(length(x[x > p])/length(x))
+}
+#####################################################
 

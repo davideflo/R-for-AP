@@ -25,31 +25,42 @@ prices14 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2014.xl
 prices15 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2015.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2016_04.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 
+meteonord <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_milano.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteocsud <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+
+
+
 ### https://cran.r-project.org/web/views/TimeSeries.html
 plot(1:length(unlist(prices10["PUN"])), unlist(prices10["PUN"]), type = "l", lwd=2, col="blue")
 acf(unlist(prices10["PUN"]), lag.max = 48)
+acf(as.numeric(unlist(meteocsud["Tmedia"])), lag.max = 365)
 #plot(stl(ts(unlist(prices10["PUN"]),frequency=365),s.window=7))
-plot(se <- stl(ts(unlist(prices10["PUN"]),frequency=24),s.window=7)) ## questo mi pare piu corretto dalla descrizione dell'help in R
+plot(se <- stl(ts(unlist(prices10["CSUD"]),frequency=24),s.window="periodic")) ## questo mi pare piu corretto dalla descrizione dell'help in R
 plot(stl(ts(unlist(prices10["PUN"]),frequency=24),s.window="periodic"))
+plot(stl(ts(as.numeric(unlist(meteocsud["Tmedia"])),frequency=365),s.window="periodic"))
 #plot(stl(ts(unlist(prices10["PUN"]),frequency=12),s.window=7))
 
 p10 <- prices10[,3:21]
 cor(p10)
 
+dts <- unique(dates(prices15[,1]))
+tdm <- trova_date_mancanti(dts, meteo = meteocsud)
+tdm
+
 test <- create_dataset(prices10, "ven")
 test <- test[1:8736,]
-test23 <- create_dataset23(prices10, "ven")
+test23 <- create_dataset23(prices10, "ven", "CSUD", meteocsud)
 
 
 library(h2o)
-##### NOTA BENE: se h2o non parte, vai in C:\Users\d_floriello\Downloads\h2o-3.8.2.3\R\h2o\inst\java e fai partire il JAR file!!!!!
+##### NOTA BENE: se h2o non parte, vai in C:\Users\d_floriello\Documents\R\R-3.3.1\library\h2o\java e fai partire il JAR file!!!!!
 ## http://localhost:54321/flow/index.html ## flow
 h2o.init(nthreads = -1)
 
-train <- as.h2o(test[1:7000,1:217])
-val <- as.h2o(test[7001:8736,1:217])
+train <- as.h2o(test23[1:7000,])
+val <- as.h2o(test23[7001:8737,])
 dl <- h2o.deeplearning(names(train)[1:216], "y", training_frame = train, validation_frame = val, activation = "Tanh",
-                       hidden = c(8736, 365, 52, 12, 4), epochs = 100)
+                       hidden = c(365, 52, 12, 4), epochs = 100)
 pred <- h2o.predict(dl, val)
 
 plot(dl) 
@@ -58,10 +69,53 @@ a <- as.numeric(pred$predict) ### <- estrae i valori da pred (H2OFrame Class)
 a <- as.matrix(a)
 
 plot(a, type="l",col="blue")
-lines(test[,217], type="l",col="red")
+lines(unlist(test23[,208]), type="o",col="red")
+
+yy <- unlist(test23[7001:8737,"y"])
+diff <- unlist(test23[7001:8737,"y"]) - a
+mean(diff)
+sd(diff)
+
+hist(diff,freq = FALSE)
+lines(density(diff))
+
+apdiff <- abs(diff)/unlist(test23[7001:8737,"y"])
+
+for(p in c(1:10)/10) print(percentage_greater_than(apdiff,p))
+
+std_diff <- (diff - mean(diff))/sd(diff)
+
+hist(std_diff,freq = FALSE)
+lines(density(std_diff))
+
+shapiro.test(std_diff)
+qqnorm(diff)
+lines(seq(-3,3,0.001),seq(-3,3,0.001),type="l",col="red")
+
+cor(yy,diff) ### <- explained by regression to the mean
+cor(yy,apdiff)
+par(mfrow = c(2,1))
+plot(yy, type="o",col="red")
+plot(diff, type="o")
+########### distribution free qqplot ################################
+qq <- qt(p = seq(0, 1, length.out = length(diff)), df = length(diff)-1 )
+plot(qq,sort(diff,decreasing=FALSE))
+lines(seq(-3,3,0.001),seq(-3,3,0.001),type="l",col="red")
+#####################################################################
+
+pred_tot <- predict(dl, as.h2o(test23))
+
+cts <- as.numeric(pred_tot$predict) ### <- estrae i valori da pred (H2OFrame Class) 
+cts <- unlist(as.matrix(cts)[,1])
+plot(dlts <- stl(ts(cts,frequency=24),s.window="periodic"))
+
+dlts$time.series
+min_season <- dlts$time.series[1:24,1]
+min_season_orig <- se$time.series[1:24,1]
+plot(min_season, type="l", col="blue")
+plot(min_season_orig, type= "o", col="red")
 
 
-diff <- test[7001:8736,"y"] - a
 plot(1:1736,diff[1:1736,1],type="p",lwd=2,col="red")
 abline(h =  colMeans(diff), lwd=2, col="black")
 
@@ -241,3 +295,18 @@ nnf <- nnetar(test2$y, P = 24, size = 1, xreg = test2[,1:216], h = 1)
 
 library(arfima)
 arf <- arfima::arfima(prices10$PUN, xreg= prices10[,c(4,8,11,12,19,21)])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
