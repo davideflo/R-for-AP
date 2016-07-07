@@ -256,7 +256,7 @@ create_dataset23 <- function(pun, first_day, varn, meteo)
     {
       p <- c(p, pun[j,varn]); aus <- c(aus, pun[j,"AUST"]); cors <- c(cors, pun[j,"CORS"])
       fran <- c(fran, pun[j,"FRAN"]); grec <- c(grec, pun[j,"GREC"]); slov <- c(slov, pun[j,"SLOV"])
-      sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,"Ora"]); dat <- c(dat, pun[j,"Data/Date"]) 
+      sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,2]); dat <- c(dat, pun[j,1]) 
     }
     y <- c(y, pun[(i+23),varn])
     day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
@@ -297,4 +297,7 @@ percentage_greater_than <- function(x, p)
   return(length(x[x > p])/length(x))
 }
 #####################################################
-
+RMSE <- function(x)
+{
+  return(sqrt(mean(x^2)))
+}
