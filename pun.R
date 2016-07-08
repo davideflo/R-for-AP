@@ -14,6 +14,10 @@ library(TDA)
 library(forecast)
 library(rugarch)
 
+##### forecast h2o - time series? #######
+## https://0xdata.atlassian.net/browse/PUBDEV-2590
+#########################################
+
 library(ggplot2)
 source("functions_for_PUN.R")
 
