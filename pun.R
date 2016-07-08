@@ -198,6 +198,63 @@ prices <- rbind(prices10[c(1:12,14:21)], prices11[,which(colnames(prices11) %in%
 
 test04 <- create_dataset23(prices, "ven", "CSUD",meteocsud)
 val15 <- create_dataset23(prices15, "gio", "CSUD",meteocsud)
+
+train_tot <- as.h2o(test04)
+val <- as.h2o(val15)
+
+dltot <- h2o.deeplearning(names(train_tot), "y", training_frame = train_tot, validation_frame = val, activation = "Tanh",
+                         hidden = c(365, 52, 12, 4), epochs = 100)
+plot(dltot)
+
+predtot <- predict(dltot, val)
+
+pt <- as.numeric(predtot$predict) 
+pt <- as.matrix(pt)
+
+plot(pt, type="l",col="blue", xlab="time", ylab="euro/MWh", main="CSUD15 calcolato vs vero")
+lines(unlist(val15$y), type="o",col="red")
+
+yy15 <- unlist(val15$y)
+diff <- yy15 - unlist(pt)
+mean(diff)
+sd(diff)
+median(diff)
+
+plot(density(diff),main="distribuzione degli errori")
+hist(diff,freq = FALSE, add=TRUE)
+
+apdiff <- abs(diff)/yy15
+
+for(p in c(1:10)/10) print(percentage_greater_than(apdiff,p))
+
+std_diff <- (diff - mean(diff))/sd(diff)
+
+#shapiro.test(std_diff)
+qqnorm(diff)
+lines(seq(-20,20,0.0001),seq(-20,20,0.0001),type="l",col="red")
+
+cor(yy15,diff) 
+cor(yy15,apdiff) ## <- almost independent
+
+plot(dlts <- stl(ts(unlist(pt[,1]),frequency=24),s.window="periodic"),col="blue",main="serie stimata")
+plot(se15 <- stl(ts(unlist(val15$y),frequency=24),s.window="periodic"),col="red",main="serie vera")
+#dlts11$time.series
+
+min_season <- dlts$time.series[1:24,1]
+min_season_orig15 <- se15$time.series[1:24,1]
+par(mfrow = c(2,1))
+plot(min_season, type="l", col="blue")
+plot(min_season_orig15, type= "o", col="red")
+
+dl.trend <- unlist(dlts$time.series[,2])
+se15.trend <- unlist(se15$time.series[,2])
+
+plot(dl.trend, type="l", col="blue")
+plot(se15.trend, type= "l", col="red")
+
+RMSE(dl.trend - se15.trend)
+RMSE(unlist(pt[,1]) - val15$y)
+
 ##############################################################################
 
 plot(1:1736,diff[1:1736,1],type="p",lwd=2,col="red")
