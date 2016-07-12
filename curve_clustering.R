@@ -888,7 +888,7 @@ Fhabs <- function(remi, M2)
 
 Fhd <- function(remi, M2)
 {
-  xx <- seq(0, 1, 0.001)
+  xx <- seq(-1, 1, 0.0001)
   M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
   mm <- max(M3[1:18])
   f <- c()
@@ -921,7 +921,7 @@ Fhd <- function(remi, M2)
 
 
 
-xx <- seq(0, 1, 0.001)
+xx <- seq(-1, 1, 0.0001)
 
 sol <- matrix(0, nrow = nrow(M2), ncol = 3)
 rownames(sol) <- rownames(M2)
@@ -1041,6 +1041,15 @@ xlsx::write.xlsx(data.frame(M3), paste0("C:/Users/d_floriello/Documents/plot_rem
 xlsx::write.xlsx(data.frame(M4), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_vero.xlsx"), row.names=TRUE, col.names = TRUE)
 xlsx::write.xlsx(data.frame(M5), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_stima.xlsx"), row.names=TRUE, col.names = TRUE)
 
+M2 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_CA_vero.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
+M3 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_CA_stima.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
+M4 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_vero.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
+M5 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_RIC_stima.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
+
+M2 <- as.matrix(data.matrix(data.frame(M2)))
+M3 <- as.matrix(data.matrix(data.frame(M3)))
+M4 <- as.matrix(data.matrix(data.frame(M4)))
+M5 <- as.matrix(data.matrix(data.frame(M5)))
 
 Sol <- matrix(0,nrow = nrow(M2), ncol = 12)
 rownames(Sol) <- rownames(M2)
@@ -1048,28 +1057,30 @@ colnames(Sol) <- c("% ottima CA teorico", "capacita ottima CA teorico", "minimo 
                    "% ottima CA stima", "capacita ottima CA stima", "minimo costo CA stima",
                    "% ottima RIC teorico", "capacita ottima RIC teorico", "minimo costo RIC teorico",
                    "% ottima RIC stima", "capacita ottima RIC stima", "minimo costo RIC stima")
-xx <- seq(0, 1, 0.001)
+xx <- seq(-1, 1, 0.0001)
 for(rf in rownames(M2))  
 {
   i <- which(rownames(Sol) == rf)
-  s1 <- Fhd(rf, M6); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
+  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
   
   Sol[i,1] <- xx[which.min(s1[1:(length(s1)-1)])]
-  Sol[i,2] <- s1[length(s1)]*(1+Sol[i,1])
+  Sol[i,2] <- unlist(s1[length(s1)])*(1+Sol[i,1])
   Sol[i,3] <- min(s1[1:(length(s1)-1)])
   
   Sol[i,4] <- xx[which.min(s2[1:(length(s2)-1)])]
-  Sol[i,5] <- s2[length(s2)]*(1+Sol[i,4])
+  Sol[i,5] <- unlist(s2[length(s2)])*(1+Sol[i,4])
   Sol[i,6] <- min(s2[1:(length(s2)-1)])
   
   Sol[i,7] <- xx[which.min(s3[1:(length(s3)-1)])]
-  Sol[i,8] <- s3[length(s3)]*(1+Sol[i,7])
+  Sol[i,8] <- unlist(s3[length(s3)])*(1+Sol[i,7])
   Sol[i,9] <- min(s3[1:(length(s3)-1)])
   
   Sol[i,10] <- xx[which.min(s4[1:(length(s4)-1)])]
-  Sol[i,11] <- s4[length(s4)]*(1+Sol[i,10])
+  Sol[i,11] <- unlist(s4[length(s4)])*(1+Sol[i,10])
   Sol[i,12] <- min(s4[1:(length(s4)-1)])
 }
+
+xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE.xlsx"), row.names=TRUE, col.names = TRUE)
 
 perc_ott <- Sol[,1]
 perc_ric <- Sol[,10]
@@ -1081,7 +1092,6 @@ mean(perc_ott[perc_ott > 0])
 mean(perc_ric[perc_ric > 0])
 median(perc_ott[perc_ott > 0])
 median(perc_ric[perc_ric > 0])
-
 
 length(which(perc_ott != 0))
 length(which(perc_ric != 0))

@@ -1092,6 +1092,40 @@ cluster_by_and_optimise <- function(ver2, M, from, to)
   plot(xx,opt,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=paste("remi con numero pdr >", from, "e < di", to))
   return(opt)
 }
+####################################################################
+Fhd <- function(remi, M2)
+{
+  xx <- seq(-1, 1, 0.0001)
+  M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
+  mm <- max(M3[1:18])
+  f <- c()
+  if(length(M3) > 0)
+  {
+    for(x in xx)
+    {
+      S <- 0
+      #index <- which(xx == x)
+      for(j in 1:19)
+      {
+        y <- mm*(1+x)
+        z <- M3[j+19] - 1.1*y
+        #if(z > 0.1*y)
+        if(z > 0)
+        {
+          S <- S + 3/12*mm*(1+x) + 3.5*(abs(z))
+        }
+        else
+        {
+          S <- S + 3/12*mm*(1+x) 
+        }
+      }
+      f <- c(f, S)
+    }
+  }
+  plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
+  return(c(f,mm))
+}
+
 
 
 

@@ -27,19 +27,19 @@ prices12 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2012.xl
 prices13 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2013.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices14 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2014.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices15 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2015.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
-prices16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2016_04.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2016_06.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 
 meteonord <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_milano.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 meteocsud <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 
-
-
+tmed <- as.numeric(unlist(meteocsud$Tmedia))
+plot(tm <- stl(ts(tmed,frequency=365),s.window="periodic"))
 ### https://cran.r-project.org/web/views/TimeSeries.html
 plot(1:length(unlist(prices10["PUN"])), unlist(prices10["PUN"]), type = "l", lwd=2, col="blue")
 acf(unlist(prices10["CSUD"]), lag.max = 100)
 acf(as.numeric(unlist(meteocsud["Tmedia"])), lag.max = 365)
 #plot(stl(ts(unlist(prices10["PUN"]),frequency=365),s.window=7))
-plot(se <- stl(ts(unlist(prices10["CSUD"]),frequency=24),s.window="periodic")) ## questo mi pare piu corretto dalla descrizione dell'help in R
+plot(se <- stl(ts(unlist(prices16["CSUD"]),frequency=24),s.window="periodic")) ## questo mi pare piu corretto dalla descrizione dell'help in R
 plot(stl(ts(unlist(prices10["PUN"]),frequency=24),s.window="periodic"))
 plot(stl(ts(as.numeric(unlist(meteocsud["Tmedia"])),frequency=365),s.window="periodic"))
 #plot(stl(ts(unlist(prices10["PUN"]),frequency=12),s.window=7))
@@ -240,6 +240,7 @@ lines(seq(-20,20,0.0001),seq(-20,20,0.0001),type="l",col="red")
 cor(yy15,diff) 
 cor(yy15,apdiff) ## <- almost independent
 
+plot(vera <- stl(ts(unlist(prices["CSUD"]),frequency=24),s.window="periodic"),col="blue",main="serie vera 10 - 14")
 plot(dlts <- stl(ts(unlist(pt[,1]),frequency=24),s.window="periodic"),col="blue",main="serie stimata")
 plot(se15 <- stl(ts(unlist(val15$y),frequency=24),s.window="periodic"),col="red",main="serie vera")
 #dlts11$time.series
