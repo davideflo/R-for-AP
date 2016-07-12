@@ -146,6 +146,7 @@ pred11 <- predict(dl11, val11)
 
 p11 <- as.numeric(pred11$predict) 
 p11 <- as.matrix(p11)
+p11 <- unlist(p11[,1])
 
 plot(p11, type="l",col="blue", xlab="time", ylab="euro/MWh", main="CSUD11 calcolato vs vero")
 lines(unlist(csud11$y), type="o",col="red")
@@ -175,7 +176,7 @@ lines(seq(-20,20,0.0001),seq(-20,20,0.0001),type="l",col="red")
 cor(yy11,diff11) 
 cor(yy11,apdiff11) ## <- almost independent
 
-plot(dlts11 <- stl(ts(unlist(p11[,1]),frequency=24),s.window="periodic"),main="serie stimata")
+plot(dlts11 <- stl(ts(p11,frequency=24),s.window="periodic"),main="serie stimata")
 plot(se11 <- stl(ts(unlist(csud11$y),frequency=24),s.window="periodic"),main="serie vera")
 #dlts11$time.series
 
@@ -192,7 +193,7 @@ plot(dl11.trend, type="l", col="blue")
 plot(se11.trend, type= "l", col="red")
 
 RMSE(dl11.trend - se11.trend)
-RMSE(unlist(p11[,1]) - csud11$y)
+RMSE(p11 - csud11$y)
 
 par(mfrow=c(1,1))
 plot(ud11 <- unlist(diff11[,1]), type="l",xlab="time",ylab="euro/MWh", main = "error")
@@ -200,68 +201,41 @@ plot(pud11 <- unlist(apdiff11[,1]), type="l",xlab="time",ylab="%", main = "error
 ############################################################################
 ################# test: csud 2010 - 2014 on 2015 ###########################
 ############################################################################
+## try only with weather variables 
 variables <- colnames(prices10)[c(1:12,14:21)]
 prices <- rbind(prices10[c(1:12,14:21)], prices11[,which(colnames(prices11) %in% variables)], prices12[,which(colnames(prices12) %in% variables)], 
                 prices13[,which(colnames(prices13) %in% variables)], prices14[,which(colnames(prices14) %in% variables)])
 
+start.time <- Sys.time()
 test04 <- create_dataset23(prices, "ven", "CSUD",meteocsud)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
 val15 <- create_dataset23(prices15, "gio", "CSUD",meteocsud)
 
 train_tot <- as.h2o(test04)
 val <- as.h2o(val15)
 
-dltot <- h2o.deeplearning(names(train_tot), "y", training_frame = train_tot, validation_frame = val, activation = "Tanh",
-                         hidden = c(365, 52, 12, 4), epochs = 100)
-plot(dltot)
+h2o.exportFile(train_tot, "dataset_totale10_14.csv")
+h2o.exportFile(val, "dataset_15.csv")
 
-predtot <- predict(dltot, val)
+dltot <- h2o.deeplearning(names(train_tot)[c(1:22,162:346)], "y", training_frame = train_tot, validation_frame = val, activation = "Tanh",
+                         hidden = c(365,52,12,4), epochs = 100)
 
-pt <- as.numeric(predtot$predict) 
-pt <- as.matrix(pt)
+dltot
+summary(dltot)
 
-plot(pt, type="l",col="blue", xlab="time", ylab="euro/MWh", main="CSUD15 calcolato vs vero")
-lines(unlist(val15$y), type="o",col="red")
+visualise_results(dltot, val15, val)
 
-yy15 <- unlist(val15$y)
-diff <- yy15 - unlist(pt)
-mean(diff)
-sd(diff)
-median(diff)
+dltotm <- h2o.deeplearning(names(train_tot), "y", training_frame = train_tot, validation_frame = val, activation = "Tanh",
+                          hidden = c(365,52,12,4), epochs = 100)
 
-plot(density(diff),main="distribuzione degli errori")
-hist(diff,freq = FALSE, add=TRUE)
+dltotm
+summary(dltotm)
 
-apdiff <- abs(diff)/yy15
+visualise_results(dltotm, val15, val)
 
-for(p in c(1:10)/10) print(percentage_greater_than(apdiff,p))
-
-std_diff <- (diff - mean(diff))/sd(diff)
-
-#shapiro.test(std_diff)
-qqnorm(diff)
-lines(seq(-20,20,0.0001),seq(-20,20,0.0001),type="l",col="red")
-
-cor(yy15,diff) 
-cor(yy15,apdiff) ## <- almost independent
-
-plot(dlts <- stl(ts(unlist(pt[,1]),frequency=24),s.window="periodic"),col="blue",main="serie stimata")
-plot(se15 <- stl(ts(unlist(val15$y),frequency=24),s.window="periodic"),col="red",main="serie vera")
-#dlts11$time.series
-
-min_season <- dlts$time.series[1:24,1]
-min_season_orig15 <- se15$time.series[1:24,1]
-par(mfrow = c(2,1))
-plot(min_season, type="l", col="blue")
-plot(min_season_orig15, type= "o", col="red")
-
-dl.trend <- unlist(dlts$time.series[,2])
-se15.trend <- unlist(se15$time.series[,2])
-
-plot(dl.trend, type="l", col="blue")
-plot(se15.trend, type= "l", col="red")
-
-RMSE(dl.trend - se15.trend)
-RMSE(unlist(pt[,1]) - val15$y)
 
 ##############################################################################
 

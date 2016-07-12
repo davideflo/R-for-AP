@@ -301,3 +301,60 @@ RMSE <- function(x)
 {
   return(sqrt(mean(x^2)))
 }
+#####################################################
+visualise_results <- function(dl.model, nd, ndh20)
+{
+  plot(dl.model)
+
+  pred <- predict(dl.model, ndh20)
+  
+  pt <- as.numeric(pred$predict) 
+  pt <- as.matrix(pt)
+  pt <- unlist(pt[,1])
+  
+  plot(pt, type="l",col="blue", xlab="time", ylab="euro/MWh", main="CSUD15 calcolato vs vero")
+  lines(unlist(nd["y"]), type="o",col="red")
+  
+  yy <- unlist(nd["y"])
+  diff <- yy - pt
+  print(paste0("mean of errors: ", mean(diff)))
+  print(paste0("standard deviation of errors: ", sd(diff)))
+  print(paste0("median of errors: ", median(diff)))
+  
+  
+  plot(density(diff),main="distribuzione degli errori")
+  hist(diff,freq = FALSE, add=TRUE)
+  
+  apdiff <- abs(diff)/yy
+  
+  for(p in c(1:10)/10) print(percentage_greater_than(apdiff,p))
+  
+  std_diff <- (diff - mean(diff))/sd(diff)
+  ssdd <- sample(std_diff, size = 5000)
+  
+  print(shapiro.test(ssdd))
+  qqnorm(diff)
+  lines(seq(-20,20,0.0001),seq(-20,20,0.0001),type="l",col="red")
+  
+  print(paste("correlation target price with errors:", cor(yy,diff))) 
+  cor(yy,apdiff) ## <- almost independent
+  
+  plot(dlts <- stl(ts(pt,frequency=24),s.window="periodic"),col="blue",main="serie stimata")
+  plot(se <- stl(ts(unlist(nd["y"]),frequency=24),s.window="periodic"),col="red",main="serie vera")
+  #dlts11$time.series
+  
+  min_season <- dlts$time.series[1:24,1]
+  min_season_orig15 <- se$time.series[1:24,1]
+  par(mfrow = c(2,1))
+  plot(min_season, type="l", col="blue")
+  plot(min_season_orig15, type= "o", col="red")
+  
+  dl.trend <- unlist(dlts$time.series[,2])
+  se.trend <- unlist(se$time.series[,2])
+  
+  plot(dl.trend, type="l", col="blue")
+  plot(se.trend, type= "l", col="red")
+  
+  print(paste("RMSE trend:", RMSE(dl.trend - se.trend)))
+  print(paste("RMSE total:", RMSE(pt - unlist(nd["y"]))))
+}
