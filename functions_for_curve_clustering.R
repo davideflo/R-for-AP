@@ -1095,7 +1095,7 @@ cluster_by_and_optimise <- function(ver2, M, from, to)
 ####################################################################
 Fhd <- function(remi, M2)
 {
-  xx <- seq(-1, 1, 0.0001)
+  xx <- seq(0, 1, 0.001)
   M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
   mm <- max(M3[1:18])
   f <- c()
@@ -1103,7 +1103,7 @@ Fhd <- function(remi, M2)
   {
     for(x in xx)
     {
-      S <- 0
+      S <-  + 3*mm*(1+x)
       #index <- which(xx == x)
       for(j in 1:19)
       {
@@ -1112,11 +1112,11 @@ Fhd <- function(remi, M2)
         #if(z > 0.1*y)
         if(z > 0)
         {
-          S <- S + 3/12*mm*(1+x) + 3.5*(abs(z))
+          S <- S + 3.5*(abs(z))
         }
         else
         {
-          S <- S + 3/12*mm*(1+x) 
+          S <- S + 0 
         }
       }
       f <- c(f, S)
@@ -1125,7 +1125,42 @@ Fhd <- function(remi, M2)
   plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
   return(c(f,mm))
 }
-
-
+#######################################################################
+comparison_data <- function(ag,prof)
+{
+  ag <- extract_relevant_val(ag)
+  remi <- unique(unlist(ag["COD_REMI"]))
+  mat <- matrix(0,nrow=length(remi),ncol=26)
+  rownames(mat) <- remi
+  mesi <- c("gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic")
+  nomi <- paste0("CONDUMO_", toupper(mesi))
+  for(re in remi)
+  {
+    i <- which(rownames(mat) == re)
+    ag2 <- ag[which(ag["COD_REMI"] == re),]
+    mat[i,1] <- sum(as.numeric(ag2["CONSUMO_CONTR_ANNUO"]))
+    mat[i,14] <- sum(as.numeric(ag2["CONSUMO_DISTRIBUTORE"]))
+    
+    Cc <- rep(0,12)
+    for(j in 1:nrow(ag2))
+    {
+      col <- which(colnames(prof) == ag2[j,"PROFILO_PRELIEVO"])
+      data_in_y <- ag2[j,"D_VALIDO_DAL_T"]
+      data_fin_y <- ag2[j,"D_VALIDO_AL_T"]
+      c2y <- active(data_in_y, data_fin_y)
+      Cc <- Cc + as.numeric(prof[,col]) * as.numeric(ag2[j,"CONSUMO_CONTR_ANNUO"]) * c2y
+    }
+    mat[i,2:13] <- Cc
+    
+    for(k in 1:12)
+    {
+      mat[i,k+14] <- sum(as.numeric(ag2[nomi[k]]))
+    }
+  }
+  mat <- data.frame(mat)
+  colnames(mat) <- c("consumo_contr", paste0("consumo_contr_",mesi),"consumo_distr", paste0("consumo_distr_",mesi))
+  return(mat)
+}
+## http://www.senoecoseno.it/zahara-nilsson-la-svedese-che-ci-ha-fatto-perdere-la-vista-30-foto/30/
 
 

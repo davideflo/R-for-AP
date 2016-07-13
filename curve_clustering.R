@@ -1057,7 +1057,7 @@ colnames(Sol) <- c("% ottima CA teorico", "capacita ottima CA teorico", "minimo 
                    "% ottima CA stima", "capacita ottima CA stima", "minimo costo CA stima",
                    "% ottima RIC teorico", "capacita ottima RIC teorico", "minimo costo RIC teorico",
                    "% ottima RIC stima", "capacita ottima RIC stima", "minimo costo RIC stima")
-xx <- seq(-1, 1, 0.0001)
+xx <- seq(0, 1, 0.001)
 for(rf in rownames(M2))  
 {
   i <- which(rownames(Sol) == rf)
@@ -1079,6 +1079,10 @@ for(rf in rownames(M2))
   Sol[i,11] <- unlist(s4[length(s4)])*(1+Sol[i,10])
   Sol[i,12] <- min(s4[1:(length(s4)-1)])
 }
+
+rf <- "34390301"
+s1 <- Fhd(rf, M2)
+M2[which(rownames(M2) == rf),]
 
 xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE.xlsx"), row.names=TRUE, col.names = TRUE)
 
@@ -1224,6 +1228,9 @@ for(i in 1:nrow(M))
 
 xlsx::write.xlsx(data.frame(es), "errore_su_storico.xlsx", row.names=TRUE, col.names = TRUE)
 
+################################################################################
+################### confronto dati contrattuali e distributore #################
+################################################################################
 
 
 
