@@ -23,12 +23,22 @@ prices12 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2012.xlsx", 
 prices13 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2013.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices14 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2014.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices15 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2015.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
-prices16 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2016_04.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
+prices16 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2016_06.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 
-meteonord <- read.csv2("C:/Users/utente/Documents/PUN/storico_milano.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteonord <- read.csv2("C:/Users/utente/Documents/PUN/storico_milano_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 meteocsud <- read.csv2("C:/Users/utente/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_firenze_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteosud <- read.csv2("C:/Users/utente/Documents/PUN/storico_reggiocalabria_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteosici <- read.csv2("C:/Users/utente/Documents/PUN/storico_palermo_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+meteosard <- read.csv2("C:/Users/utente/Documents/PUN/storico_cagliari_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 
+firenze <- read.delim2("C:/Users/utente/Documents/PUN/Firenze.csv", header=FALSE, row.names=NULL,sep=",",colClasses = "character", stringsAsFactors = FALSE)
 
+start.time <- Sys.time()
+prepare_meteo(meteocnord,"Firenze")
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
 
 ### https://cran.r-project.org/web/views/TimeSeries.html
 plot(1:length(unlist(prices10["PUN"])), unlist(prices10["PUN"]), type = "l", lwd=2, col="blue")

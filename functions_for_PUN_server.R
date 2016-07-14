@@ -10,6 +10,7 @@ library(fda)
 #library(h2o)
 library(TSA)
 library(tseries)
+library(data.table)
 
 #localH2O <- h2o.init()
 library(TDA)
@@ -358,3 +359,58 @@ visualise_results <- function(dl.model, nd, ndh20)
   print(paste("RMSE trend:", RMSE(dl.trend - se.trend)))
   print(paste("RMSE total:", RMSE(pt - unlist(nd["y"]))))
 }
+####################################################################
+prepare_csv <- function(meteo_str)
+{
+  meteo <- read.delim2(paste0("C:/Users/utente/Documents/PUN/",meteo_str,".csv"), header=FALSE, row.names=NULL,sep=",",colClasses = "character", stringsAsFactors = FALSE)
+  n <- nrow(meteo)
+  write.table(n,paste0("C:/Users/utente/Documents/PUN/",meteo_str,"nrow.txt"))
+  meteo <- meteo[2:nrow(meteo),]
+  #date_ <- gsub("-", "/", unlist(meteo[,1]))
+  
+  duniq <- unique(unlist(meteo[,1]))
+  ptmin <- ptmed <- ptmax <- prain <- pwind <- pdate <-c()
+  for(du in duniq)
+  {
+    sub_meteo <- meteo[which(meteo[,1] == du),3:5]
+    #if(nrow(sub_meteo) == 24)
+    #{
+      ptmin <- c(ptmin, min(as.numeric(sub_meteo[,1])))
+      ptmax <- c(ptmax, max(as.numeric(sub_meteo[,1])))
+      ptmed <- c(ptmed, mean(as.numeric(sub_meteo[,1])))
+      prain <- c(prain, sum(as.numeric(sub_meteo[,3])))
+      pwind <- c(pwind, mean(as.numeric(sub_meteo[,2])))
+      dd <- unlist(strsplit(du, "-"))
+      pdate <- c(pdate, paste0(dd[3],"/",dd[2],"/",dd[1]))
+    #}
+    # else
+    # {
+    #   
+    # }
+  }
+  Date <- rep(pdate,rep(24,length(pdate)))
+  tmin <- rep(ptmin,rep(24,length(pdate)))
+  tmed <- rep(ptmed,rep(24,length(pdate)))
+  tmax <- rep(ptmax,rep(24,length(pdate)))
+  rain <- rep(prain,rep(24,length(pdate)))
+  wind <- rep(pwind,rep(24,length(pdate)))
+  #mdf <- data.frame(t(Date), t(tmin), t(tmed), t(tmax), t(rain), t(wind))
+  mdf <- data.frame(Date, tmin, tmed, tmax, rain, wind)
+  colnames(mdf) <- c("Data", "Tmin", "Tmedia", "Tmax", "Pioggia", "Vento_media")
+  return(mdf)
+}
+#################################################################
+prepare_meteo <- function(meteotxt, meteo_str)
+{
+  meteo_s <- prepare_csv(meteo_str)
+  variables <- which(colnames(meteotxt) %in% c("Data", "Tmin", "Tmedia", "Tmax", "Pioggia", "Vento_media"))
+  meteo_t <- meteotxt[,variables]
+  
+  #Îmeteo <- data.frame(rbind(meteo_t,meteo_s))
+  # data.table 20.9695 times faster than rbind --> https://cran.r-project.org/web/packages/data.table/index.html
+  ll <- list(meteo_t,meteo_s)
+  meteo <- rbindlist(ll,use.names = TRUE)
+  return(meteo)
+}
+####################################################################
+
