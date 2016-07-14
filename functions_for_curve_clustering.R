@@ -1126,41 +1126,82 @@ Fhd <- function(remi, M2)
   return(c(f,mm))
 }
 #######################################################################
+compute_consumption <- function(ag,prof,n,str_cons)
+{
+  col <- which(colnames(prof) == ag[n,"PROFILO_PRELIEVO"])
+  print(n);print(ag[n,"PDR"]);print(ag[n,"D_VALIDO_DAL_T"]);print(ag[n,"D_VALIDO_AL_T"]) 
+  s <- sum(as.numeric(prof[,col]) * active(ag[n,"D_VALIDO_DAL_T"], ag[n,"D_VALIDO_AL_T"])[5:16] * as.numeric(ag[n,str_cons]))
+  return(s)
+}
+######################################################################
 comparison_data <- function(ag,prof)
 {
-  ag <- extract_relevant_val(ag)
+  #ag <- extract_relevant_val(ag)
   remi <- unique(unlist(ag["COD_REMI"]))
   mat <- matrix(0,nrow=length(remi),ncol=26)
   rownames(mat) <- remi
   mesi <- c("gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic")
-  nomi <- paste0("CONDUMO_", toupper(mesi))
+  nomi <- paste0("CONSUMO_", toupper(mesi))
   for(re in remi)
   {
     i <- which(rownames(mat) == re)
-    ag2 <- ag[which(ag["COD_REMI"] == re),]
-    mat[i,1] <- sum(as.numeric(ag2["CONSUMO_CONTR_ANNUO"]))
-    mat[i,14] <- sum(as.numeric(ag2["CONSUMO_DISTRIBUTORE"]))
+    ag2 <- extract_relevant_val(ag[which(ag["COD_REMI"] == re),])
+    mat[i,1] <- sum(maply(1:nrow(ag2), function(n) compute_consumption(ag2,prof,n,"CONSUMO_CONTR_ANNUO")))
+    #mat[i,1] <- sum(as.numeric(unlist(ag2["CONSUMO_CONTR_ANNUO"])))
+    #mat[i,14] <- sum(as.numeric(unlist(ag2["CONSUMO_DISTRIBUTORE"])))
+    mat[i,14] <- sum(maply(1:nrow(ag2), function(n) compute_consumption(ag2,prof,n,"CONSUMO_DISTRIBUTORE")))
     
-    Cc <- rep(0,12)
+    Cc <- Dc <- rep(0,12)
     for(j in 1:nrow(ag2))
     {
       col <- which(colnames(prof) == ag2[j,"PROFILO_PRELIEVO"])
       data_in_y <- ag2[j,"D_VALIDO_DAL_T"]
       data_fin_y <- ag2[j,"D_VALIDO_AL_T"]
-      c2y <- active(data_in_y, data_fin_y)
-      Cc <- Cc + as.numeric(prof[,col]) * as.numeric(ag2[j,"CONSUMO_CONTR_ANNUO"]) * c2y
+      c2y <- active(data_in_y, data_fin_y) # second half because it's 2015/2016
+      Cc <- Cc + as.numeric(prof[,col]) * as.numeric(ag2[j,"CONSUMO_CONTR_ANNUO"]) * c2y[5:16]
+      Dc <- Dc + as.numeric(prof[,col]) * as.numeric(ag2[j,nomi]) * c2y[5:16]
     }
     mat[i,2:13] <- Cc
+    mat[i,15:26] <- Dc
     
-    for(k in 1:12)
-    {
-      mat[i,k+14] <- sum(as.numeric(ag2[nomi[k]]))
-    }
   }
   mat <- data.frame(mat)
   colnames(mat) <- c("consumo_contr", paste0("consumo_contr_",mesi),"consumo_distr", paste0("consumo_distr_",mesi))
   return(mat)
 }
 ## http://www.senoecoseno.it/zahara-nilsson-la-svedese-che-ci-ha-fatto-perdere-la-vista-30-foto/30/
+####################################################################
+Fhdn <- function(remi, M2)
+{
+  xx <- seq(-1, 1, 0.001)
+  M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
+  mm <- max(M3[1:18])
+  f <- c()
+  if(length(M3) > 0)
+  {
+    for(x in xx)
+    {
+      S <-  + 3*mm*(1+x)
+      #index <- which(xx == x)
+      for(j in 1:19)
+      {
+        y <- mm*(1+x)
+        z <- M3[j+19] - 1.1*y
+        #if(z > 0.1*y)
+        if(z > 0)
+        {
+          S <- S + 3.5*(abs(z))
+        }
+        else
+        {
+          S <- S + 0 
+        }
+      }
+      f <- c(f, S)
+    }
+  }
+  plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
+  return(c(f,mm))
+}
 
 

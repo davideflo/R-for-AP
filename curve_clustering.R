@@ -1057,11 +1057,12 @@ colnames(Sol) <- c("% ottima CA teorico", "capacita ottima CA teorico", "minimo 
                    "% ottima CA stima", "capacita ottima CA stima", "minimo costo CA stima",
                    "% ottima RIC teorico", "capacita ottima RIC teorico", "minimo costo RIC teorico",
                    "% ottima RIC stima", "capacita ottima RIC stima", "minimo costo RIC stima")
-xx <- seq(0, 1, 0.001)
+xx <- seq(-1, 1, 0.001)
 for(rf in rownames(M2))  
 {
   i <- which(rownames(Sol) == rf)
-  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
+#  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
+  s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M3); s3 <- Fhdn(rf, M4); s4 <- Fhdn(rf, M5)
   
   Sol[i,1] <- xx[which.min(s1[1:(length(s1)-1)])]
   Sol[i,2] <- unlist(s1[length(s1)])*(1+Sol[i,1])
@@ -1080,14 +1081,17 @@ for(rf in rownames(M2))
   Sol[i,12] <- min(s4[1:(length(s4)-1)])
 }
 
-rf <- "34390301"
-s1 <- Fhd(rf, M2)
+rf <- "34216701"
+s1 <- Fhdn(rf, M2)
 M2[which(rownames(M2) == rf),]
 
-xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE_NEG.xlsx"), row.names=TRUE, col.names = TRUE)
 
 perc_ott <- Sol[,1]
 perc_ric <- Sol[,10]
+
+length(perc_ott[perc_ott > 0])
+length(perc_ric[perc_ric > 0])
 
 hist(perc_ott, main = "istogramma percentuale sicurezza ottima CA")
 hist(perc_ric, main = "istogramma percentuale sicurezza ottima RIC")
@@ -1231,8 +1235,52 @@ xlsx::write.xlsx(data.frame(es), "errore_su_storico.xlsx", row.names=TRUE, col.n
 ################################################################################
 ################### confronto dati contrattuali e distributore #################
 ################################################################################
+ver <- openxlsx::read.xlsx("Report_214.xlsx", sheet = 1, colNames = TRUE)
+ver[is.na(ver)] <- 0
+pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 1, colNames = TRUE)
+ver2 <- extract_relevant_val(ver[which(ver["CONSUMO_DISTRIBUTORE"] != "0"),])
 
+comp <- comparison_data(ver2,pm)
 
+Ms <- M2[,25:48]
+Msy <- Ms[,5:16]
+
+comp2 <- comp[which(rownames(comp) %in% rownames(Msy)),]
+Msy <- Msy[which(rownames(Msy) %in% rownames(comp)),]
+
+LCc <- LDc <- matrix(0,nrow=nrow(comp2),ncol=12)
+rownames(LCc) <- rownames(LDc) <- rownames(comp2)
+for(rn in rownames(comp2))
+{
+  i <- which(rownames(Msy) == rn)
+  i2 <- which(rownames(comp2) == rn)
+  ic <- which(rownames(LCc) == rn)
+  id <- which(rownames(LDc) == rn)
+  
+  LCc[ic,] <- maply(1:12, function(n) Msy[i,n] - comp2[i2,n+1])
+  LDc[id,] <- maply(1:12, function(n) Msy[i,n] - comp2[i2,n+14])
+  
+}
+matplot(t(LCc), type="l",lwd=2, ylab = "diff", main = "curve delle differenze allocato - consumo contr")
+matplot(t(LDc), type="l",lwd=2, ylab = "diff", main = "curve delle differenze allocato - consumo distr")
+
+colMeans(LCc)
+colMeans(LDc)
+
+plot(colMeans(LCc), type="l",lwd=2, ylab = "diff", main = "curve delle differenze medie allocato - consumo")
+lines(colMeans(LDc), type="l",lwd=2,col="blue")
+
+mean(colMeans(LCc))
+mean(colMeans(LDc))
+
+apply(LCc, 2, var)
+apply(LDc, 2, var)
+
+mean(apply(LCc, 2, var))
+mean(apply(LDc, 2, var))
+
+var(apply(LCc, 2, var))
+var(apply(LDc, 2, var))
 
 #################################################################################
 ####### costruzione database storico dei consumi ##########
