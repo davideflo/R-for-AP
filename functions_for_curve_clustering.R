@@ -1055,7 +1055,7 @@ Fhd2 <- function(M)
     f <- c()
     for(x in xx)
     {
-      S <- 0
+      S <- 3/12*mm*(1+x) 
       #index <- which(xx == x)
       for(j in 1:19)
       {
@@ -1064,11 +1064,11 @@ Fhd2 <- function(M)
         #if(z > 0.1*y)
         if(z > 0)
         {
-          S <- S + 3/12*mm*(1+x) + 3.5*(abs(z))
+          S <- S + 3.5*(abs(z))
         }
         else
         {
-          S <- S + 3/12*mm*(1+x) 
+          S <- S + 0
         }
       }
       f <- c(f, S)

@@ -1057,12 +1057,12 @@ colnames(Sol) <- c("% ottima CA teorico", "capacita ottima CA teorico", "minimo 
                    "% ottima CA stima", "capacita ottima CA stima", "minimo costo CA stima",
                    "% ottima RIC teorico", "capacita ottima RIC teorico", "minimo costo RIC teorico",
                    "% ottima RIC stima", "capacita ottima RIC stima", "minimo costo RIC stima")
-xx <- seq(-1, 1, 0.001)
+xx <- seq(0, 1, 0.001)
 for(rf in rownames(M2))  
 {
   i <- which(rownames(Sol) == rf)
-#  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
-  s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M3); s3 <- Fhdn(rf, M4); s4 <- Fhdn(rf, M5)
+  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
+#  s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M3); s3 <- Fhdn(rf, M4); s4 <- Fhdn(rf, M5)
   
   Sol[i,1] <- xx[which.min(s1[1:(length(s1)-1)])]
   Sol[i,2] <- unlist(s1[length(s1)])*(1+Sol[i,1])
@@ -1085,12 +1085,12 @@ rf <- "34216701"
 s1 <- Fhdn(rf, M2)
 M2[which(rownames(M2) == rf),]
 
-xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE_NEG.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE.xlsx"), row.names=TRUE, col.names = TRUE)
 
 perc_ott <- Sol[,1]
 perc_ric <- Sol[,10]
 
-length(perc_ott[perc_ott > 0])
+length(perc_ott[perc_ott > 0])/length(perc_ott)
 length(perc_ric[perc_ric > 0])
 
 hist(perc_ott, main = "istogramma percentuale sicurezza ottima CA")
@@ -1163,12 +1163,28 @@ var(p_ca)
 ############### ottimizzazione con clusterizzazione ##################################
 ######################################################################################
 
-f10 <- cluster_by_and_optimise(ver2, M6, from = 0, to = 11)
+f10 <- cluster_by_and_optimise(ver2, M2, from = 0, to = 11)
 f10_ric <- cluster_by_and_optimise(ver2, M5, from = 0, to = 11)
-f30 <- cluster_by_and_optimise(ver2, M6, from = 11, to = 31)
+f30 <- cluster_by_and_optimise(ver2, M2, from = 11, to = 31)
 f30_ric <- cluster_by_and_optimise(ver2, M5, from = 11, to = 31)
-finf <- cluster_by_and_optimise(ver2, M6, from = 31, to = 150)
+finf <- cluster_by_and_optimise(ver2, M2, from = 31, to = 150)
 finf_ric <- cluster_by_and_optimise(ver2, M5, from = 31, to = 150)
+
+Sol_agg <- data.frame(min(f10), xx[which.min(f10)],
+                      min(f10_ric), xx[which.min(f10_ric)],
+                      min(f30), xx[which.min(f30)],
+                      min(f30_ric), xx[which.min(f30_ric)],
+                      min(finf), xx[which.min(finf)],
+                      min(finf_ric), xx[which.min(finf_ric)])
+
+colnames(Sol_agg) <- c("costo minimo CA cluster 10", "% ottima CA cluster 10",
+                       "costo minimo CA cluster 30", "% ottima CA cluster 30",
+                       "costo minimo CA cluster >30", "% ottima CA cluster >30",
+                       "costo minimo RIC cluster 10", "% ottima RIC cluster 10",
+                       "costo minimo RIC cluster 30", "% ottima RIC cluster 30",
+                       "costo minimo RIC cluster >30", "% ottima RIC cluster >30")
+
+xlsx::write.xlsx(Sol_agg, paste0("C:/Users/d_floriello/Documents/plot_remi/SOL_OTTIMIZZAZIONE_AGGREGATA.xlsx"), row.names=TRUE, col.names = TRUE)
 
 ###### errore e stima di x* con i consumi storici
 

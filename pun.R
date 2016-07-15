@@ -32,6 +32,11 @@ prices16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Anno 2016_06
 meteonord <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_milano.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 meteocsud <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 
+# mi16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Milano 2016.xlsx", sheet=1, colNames=TRUE)
+# format(Sys.Date(), "%d/%m/%y")
+# ad <- as.Date(unlist(mi16[,2]),origin = "1899-12-30")
+elabora_meteo_2016("Milano")
+
 tmed <- as.numeric(unlist(meteocsud$Tmedia))
 plot(tm <- stl(ts(tmed,frequency=365),s.window="periodic"))
 ### https://cran.r-project.org/web/views/TimeSeries.html

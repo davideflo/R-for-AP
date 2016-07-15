@@ -301,3 +301,31 @@ RMSE <- function(x)
 {
   return(sqrt(mean(x^2)))
 }
+########################################################
+better_dates <- function(vds)
+{
+  bd <- c()
+  for(d in vds)
+  {
+    dd <- unlist(strsplit(strptime(as.character(d), "%d/%m/%y"), "-"))
+    print(dd)
+    bd <- c(bd, paste0(dd[3],"/",dd[2],"/",dd[1]))
+    print(bd[length(bd)])
+  }
+  return(bd)
+}
+########################################################
+elabora_meteo_2016 <- function(meteo)
+{
+  mi16 <- openxlsx::read.xlsx(paste0("C:/Users/d_floriello/Documents/PUN/",meteo," 2016.xlsx"), sheet=1, colNames=TRUE)
+  #ad <- as.Date(unlist(mi16[,2]),origin = "1899-12-30")
+  #bd <- better_dates(ad)
+  variables <- c("DATA","Tmin", "Tmedia","Tmax", "PIOGGIA", "VENTOMEDIA")
+  ncols <- which(colnames(mi16) %in% variables)
+  int_meteo <- mi16[,ncols]
+  
+  dfm <- data.frame(int_meteo)
+  colnames(dfm) <- c("Data", "Tmin", "Tmedia","Tmax","Vento_media", "Pioggia")
+  
+  return(dfm)
+}
