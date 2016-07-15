@@ -68,6 +68,34 @@ library(h2o)
 ## http://localhost:54321/flow/index.html ## flow
 h2o.init(nthreads = -1)
 
+####################################################################
+############ test some h2o features ################################
+trainset <- h2o.importFile("dataset_totale10_14.csv")
+test_set <- h2o.importFile("dataset_15.csv")
+
+dltot <- h2o.deeplearning(names(trainset), "y", training_frame = trainset, validation_frame = test_set, activation = "Tanh",
+                          hidden = c(365,52,12,4), epochs = 100)
+
+dltot
+summary(dltot)
+df1 <- h2o.deepfeatures(dltot,trainset,layer=1)
+df2 <- h2o.deepfeatures(dltot,trainset,layer=2)
+df3 <- h2o.deepfeatures(dltot,trainset,layer=3)
+df4 <- h2o.deepfeatures(dltot,trainset,layer=4)
+show(dltot)
+
+dltot2 <- h2o.deeplearning(names(trainset), "y", training_frame = trainset, validation_frame = test_set, activation = "Tanh",
+                          hidden = c(4, 12, 52, 365), epochs = 100)
+dltot2  ### first one better ### 
+
+##### heavy tuning
+act <- c( "Tanh", "TanhWithDropout","Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout")
+hide <- list(c(365,52,12,4), c(365,52,12,6,4), c(365,52,12,6,4)*5)
+stdize <- c(TRUE,FALSE)
+ids <- generate_ids(act,hide,stdize)
+ht <- brute_force_tuning(trainset,test_set,act,hide,stdize)
+####################################################################
+
 train <- as.h2o(test23[1:7000,])
 val <- as.h2o(test23[7001:8737,])
 dl <- h2o.deeplearning(names(train), "y", training_frame = train, validation_frame = val, activation = "Tanh",

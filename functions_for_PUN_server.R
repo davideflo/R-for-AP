@@ -373,8 +373,10 @@ prepare_csv <- function(meteo_str)
   for(du in duniq)
   {
     sub_meteo <- meteo[which(meteo[,1] == du),3:5]
-    #if(nrow(sub_meteo) == 24)
-    #{
+    nrsb <- nrow(sub_meteo) 
+    last_date <- 0
+    if(nrsb == 24)
+    {
       ptmin <- c(ptmin, min(as.numeric(sub_meteo[,1])))
       ptmax <- c(ptmax, max(as.numeric(sub_meteo[,1])))
       ptmed <- c(ptmed, mean(as.numeric(sub_meteo[,1])))
@@ -382,18 +384,18 @@ prepare_csv <- function(meteo_str)
       pwind <- c(pwind, mean(as.numeric(sub_meteo[,2])))
       dd <- unlist(strsplit(du, "-"))
       pdate <- c(pdate, paste0(dd[3],"/",dd[2],"/",dd[1]))
-    #}
-    # else
-    # {
-    #   
-    # }
+    }
+    else
+    {
+      last_date <- nsrb 
+    }
   }
-  Date <- rep(pdate,rep(24,length(pdate)))
-  tmin <- rep(ptmin,rep(24,length(pdate)))
-  tmed <- rep(ptmed,rep(24,length(pdate)))
-  tmax <- rep(ptmax,rep(24,length(pdate)))
-  rain <- rep(prain,rep(24,length(pdate)))
-  wind <- rep(pwind,rep(24,length(pdate)))
+  Date <- rep(pdate,c(rep(24,length(pdate)-1),last_date))
+  tmin <- rep(ptmin,c(rep(24,length(pdate)-1),last_date))
+  tmed <- rep(ptmed,c(rep(24,length(pdate)-1),last_date))
+  tmax <- rep(ptmax,c(rep(24,length(pdate)-1),last_date))
+  rain <- rep(prain,c(rep(24,length(pdate)-1),last_date))
+  wind <- rep(pwind,c(rep(24,length(pdate)-1),last_date))
   #mdf <- data.frame(t(Date), t(tmin), t(tmed), t(tmax), t(rain), t(wind))
   mdf <- data.frame(Date, tmin, tmed, tmax, rain, wind)
   colnames(mdf) <- c("Data", "Tmin", "Tmedia", "Tmax", "Pioggia", "Vento_media")
@@ -407,10 +409,108 @@ prepare_meteo <- function(meteotxt, meteo_str)
   meteo_t <- meteotxt[,variables]
   
   #Îmeteo <- data.frame(rbind(meteo_t,meteo_s))
+  # data.table vignette
   # data.table 20.9695 times faster than rbind --> https://cran.r-project.org/web/packages/data.table/index.html
   ll <- list(meteo_t,meteo_s)
   meteo <- rbindlist(ll,use.names = TRUE)
   return(meteo)
 }
 ####################################################################
+generate_ids <- function(a,h,s)
+{
+  ids <- c()
+  for(i in 1:length(a))
+  {
+    for(j in 1:length(h))
+    {
+      for(k in 1:length(s))
+      {
+        ids <- c(ids, paste0(i,j,k))
+      }
+    }
+  }
+ return(ids) 
+}
+##################################################################
+learn_model <- function(predictors, response, trainset, id, testset, s, a, h, se.trend, y,undounded)
+{
+  if(a[i] %in% unbounded)
+  {
+    dl_id <- h2o.deeplearning(predictors, response, training_frame = trainset,model_id = id, validation_frame = testset, standardize = s, activation = a,
+                              hidden = h, epochs = 100, max_w2 = 100, l1=1e-5)
+  }
+  else
+  {
+    dl_id <- h2o.deeplearning(predictors, response, training_frame = trainset,model_id = id, validation_frame = testset, standardize = s, activation = a,
+                              hidden = h, epochs = 100)
+  }
+  
+  pred <- predict(dl_id,testset)
+  
+  pt <- as.numeric(pred$predict) 
+  pt <- as.matrix(pt)
+  pt <- unlist(pt[,1])
+  
+  dlts <- stl(ts(pt,frequency=24),s.window="periodic")
+  
+  
+  min_season <- dlts$time.series[1:24,1]
+  
+  
+  dl.trend <- unlist(dlts$time.series[,2])
+  
+  
+  RMSE_trend <- RMSE(dl.trend - se.trend)
+  RMSE_total <- RMSE(pt - y)
+  
+  return(c(h2o.r2(dl_id, train=TRUE, valid=TRUE),h2o.mean_residual_deviance(dl_id, train=TRUE, valid=TRUE),h2o.mse(dl_id, train=TRUE, valid=TRUE), RMSE_trend, RMSE_total))
+  
+}
+##################################################################
+learn_model_TC <- function(predictors, response, trainset, id, testset, s, a, h, se.trend, y, unbounded)
+{
+  out <- tryCatch(
+    {
+      learn_model(predictors, response, trainset, id, testset, s, a, h, se.trend, y, unbounded)
+    },
+    error = function(cond)
+    {
+      #next
+      return(c(0,0,0,0))
+    }
+  )
+  return(out)
+}
+##################################################################
+brute_force_tuning <- function(trainset,testset,a,h,s)
+{
+  response <- "y"
+  predictors <- setdiff(names(trainset), response)
+  unbounded <- c("Rectifier","RectifierWithDropout","Maxout","MaxoutWithDropout")
+  ids <- generate_ids(a,h,s)
+  
+  t_s <- as.data.frame(testset)
+  y <- unlist(t_s$y)
+  
+  se <- stl(ts(y,frequency=24),s.window="periodic")
+  min_season_orig15 <- se$time.series[1:24,1]
+  se.trend <- unlist(se$time.series[,2])
+  
+  
+  models <- list()
+  for(i in 1:length(a))
+  {
+    for(j in 1:length(h))
+    {
+      for(k in 1:length(s)) 
+      {
+        id <- which(ids == paste0(i,j,k))
+        models[[ids[id]]] <- learn_model_TC(predictors,response,trainset, ids[id], testset, s[k], a[i], h[[j]], se.trend, y, unbounded)
+      }
+    }
+  }
+  return(models)
+}
+########################################################################
+
 
