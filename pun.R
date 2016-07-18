@@ -14,6 +14,7 @@ library(TDA)
 library(forecast)
 library(rugarch)
 
+
 ##### forecast h2o - time series? #######
 ## https://0xdata.atlassian.net/browse/PUBDEV-2590
 #########################################
@@ -35,6 +36,12 @@ meteocsud <- read.csv2("C:/Users/d_floriello/Documents/PUN/storico_roma.txt", he
 # mi16 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/PUN/Milano 2016.xlsx", sheet=1, colNames=TRUE)
 # format(Sys.Date(), "%d/%m/%y")
 # ad <- as.Date(unlist(mi16[,2]),origin = "1899-12-30")
+
+# sysda <- as.character(Sys.Date())
+# sysda
+# "2016-07-18"
+# strsplit(sysda, "-")
+
 elabora_meteo_2016("Milano")
 
 tmed <- as.numeric(unlist(meteocsud$Tmedia))

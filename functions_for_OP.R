@@ -735,7 +735,7 @@ compute_combinations_DEF_val <- function(attivi)
   prodotti <- unique(unlist(attivi["CODICE_PRODOTTO"]))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
   no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
-  tot_consumo <- sum(attivi[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE) + sum(as.numeric(attivi[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
+  tot_consumo <- sum(as.numeric(attivi[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
   check <- 0
   for(prod in prodotti)
   {

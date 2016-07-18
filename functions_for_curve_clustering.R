@@ -1046,7 +1046,8 @@ return_num_days <- function(m)
 #####################################################################
 Fhd2 <- function(M)
 {
-  xx <- seq(0, 1, 0.001)
+  #xx <- seq(0, 1, 0.001)
+  xx <- seq(-1, 2, 0.001)
   ftot <- rep(0, length(xx))
   for(remi in rownames(M))
   {
@@ -1055,7 +1056,7 @@ Fhd2 <- function(M)
     f <- c()
     for(x in xx)
     {
-      S <- 3/12*mm*(1+x) 
+      S <- 3*mm*(1+x) 
       #index <- which(xx == x)
       for(j in 1:19)
       {
@@ -1081,14 +1082,19 @@ Fhd2 <- function(M)
 cluster_by_and_optimise <- function(ver2, M, from, to)
 {
   rl <- c()
+  mat <- matrix(0,nrow=nrow(M),ncol=1)
+  rownames(mat) <- rownames(M)
   for(i in 1:nrow(M))
   {
     len <- length(unique(unlist(ver2[which(ver["COD_REMI"] == rownames(M)[i]),"PDR"])))
+    j <- which(rownames(mat) == rownames(M)[i])
+    mat[j,1] <- len
     if(len >= from & len < to) rl <- c(rl, i)
   }
   Mloc <- M[rl,]
+  xlsx::write.xlsx(data.frame(mat), paste0("C:/Users/d_floriello/Documents/plot_remi/num_pdr2", to,".xlsx"), row.names=TRUE, col.names = TRUE)
   opt <- Fhd2(Mloc)
-  xx <- seq(0, 1, 0.001)
+  xx <- seq(-1, 2, 0.001)
   plot(xx,opt,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=paste("remi con numero pdr >", from, "e < di", to))
   return(opt)
 }
@@ -1203,5 +1209,47 @@ Fhdn <- function(remi, M2)
   plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
   return(c(f,mm))
 }
-
+#####################################################
+sumprod_by_cluster <- function(Sol, solfile, npdr)
+{
+  res <- list()
+   
+  p10 <- which(as.numeric(npdr[,1]) <= 10)
+  np10 <- rownames(npdr)[p10]
+  sumprod <- 0
+  S <- 0
+  for(n in np10)
+  {
+    i <- which(rownames(Sol) == n)
+    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
+    S <- S + as.numeric(Sol[i,2])
+  }
+  res[["cluster 10"]] <- sumprod/S
+  
+  p10 <- which(as.numeric(npdr[,1]) >= 11 & as.numeric(npdr[,1]) <= 30)
+  np10 <- rownames(npdr)[p10]
+  sumprod <- 0
+  S <- 0
+  for(n in np10)
+  {
+    i <- which(rownames(Sol) == n)
+    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
+    S <- S + as.numeric(Sol[i,2])
+  }
+  res[["cluster 30"]] <- sumprod/S
+  
+  p10 <- which(as.numeric(npdr[,1]) > 30)
+  np10 <- rownames(npdr)[p10]
+  sumprod <- 0
+  S <- 0
+  for(n in np10)
+  {
+    i <- which(rownames(Sol) == n)
+    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
+    S <- S + as.numeric(Sol[i,2])
+  }
+  res[["cluster >30"]] <- sumprod/S
+  
+  return(res)
+}
 
