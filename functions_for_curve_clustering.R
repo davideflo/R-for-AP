@@ -1180,37 +1180,45 @@ comparison_data <- function(ag,prof)
 Fhdn <- function(remi, M2)
 {
   xx <- seq(-1, 1, 0.001)
-  M3 <- M2[which(rownames(M2) == remi),c(6:24,30:48)]
-  mm <- max(M3[1:18])
-  f <- c()
-  if(length(M3) > 0)
-  {
-    for(x in xx)
+  M3 <- M2[which(rownames(M2) == remi),c(5:16,29:40)]
+  mm <- max(M3[1:12])
+  mm2 <- max(M3[13:24])
+  if(mm > 0 & mm2 > 0)
+  {  
+    f <- c()
+    if(length(M3) > 0)
     {
-      S <-  + 3*mm*(1+x)
-      #index <- which(xx == x)
-      for(j in 1:19)
+      for(x in xx)
       {
-        y <- mm*(1+x)
-        z <- M3[j+19] - 1.1*y
-        #if(z > 0.1*y)
-        if(z > 0)
+        S <- 3*mm*(1+x)
+        for(j in 1:12)
         {
-          S <- S + 3.5*(abs(z))
+          y <- mm*(1+x)
+          z <- M3[j+12] - 1.1*y
+          #if(z > 0.1*y)
+          if(z > 0)
+          {
+            S <- S + 3.5*(abs(z))
+          }
+          else
+          {
+            S <- S + 0 
+          }
         }
-        else
-        {
-          S <- S + 0 
-        }
+        f <- c(f, S)
       }
-      f <- c(f, S)
     }
   }
+  else f <- rep(0,length(xx))
   plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
-  return(c(f,mm))
+  return(f)
 }
 #####################################################
-sumprod_by_cluster <- function(Sol, solfile, npdr)
+sel <- function(dat, expr) {
+  eval(substitute(expr), dat)
+}
+#####################################################
+sumprod_by_cluster <- function(Sol, j, npdr)
 {
   res <- list()
    
@@ -1221,10 +1229,10 @@ sumprod_by_cluster <- function(Sol, solfile, npdr)
   for(n in np10)
   {
     i <- which(rownames(Sol) == n)
-    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
-    S <- S + as.numeric(Sol[i,2])
+    sumprod <- sumprod + as.numeric(Sol[i,j])*as.numeric(Sol[i,j+1])
+    S <- S + as.numeric(Sol[i,j+1])
   }
-  res[["cluster 10"]] <- sumprod/S
+  res[[paste0(j,"cluster 10")]] <- sumprod/S
   
   p10 <- which(as.numeric(npdr[,1]) >= 11 & as.numeric(npdr[,1]) <= 30)
   np10 <- rownames(npdr)[p10]
@@ -1233,10 +1241,10 @@ sumprod_by_cluster <- function(Sol, solfile, npdr)
   for(n in np10)
   {
     i <- which(rownames(Sol) == n)
-    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
-    S <- S + as.numeric(Sol[i,2])
+    sumprod <- sumprod + as.numeric(Sol[i,j])*as.numeric(Sol[i,j+1])
+    S <- S + as.numeric(Sol[i,j+1])
   }
-  res[["cluster 30"]] <- sumprod/S
+  res[[paste0(j,"cluster 30")]] <- sumprod/S
   
   p10 <- which(as.numeric(npdr[,1]) > 30)
   np10 <- rownames(npdr)[p10]
@@ -1245,10 +1253,10 @@ sumprod_by_cluster <- function(Sol, solfile, npdr)
   for(n in np10)
   {
     i <- which(rownames(Sol) == n)
-    sumprod <- sumprod + as.numeric(Sol[i,1])*as.numeric(Sol[i,2])
-    S <- S + as.numeric(Sol[i,2])
+    sumprod <- sumprod + as.numeric(Sol[i,j])*as.numeric(Sol[i,j+1])
+    S <- S + as.numeric(Sol[i,j+1])
   }
-  res[["cluster >30"]] <- sumprod/S
+  res[[paste0(j,"cluster >30")]] <- sumprod/S
   
   return(res)
 }
