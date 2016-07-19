@@ -432,9 +432,9 @@ generate_ids <- function(a,h,s)
  return(ids) 
 }
 ##################################################################
-learn_model <- function(predictors, response, trainset, id, testset, s, a, h, se.trend, y,undounded)
+learn_model <- function(predictors, response, trainset, id, testset, s, a, h, se.trend, y,unbounded)
 {
-  if(a[i] %in% unbounded)
+  if(a %in% unbounded)
   {
     dl_id <- h2o.deeplearning(predictors, response, training_frame = trainset,model_id = id, validation_frame = testset, standardize = s, activation = a,
                               hidden = h, epochs = 100, max_w2 = 100, l1=1e-5)
@@ -475,8 +475,9 @@ learn_model_TC <- function(predictors, response, trainset, id, testset, s, a, h,
     },
     error = function(cond)
     {
+      message(cond)
       #next
-      return(c(0,0,0,0))
+      return(c(0,0,0,0,0,0))
     }
   )
   return(out)
@@ -504,8 +505,9 @@ brute_force_tuning <- function(trainset,testset,a,h,s)
     {
       for(k in 1:length(s)) 
       {
-        id <- which(ids == paste0(i,j,k))
-        models[[ids[id]]] <- learn_model_TC(predictors,response,trainset, ids[id], testset, s[k], a[i], h[[j]], se.trend, y, unbounded)
+        ir <- which(ids == paste0(i,j,k))
+        id <- ids[ir]
+        models[[id]] <- learn_model_TC(predictors,response,trainset, id, testset, s[k], a[i], h[[j]], se.trend, y, unbounded)
       }
     }
   }

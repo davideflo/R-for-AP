@@ -24,7 +24,7 @@ prices13 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2013.xlsx", 
 prices14 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2014.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices15 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2015.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices16 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2016_06.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
-
+### H:\Energy Management\04. WHOLESALE\02. REPORT PORTAFOGLIO\2016\06. MI \ DB_Borse_Elettriche_PER MI --> file aggiornato giornalmente con PUN
 meteonord <- read.csv2("C:/Users/utente/Documents/PUN/storico_milano_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 meteocsud <- read.csv2("C:/Users/utente/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
 meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_firenze_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
@@ -94,6 +94,7 @@ hide <- list(c(365,52,12,4), c(365,52,12,6,4), c(365,52,12,6,4)*5)
 stdize <- c(TRUE,FALSE)
 ids <- generate_ids(act,hide,stdize)
 ht <- brute_force_tuning(trainset,test_set,act,hide,stdize)
+lapply(ht, write, "DL_tuning_results.txt", append=TRUE, ncolumns=1000 )
 ####################################################################
 
 train <- as.h2o(test23[1:7000,])
