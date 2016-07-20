@@ -100,16 +100,19 @@ listing <- openxlsx::read.xlsx("listing.xlsx", sheet = 1, colNames = TRUE)
 listing <- unlist(listing[[1]])
 head(pm)
 listing
+
+listingG <- openxlsx::read.xlsx("listing_G.xlsx", sheet = 1, colNames = TRUE)
+listingG <- unlist(listingG[[1]])
+listingG
 ###### file ripassato da Tecla con i prezzi dei vari prodotti (lascia solo la parte di vendita)
-vendite <- openxlsx::read.xlsx("vendite_aggiornato.xlsx", sheet = 1, colNames = TRUE)
-head(vendite)
+#vendite <- openxlsx::read.xlsx("vendite_aggiornato.xlsx", sheet = 1, colNames = TRUE)
+#head(vendite)
 #vendite <- vendite[,-c(2,3,5)]
 #colnames(vendite) <- vendite[1,]
 #vendite <- vendite[2:nrow(vendite),] 
 #head(vendite)
-vendite[is.na(vendite)] <- 0
-vendite[is.na(vendite)] <- 0
-TM <- total_sellings_per_components(vendite, pm, listing)
+
+TM <- total_sellings_per_components(vendite, pm, listing, listingG)
 #tm <- total_selling(vendite,pm,listing)
 TM <- data.frame(TM)
 

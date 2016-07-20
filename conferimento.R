@@ -76,11 +76,13 @@ M3 <- matrix(0,nrow = nrow(M2), ncol = 48) ## solo lg
 rownames(M3) <- rownames(M2)
 M4 <- matrix(0,nrow = nrow(M2), ncol = 48) ## altri
 rownames(M4) <- rownames(M2)
+M5 <- matrix(0,nrow = nrow(M2), ncol = 48) ## lg ricostruiti con profilo di prelievo
+rownames(M5) <- rownames(M2)
 
 for(rf in rownames(M2))
 {
   re <- ver2[which(ver2["COD_REMI"] == rf),]
-  CG <- CGlg <- rep(0, 24)
+  CG <- CGlg <- CGlgrec <- rep(0, 24)
   {
     if(nrow(re) > 0)
     {
@@ -97,7 +99,7 @@ for(rf in rownames(M2))
       
       for(k in 1:nrow(re))
       {
-        CGtemp <-  CGtemplg <- rep(0, 24)
+        CGtemp <-  CGtemplg <- CGlgrectemp <- rep(0, 24)
         pdr <- unique(unlist(re[k,"PDR"]))
         cons <- ifelse(re[k,"CONSUMO_DISTRIBUTORE"] != "0", as.numeric(as.character(re[k,"CONSUMO_DISTRIBUTORE"])), as.numeric(as.character(re[k,"CONSUMO_CONTR_ANNUO"])))
         agg <- data_frame(prodotto = re[k,"CODICE_PRODOTTO"], data.inizio = as.character(re[k,"D_VALIDO_DAL_T"]), 
@@ -122,22 +124,26 @@ for(rf in rownames(M2))
             #CGtemppp[index+2] <- CGtemppp[index+2] - max(DF[index2,])
             M3[which(rownames(M3) == rf), index+26] <- M3[which(rownames(M3) == rf), index+26] -  max(DF[index2,])
             #M4[which(rownames(M4) == rf), index+26] <- M4[which(rownames(M4) == rf), index+26] -  max(DF[index2,])
+            CGlgrectemp <- compute_max_prof(agg, prof)
           }
         }
         CGtemp <- CGtemp*active(agg$`data inizio`, agg$`data fine`)
         CGtemplg <- CGtemplg*active(agg$`data inizio`, agg$`data fine`)
+        CGlgrectemp <- CGlgrectemp*active(agg$`data inizio`, agg$`data fine`)
         #CGtemppp <- CGtemppp*active(agg$`data inizio`, agg$`data fine`)
         
         #print(CG_temp);print(CG_temp_hp);print(CGr_temp);print(CGrhp_temp);
         
         CG <- CG + CGtemp
         CGlg <- CGlg + CGtemplg
+        CGlgrec <- CGlgrec + CGlgrectemp
         #CGpp <- CGpp + CGtemppp
       }
       
       index2 <- which(rownames(M2) == rf)
       index3 <- which(rownames(M3) == rf)
       index4 <- which(rownames(M4) == rf)
+      index5 <- which(rownames(M5) == rf)
       for(j in 1:24)
       {
         M2[index2,j] <- CG[j]
@@ -145,7 +151,9 @@ for(rf in rownames(M2))
         M3[index3,j] <- CGlg[j]
         M3[index3,(24+j)] <- max_rf[j] - M3[index3,j]
         M4[index4,j] <- M2[index2,j] - M3[index3,j]
-        M4[index4,j+24] <- M2[index2,j+24] - M3[index3,j+24]
+        M4[index4,j+24] <- M2[index2,j+24] - M3[index3,j]
+        M5[index5,j] <- CGlgrec[j]
+        M5[index5, j+24] <- CGlg[j]
       }
     }
   }
@@ -154,6 +162,7 @@ for(rf in rownames(M2))
 xlsx::write.xlsx(data.frame(M2), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW.xlsx"), row.names=TRUE, col.names = TRUE)
 xlsx::write.xlsx(data.frame(M3), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_LG.xlsx"), row.names=TRUE, col.names = TRUE)
 xlsx::write.xlsx(data.frame(M4), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_nonLG.xlsx"), row.names=TRUE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(M5), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_LGrec.xlsx"), row.names=TRUE, col.names = TRUE)
 
 ########
 npdr <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/num_pdr150.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
@@ -161,7 +170,7 @@ npdr <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/num_pdr150
 Sol <- matrix(0,nrow = nrow(M2), ncol = 9)
 rownames(Sol) <- rownames(M2)
 colnames(Sol) <- c("% ottima CA totale", "capacita ottima CA totale", "minimo costo CA totale",
-                   "% ottima CA LG", "capacita ottima CA LG", "minimo costo CA LG",
+                   "% ottima CA LG rec", "capacita ottima CA LG rec", "minimo costo CA LG rec",
                    "% ottima CA NONLG", "capacita ottima CA NONLG", "minimo costo CA NONLG")
 
 xx <- seq(-1, 1, 0.001)
@@ -169,7 +178,7 @@ for(rf in rownames(M2))
 {
   i <- which(rownames(Sol) == rf)
   #  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
-  s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M3); s3 <- Fhdn(rf, M4); #s4 <- Fhdn(rf, M5)
+  s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M5); s3 <- Fhdn(rf, M4); #s4 <- Fhdn(rf, M5)
   
   if(sum(s1) > 0)
   {

@@ -18,7 +18,7 @@ find_active_in_month <- function(date, vendite)
 }
 
 
-total_sellings_per_components <- function(vendite, pm, listing)
+total_sellings_per_components <- function(vendite, pm, listing, listingG)
 {
   #total <- rep(0, nrow(vendite))
   total_matrix <- matrix(0, nrow = 10, ncol = 24)
@@ -64,6 +64,8 @@ total_sellings_per_components <- function(vendite, pm, listing)
         qtpsv <- as.numeric(unlist(vendite[i, 71:82]))
         lg <- listing[1:12]
         
+        if(vendite[i,"prodotto"] == "LG1_BP_CIES") lg <- listingG[1:12]
+        
         
         if(vendite[i,8] == "S" & vendite[i,7] == "0")
         {
@@ -84,6 +86,8 @@ total_sellings_per_components <- function(vendite, pm, listing)
         qtint <- as.numeric(unlist(vendite[i, 155:166]))
         qtpsv <- as.numeric(unlist(vendite[i, 167:178]))
         lg <- listing[13:24]
+        
+        if(vendite[i,"prodotto"] == "LG1_BP_CIES") lg <- listingG[13:24]
         
         if(vendite[i,8] == "S" & vendite[i,7] == "0")
         {
