@@ -26,7 +26,7 @@ convert_day_to_angle <- function(day)
 #############################################################
 convert_hour_to_angle <- function(ora)
 {
-  return(sin(ora*pi/24))
+  return(sin((ora-12)*pi/24))
 }
 #############################################################
 numeric_days <- function(vec)
@@ -241,14 +241,26 @@ create_dataset <- function(pun, first_day)
   return(d_f)
 }
 ######################################################
-create_dataset23 <- function(pun, first_day, varn, meteo)
+variables_at_step <- function(ora,day,hol,ds,step)
 {
+  aora <- (12 + (24/pi)*asin(ora) + (1 + step)) %% 25
+  aday <- (7/pi)*acos(day)
+  
+  newora <- a
+}
+#####################################################
+create_dataset23 <- function(pun, first_day, varn, meteo, step)
+{
+  ## step starts from 0, in which case the model predicts the hour after the predictors provided 
+  ## and goes to 24, which is the same hour the day after
   d_f <- data_frame()
   Names <- c(paste0(varn,"-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
              paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1), "y",
              paste0("angleora-",23:1),
              paste0("tmin-",23:1), paste0("tmax-",23:1), paste0("tmed-",23:1), paste0("rain-",23:1), paste0("vento-",23:1), 
              paste0("day-",23:1))
+  
+  
   for(i in 1:(nrow(pun)-23))
   {
     #print(i)
@@ -259,7 +271,11 @@ create_dataset23 <- function(pun, first_day, varn, meteo)
       fran <- c(fran, pun[j,"FRAN"]); grec <- c(grec, pun[j,"GREC"]); slov <- c(slov, pun[j,"SLOV"])
       sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,2]); dat <- c(dat, pun[j,1]) 
     }
-    y <- c(y, pun[(i+23),varn])
+    y <- c(y, pun[(i+23+step),varn])
+    # if(step > 0)
+    # {
+    #   targeth <- c(targeth, pun[(i+23+step),2]); targetd <- c(targetd, pun[(i+23+step),1])
+    # }
     day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
     #print(day)
     ds <- dates(dat)
@@ -282,6 +298,15 @@ create_dataset23 <- function(pun, first_day, varn, meteo)
     d_f <- bind_rows(d_f, adf)
   }
   colnames(d_f) <- Names
+  if(step > 0)
+  {
+    Names <- c(Names, "target_hour", "target_day", "target_holiday")
+    targeth <- targetd <- targetv <- c()
+    for(k in 1:(nrow(d_f)-step))
+    {
+      targeth <- c(targeth, d_f[])
+    }
+  }
   return(d_f[,1:346])
 }
 ######################################################
@@ -514,5 +539,12 @@ brute_force_tuning <- function(trainset,testset,a,h,s)
   return(models)
 }
 ########################################################################
-
+compare_prediction_given_step <- function(dl.model, testseth2o, step)
+{
+  pred <- predict(dl.model, testseth2o)
+  
+  pt <- as.numeric(pred$predict) 
+  pt <- as.matrix(pt)
+  pt <- unlist(pt[,1])
+}
 

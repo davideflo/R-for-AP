@@ -17,6 +17,9 @@ library(rugarch)
 library(ggplot2)
 source("R_code/functions_for_PUN_server.R")
 
+### time series prediction with NN-models for more than one step ahead
+## https://www.cs.cmu.edu/afs/cs/academic/class/15782-f06/slides/timeseries.pdf
+
 prices10 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2010.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices11 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2011.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices12 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2012.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
@@ -434,6 +437,40 @@ long.predictions <- lapply(1:length(offsettedsubdfs), function(i)
   prediction
   
 })
+
+################# try nnet  and nnetar ###################
+test23 <- create_dataset23(prices10, "ven", "CSUD", meteocsud)
+csud11 <- create_dataset23(prices11, "sab", "CSUD", meteocsud)
+
+response <- "y"
+predictors <- setdiff(names(test23), response)
+cols <- which(colnames(test23) %in% predictors)
+
+gc()
+library(forecast)
+library(nnet)
+
+nn <- nnet(x= test23[,cols], y = test23$y, size=c(8760),data=test23,entropy=TRUE, maxit = 1000, MaxNWts = 100000,linout = FALSE)
+
+test2 <- test[,1:217]
+nn <- nnet(test2$y ~ ., data=test2, size=100, rang=0.5, maxit = 1000, MaxNWts = 100000,linout = TRUE)
+
+library(tsDyn)
+modar <- aar(test23$y, m=1,d=24,steps=24)
+plot(modar)
+
+plot(modar$fitted.values, col="blue", type="l", lwd=2)
+lines(test$y, col="red", type="l", lwd=1.5)
+
+diff2 <- test$y - modar$fitted.values
+
+
+nnf <- nnetar(test23$y, P = 24, size = 1, xreg = test2[,1:216], h = 1)
+
+library(arfima)
+arf <- arfima::arfima(prices10$PUN, xreg= prices10[,c(4,8,11,12,19,21)])
+
+#############################################
 
 gc()
 nn <- nnet(x= test[,1:216], y = test[,217], size=c(52,24,12,4),data=test,entropy=TRUE, maxit = 1000, MaxNWts = 100000,linout = FALSE)
