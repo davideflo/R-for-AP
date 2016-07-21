@@ -99,6 +99,24 @@ ids <- generate_ids(act,hide,stdize)
 ht <- brute_force_tuning(trainset,test_set,act,hide,stdize)
 lapply(ht, write, "DL_tuning_results.txt", append=TRUE, ncolumns=1000 )
 ####################################################################
+###################### test new datasets ###########################
+step <- 1
+train10 <- augmented_dataset(prices10, prices11, step)
+test11 <- augmented_dataset(prices11, prices12, step)
+
+start.time <- Sys.time()
+trainset <- create_dataset23(train10, "ven", "CSUD", meteocsud, step)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+start.time <- Sys.time()
+generate_stepped_datasets(prices10, prices11, prices12,meteocsud)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+####################################################################
+
 
 train <- as.h2o(test23[1:7000,])
 val <- as.h2o(test23[7001:8737,])

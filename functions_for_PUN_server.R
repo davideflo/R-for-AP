@@ -135,9 +135,9 @@ add_holidays <- function(vd)
   return(holidays)
 }
 #########################################################################################
-data_successiva <- function(date)
+data_successiva <- function(cdate)
 {
-  d <- strsplit(date, "/")
+  d <- unlist(strsplit(cdate, "/"))
   
   day <- as.numeric(d[1])
   month <- as.numeric(d[2])
@@ -241,12 +241,61 @@ create_dataset <- function(pun, first_day)
   return(d_f)
 }
 ######################################################
-variables_at_step <- function(ora,day,hol,ds,step)
+future_hour_with_step <- function(ora, step)
 {
-  aora <- (12 + (24/pi)*asin(ora) + (1 + step)) %% 25
-  aday <- (7/pi)*acos(day)
+  now_1 <- 12 + (24/pi)*asin(ora) ## ora input
+  now <- (now_1 %% 24) + 1 ## ora corrente
+  targeth <- 0 ## ora futura
+  if((now + step) <= 24) targeth <- now+step
+  else targeth <- now+step - 24
   
-  newora <- a
+  #print(targeth)
+  return(convert_hour_to_angle(targeth))
+}
+######################################################
+future_date_at_step <- function(current_date, ora, step)
+{
+  new_date <- 0
+  now_1 <- 12 + (24/pi)*asin(ora) ## ora input
+  now <- (now_1 %% 24) + 1 ## ora corrente
+
+  if((now + step) < 24) new_date <- current_date
+  else new_date <- data_successiva(current_date)
+  
+  return(new_date)
+}
+######################################################
+new_day_at_step <- function(current_date, ora, step, day)
+{
+  new_day <- 0
+  new_date <- future_date_at_step(current_date,ora,step)
+  
+  if(new_date != current_date) new_day <- subsequent_day(day)
+  else new_day <- day
+  
+  return(new_day)
+}
+######################################################
+variables_at_step <- function(ora,day,current_date,step)
+{
+  new_hour <- future_hour_with_step(ora,step)
+  new_day <- convert_day_to_angle(new_day_at_step(current_date,ora,step,day))
+  new_date <- future_date_at_step(current_date,ora,step)
+  new_hol <- add_holidays(new_date)
+  
+  return(c(new_hour,new_day,new_hol))
+}
+#####################################################
+augmented_dataset <- function(train1, train2, step)
+{
+  colnames(train1)[1:2] <- colnames(train2)[1:2] <- c("Data", "ora")
+  variables1 <- colnames(train1)
+  variables2 <- colnames(train2)
+  common <- intersect(variables1, variables2)
+  
+  train <- rbind(train1[,which(colnames(train1) %in% common)], train2[1:step,which(colnames(train2) %in% common)])
+  
+  return(train)
 }
 #####################################################
 create_dataset23 <- function(pun, first_day, varn, meteo, step)
@@ -257,11 +306,11 @@ create_dataset23 <- function(pun, first_day, varn, meteo, step)
   Names <- c(paste0(varn,"-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
              paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1), "y",
              paste0("angleora-",23:1),
-             paste0("tmin-",23:1), paste0("tmax-",23:1), paste0("tmed-",23:1), paste0("rain-",23:1), paste0("vento-",23:1), 
+             paste0("tmin-",23:1), paste0("tmax-",23:1), paste0("tmed-",23:1), paste0("rain-",23:1), paste0("vento-",23:1),
+             "target_ora", "target_day", "target_holiday",
              paste0("day-",23:1))
   
-  
-  for(i in 1:(nrow(pun)-23))
+  for(i in 1:(nrow(pun)-(23+step)))
   {
     #print(i)
     y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- dat <- c()
@@ -272,10 +321,7 @@ create_dataset23 <- function(pun, first_day, varn, meteo, step)
       sviz <- c(sviz, pun[j,"SVIZ"]); ora <- c(ora, pun[j,2]); dat <- c(dat, pun[j,1]) 
     }
     y <- c(y, pun[(i+23+step),varn])
-    # if(step > 0)
-    # {
-    #   targeth <- c(targeth, pun[(i+23+step),2]); targetd <- c(targetd, pun[(i+23+step),1])
-    # }
+    
     day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
     #print(day)
     ds <- dates(dat)
@@ -284,6 +330,9 @@ create_dataset23 <- function(pun, first_day, varn, meteo, step)
     vdays2 <- maply(1:24, function(n) as.character(vdays[n]))
     aday <- maply(1:24, function(n) convert_day_to_angle(vdays2[n]))
     ahour <- convert_hour_to_angle(ora)
+    
+    targets <- variables_at_step(ahour[23], day, ds[23], step)
+    
     ## togli vdays e metti variabili meteo
     tmin <- associate_meteo_ora(ds, meteo, "Tmin")
     tmax <- associate_meteo_ora(ds, meteo, "Tmax")
@@ -292,22 +341,13 @@ create_dataset23 <- function(pun, first_day, varn, meteo, step)
     vm <- associate_meteo_ora(ds, meteo, "Vento_media")
     ### transpose the vectors as they are column vectors in R
     adf <- data.frame(t(p), t(aus), t(cors), t(fran), t(grec), t(slov), t(sviz), t(aday[1:23]), t(hol[1:23]), y, t(ahour[1:23]),
-                      t(tmin[1:23]), t(tmax[1:23]), t(tmed[1:23]), t(rain[1:23]), t(vm[1:23]), t(vdays[1:23]), stringsAsFactors = FALSE)
+                      t(tmin[1:23]), t(tmax[1:23]), t(tmed[1:23]), t(rain[1:23]), t(vm[1:23]), targets[1],targets[2],targets[3], t(vdays[1:23]), stringsAsFactors = FALSE)
     colnames(adf) <- Names
     
     d_f <- bind_rows(d_f, adf)
   }
   colnames(d_f) <- Names
-  if(step > 0)
-  {
-    Names <- c(Names, "target_hour", "target_day", "target_holiday")
-    targeth <- targetd <- targetv <- c()
-    for(k in 1:(nrow(d_f)-step))
-    {
-      targeth <- c(targeth, d_f[])
-    }
-  }
-  return(d_f[,1:346])
+  return(d_f[,1:349])
 }
 ######################################################
 sign_process <- function(Pt)
@@ -539,12 +579,68 @@ brute_force_tuning <- function(trainset,testset,a,h,s)
   return(models)
 }
 ########################################################################
+generate_stepped_datasets <- function(prices1, prices2, prices3, meteo)
+{
+  for(step in 0:24)
+  {
+    train <- augmented_dataset(prices1, prices2, step)
+    test <- augmented_dataset(prices2, prices3, step)
+    
+    trainset <- create_dataset23(train, "ven", "CSUD", meteocsud, step)
+    testset <- create_dataset23(test, "sab", "CSUD", meteocsud, step)
+    
+    name1 <- paste0("trainset_step_",step,".csv")
+    name2 <- paste0("testset_step_",step,".csv")  
+    
+    h2o.exportFile(trainset, "dataset_totale10_14.csv")
+    h2o.exportFile(testset, "dataset_15.csv")
+  }
+}
+########################################################################
+# brute_force_tuning_with_steps <- function(trainset,testset,a,h,s)
+# {
+#   results <- data_frame()
+#   
+#   response <- "y"
+#   predictors <- setdiff(names(trainset), response)
+#   unbounded <- c("Rectifier","RectifierWithDropout","Maxout","MaxoutWithDropout")
+#   
+#   ids <- generate_ids(a,h,s)
+#   
+#   t_s <- as.data.frame(testset)
+#   y <- unlist(t_s$y)
+#   
+#   se <- stl(ts(y,frequency=24),s.window="periodic")
+#   min_season_orig15 <- se$time.series[1:24,1]
+#   se.trend <- unlist(se$time.series[,2])
+# 
+#   for(i in 1:length(a))
+#   {
+#     for(j in 1:length(h))
+#     {
+#       for(k in 1:length(s)) 
+#       {
+#         ir <- which(ids == paste0(i,j,k))
+#         id <- ids[ir]
+#         models[[id]] <- learn_model_TC(predictors,response,trainset, id, testset, s[k], a[i], h[[j]], se.trend, y, unbounded)
+#       }
+#     }
+#   }
+# }
+########################################################################
 compare_prediction_given_step <- function(dl.model, testseth2o, step)
 {
+  testset <- as.data.frame(testseth20)
+  
+  y <- testset["y"]
+  y_s <- y[step:length(y)]
+  
   pred <- predict(dl.model, testseth2o)
   
   pt <- as.numeric(pred$predict) 
   pt <- as.matrix(pt)
   pt <- unlist(pt[,1])
+  
+  
 }
 
