@@ -78,7 +78,7 @@ M4 <- matrix(0,nrow = nrow(M2), ncol = 48) ## altri
 rownames(M4) <- rownames(M2)
 M5 <- matrix(0,nrow = nrow(M2), ncol = 48) ## lg ricostruiti con profilo di prelievo
 rownames(M5) <- rownames(M2)
-
+start <- Sys.time()
 for(rf in rownames(M2))
 {
   re <- ver2[which(ver2["COD_REMI"] == rf),]
@@ -151,13 +151,16 @@ for(rf in rownames(M2))
         M3[index3,j] <- CGlg[j]
         M3[index3,(24+j)] <- max_rf[j] - M3[index3,j]
         M4[index4,j] <- M2[index2,j] - M3[index3,j]
-        M4[index4,j+24] <- M2[index2,j+24] - M3[index3,j]
+        #M4[index4,j+24] <- max_rf[j] + M3[index3,(j+24)]
+        M4[index4,j+24] <- M2[index3,(j+24)] - M3[index3,j]
         M5[index5,j] <- CGlgrec[j]
         M5[index5, j+24] <- CGlg[j]
       }
     }
   }
 }
+end <- Sys.time()
+end-start
 
 xlsx::write.xlsx(data.frame(M2), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW.xlsx"), row.names=TRUE, col.names = TRUE)
 xlsx::write.xlsx(data.frame(M3), paste0("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_LG.xlsx"), row.names=TRUE, col.names = TRUE)
@@ -209,5 +212,18 @@ result3 <- sumprod_by_cluster(Sol, 7,npdr)
 result1
 result2
 result3
+
+penali2 <- matrix(0,nrow=nrow(M2),ncol = 12)
+rownames(penali2) <- rownames(M2)
+for(rf in rownames(M2))  
+{
+  i <- which(rownames(penali2) == rf)
+  penali2[i,] <- penali(rf,M2,0)
+}
+
+
+
+
+
 
 
