@@ -109,12 +109,23 @@ trainset <- create_dataset23(train10, "ven", "CSUD", meteocsud, step)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
-
+### ### ### ### ### ### ### ### ### ### ### ### ### 
 start.time <- Sys.time()
 generate_stepped_datasets(prices10, prices11, prices12,meteocsud)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+act <- c( "Tanh", "TanhWithDropout","Rectifier", "RectifierWithDropout")
+hide <- list(c(365,52,12,4), c(365,52,12,6,4), c(365,52,12,6,4)*5)
+stdize <- c(TRUE,FALSE)
+ids <- generate_ids(act,hide,stdize)
+start.time <- Sys.time()
+ht <- brute_force_tuning_with_steps(act,hide,stdize)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
 ####################################################################
 
 

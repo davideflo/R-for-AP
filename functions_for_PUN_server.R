@@ -528,7 +528,7 @@ learn_model <- function(predictors, response, trainset, id, testset, s, a, h, se
   RMSE_trend <- RMSE(dl.trend - se.trend)
   RMSE_total <- RMSE(pt - y)
   
-  return(c(h2o.r2(dl_id, train=TRUE, valid=TRUE),h2o.mean_residual_deviance(dl_id, train=TRUE, valid=TRUE),h2o.mse(dl_id, train=TRUE, valid=TRUE), RMSE_trend, RMSE_total))
+  return(c(h2o.r2(dl_id, train=TRUE, valid=TRUE),h2o.mse(dl_id, train=TRUE, valid=TRUE), RMSE_trend, RMSE_total))
   
 }
 ##################################################################
@@ -562,7 +562,6 @@ brute_force_tuning <- function(trainset,testset,a,h,s)
   min_season_orig15 <- se$time.series[1:24,1]
   se.trend <- unlist(se$time.series[,2])
   
-  
   models <- list()
   for(i in 1:length(a))
   {
@@ -589,44 +588,63 @@ generate_stepped_datasets <- function(prices1, prices2, prices3, meteo)
     trainset <- create_dataset23(train, "ven", "CSUD", meteocsud, step)
     testset <- create_dataset23(test, "sab", "CSUD", meteocsud, step)
     
-    name1 <- paste0("trainset_step_",step,".csv")
-    name2 <- paste0("testset_step_",step,".csv")  
+    trainseth2o <- as.h2o(trainset)
+    testseth2o <- as.h2o(testset)
     
-    h2o.exportFile(trainset, "dataset_totale10_14.csv")
-    h2o.exportFile(testset, "dataset_15.csv")
+    name1 <- paste0("C:\\Users\\utente\\Documents\\trainset_step_",step,".csv")
+    name2 <- paste0("C:\\Users\\utente\\Documents\\testset_step_",step,".csv")  
+    
+    h2o.exportFile(trainseth2o, name1)
+    h2o.exportFile(testseth2o, name2)
   }
 }
 ########################################################################
-# brute_force_tuning_with_steps <- function(trainset,testset,a,h,s)
-# {
-#   results <- data_frame()
-#   
-#   response <- "y"
-#   predictors <- setdiff(names(trainset), response)
-#   unbounded <- c("Rectifier","RectifierWithDropout","Maxout","MaxoutWithDropout")
-#   
-#   ids <- generate_ids(a,h,s)
-#   
-#   t_s <- as.data.frame(testset)
-#   y <- unlist(t_s$y)
-#   
-#   se <- stl(ts(y,frequency=24),s.window="periodic")
-#   min_season_orig15 <- se$time.series[1:24,1]
-#   se.trend <- unlist(se$time.series[,2])
-# 
-#   for(i in 1:length(a))
-#   {
-#     for(j in 1:length(h))
-#     {
-#       for(k in 1:length(s)) 
-#       {
-#         ir <- which(ids == paste0(i,j,k))
-#         id <- ids[ir]
-#         models[[id]] <- learn_model_TC(predictors,response,trainset, id, testset, s[k], a[i], h[[j]], se.trend, y, unbounded)
-#       }
-#     }
-#   }
-# }
+brute_force_tuning_with_steps <- function(a,h,s)
+{
+  results <- data_frame()
+
+  response <- "y"
+  
+  unbounded <- c("Rectifier","RectifierWithDropout","Maxout","MaxoutWithDropout")
+
+  ids <- generate_ids(a,h,s)
+
+  for(i in 1:length(a))
+  {
+    for(j in 1:length(h))
+    {
+      for(k in 1:length(s))
+      {
+        for(step in 0:24)
+        {
+          nametrain <- paste0("C:\\Users\\utente\\Documents\\trainset_step_",step,".csv")
+          nametest <- paste0("C:\\Users\\utente\\Documents\\testset_step_",step,".csv") 
+          
+          train <- h2o.importFile(nametrain)
+          test <- h2o.importFile(nametest)
+          
+          predictors <- setdiff(names(train), response)
+          
+          t_s <- as.data.frame(test)
+          y <- unlist(t_s$y)
+          
+          se <- stl(ts(y,frequency=24),s.window="periodic")
+          
+          se.trend <- unlist(se$time.series[,2])
+          
+          ir <- which(ids == paste0(i,j,k))
+          id <- paste(ids[ir],step, sep="|")
+          models <- learn_model_TC(predictors,response,train, id, test, s[k], a[i], h[[j]], se.trend, y, unbounded)
+          results <- bind_rows(results, models)
+          rownames(results)[nrow(results)] <- id
+        }
+      }
+    }
+  }
+  colnames(results) <- c("R2.train", "R2.test", "MSE.train", "MSE.test", "RMSE.trend", "RMSE.total")
+  xlsx::write.xlsx(results, "results_tuning.xlsx", row.names=TRUE, col.names = TRUE)
+  return(data.frame(results))
+}
 ########################################################################
 compare_prediction_given_step <- function(dl.model, testseth2o, step)
 {
