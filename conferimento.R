@@ -170,11 +170,13 @@ xlsx::write.xlsx(data.frame(M5), paste0("C:/Users/d_floriello/Documents/plot_rem
 ########
 npdr <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/num_pdr150.xlsx", sheet = 1, rowNames = TRUE, colNames = TRUE)
 
-Sol <- matrix(0,nrow = nrow(M2), ncol = 9)
+Sol <- matrix(0,nrow = nrow(M2), ncol = 15)
 rownames(Sol) <- rownames(M2)
 colnames(Sol) <- c("% ottima CA totale", "capacita ottima CA totale", "minimo costo CA totale",
                    "% ottima CA LG rec", "capacita ottima CA LG rec", "minimo costo CA LG rec",
-                   "% ottima CA NONLG", "capacita ottima CA NONLG", "minimo costo CA NONLG")
+                   "% ottima CA NONLG", "capacita ottima CA NONLG", "minimo costo CA NONLG",
+                   "simple CA totale", "simple CA LG", "simple CA non LG",
+                   "cap. ottima simple tot", "cap ottima simple Lg", "cap ottima simple non lg")
 
 xx <- seq(-1, 1, 0.001)
 for(rf in rownames(M2))  
@@ -182,6 +184,7 @@ for(rf in rownames(M2))
   i <- which(rownames(Sol) == rf)
   #  s1 <- Fhd(rf, M2); s2 <- Fhd(rf, M3); s3 <- Fhd(rf, M4); s4 <- Fhd(rf, M5)
   s1 <- Fhdn(rf, M2); s2 <- Fhdn(rf, M5); s3 <- Fhdn(rf, M4); #s4 <- Fhdn(rf, M5)
+  x1 <- simple_optim(rf, M2); x4 <- simple_optim(rf, M4); x5 <- simple_optim(rf, M5)
   
   if(sum(s1) > 0)
   {
@@ -203,7 +206,12 @@ for(rf in rownames(M2))
     Sol[i,8] <- unlist(s3[length(s3)])*(1+Sol[i,7])
     Sol[i,9] <- min(s3[1:(length(s3)-1)])
   }
+  
+  Sol[i,10] <- x1; Sol[i,11] <- x5; Sol[i,12] <- x4; 
+  Sol[i,13] <- unlist(s1[length(s1)])*(1+x1); Sol[i,14] <- unlist(s2[length(s2)])*(1+x5); Sol[i,15] <- unlist(s3[length(s3)])*(1+x4); 
 }
+
+xlsx::write.xlsx(data.frame(Sol), paste0("C:/Users/d_floriello/Documents/plot_remi/soluzione_ottimizzazione.xlsx"), row.names=TRUE, col.names = TRUE)
 
 result1 <- sumprod_by_cluster(Sol, 1,npdr)
 result2 <- sumprod_by_cluster(Sol, 4,npdr)
@@ -221,8 +229,30 @@ for(rf in rownames(M2))
   penali2[i,] <- penali(rf,M2,0)
 }
 
+penali4 <- matrix(0,nrow=nrow(M4),ncol = 12)
+rownames(penali4) <- rownames(M2)
+for(rf in rownames(M2))  
+{
+  i <- which(rownames(penali4) == rf)
+  penali4[i,] <- penali(rf,M4,0)
+}  
 
+penali5 <- matrix(0,nrow=nrow(M5),ncol = 12)
+rownames(penali5) <- rownames(M2)
+for(rf in rownames(M2))  
+{
+  i <- which(rownames(penali5) == rf)
+  penali5[i,] <- penali(rf,M5,0)
+}  
 
+r2 <- rowSums(penali2)
+r4 <- rowSums(penali4)
+r5 <- rowSums(penali5)
+
+dd <- data.frame(r2,r4,r5)
+colnames(dd) <- c("totale", "non_LG", "LG")
+ 
+xlsx::write.xlsx(dd, paste0("C:/Users/d_floriello/Documents/plot_remi/penali_remi.xlsx"), row.names=TRUE, col.names = TRUE)
 
 
 

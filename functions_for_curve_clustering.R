@@ -1209,16 +1209,27 @@ penali <- function(remi, M2, x)
   else return(rep(0,12))
 }
 ####################################################################
-Fhdn <- function(remi, M2)
+simple_optim <- function(remi, M)
+{
+  x <- 0
+  Mo <- M[which(rownames(M) == remi),c(5:16,29:40)]
+  m1 <- max(Mo[1:12])
+  m2 <- max(Mo[13:24])
+  if(m1 > 0 & m2 > 0) x <- (m2 - 1.1*m1)/m1
+  if(x > 1) x <- 1
+  return(x)
+}
+###################################################################
+Fhdn <- function(remi, M)
 {
   xx <- seq(-1, 1, 0.001)
-  M3 <- M2[which(rownames(M2) == remi),c(5:16,29:40)]
-  mm <- max(M3[1:12])
-  mm2 <- max(M3[13:24])
+  Mo <- M[which(rownames(M) == remi),c(5:16,29:40)]
+  mm <- max(Mo[1:12])
+  mm2 <- max(Mo[13:24])
   if(mm > 0 & mm2 > 0)
   {  
     f <- c()
-    if(length(M3) > 0)
+    if(length(Mo) > 0)
     {
       for(x in xx)
       {
@@ -1226,7 +1237,7 @@ Fhdn <- function(remi, M2)
         for(j in 1:12)
         {
           y <- mm*(1+x)
-          z <- M3[j+12] - 1.1*y
+          z <- Mo[j+12] - 1.1*y
           #if(z > 0.1*y)
           if(z > 0)
           {
@@ -1243,7 +1254,7 @@ Fhdn <- function(remi, M2)
   }
   else f <- rep(0,length(xx))
   plot(xx,f,type="l",lwd=2, col="red",xlab= "% banda di sicurezza", ylab="euro", main=rf)
-  return(f)
+  return(c(f,mm))
 }
 #####################################################
 sel <- function(dat, expr) {
