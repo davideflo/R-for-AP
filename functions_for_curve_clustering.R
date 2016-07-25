@@ -1177,7 +1177,7 @@ comparison_data <- function(ag,prof)
 }
 ## http://www.senoecoseno.it/zahara-nilsson-la-svedese-che-ci-ha-fatto-perdere-la-vista-30-foto/30/
 ####################################################################
-penali <- function(remi, M2, x)
+penali <- function(remi, M2, x=0)
 {
   M <- M2[which(rownames(M2) == remi),c(5:16,29:40)]
   mm <- max(M[1:12])

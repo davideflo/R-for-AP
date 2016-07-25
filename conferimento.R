@@ -49,6 +49,11 @@ cfeb <- read_and_plot_data("FEBBRAIO")
 cmar <- read_and_plot_data("MARZO")
 capr <- read_and_plot_data("APRILE")
 dfs2 <- c("cmar15", "capr15", "cmag15","cgiu15","clug15","cago15","cset15","cott15","cnov15","cdic15","cgen","cfeb","cmar","capr")
+
+for(df in dfs2)
+{
+  xlsx::write.xlsx(data.frame(get(df)), paste0(df,".xlsx"), row.names=TRUE, col.names = TRUE)
+}
 #########
 
 # dfs <- ls()[sapply(mget(ls(), .GlobalEnv), is.data.frame)]
@@ -254,6 +259,64 @@ colnames(dd) <- c("totale", "non_LG", "LG")
  
 xlsx::write.xlsx(dd, paste0("C:/Users/d_floriello/Documents/plot_remi/penali_remi.xlsx"), row.names=TRUE, col.names = TRUE)
 
+#################################################################################
+##### i remi del secondo cluster sono quelli che prendono piu' penali? ##########
+
+M2 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW.xlsx", rowNames = TRUE)
+M4 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_nonLG.xlsx", rowNames = TRUE)
+M5 <- openxlsx::read.xlsx("C:/Users/d_floriello/Documents/plot_remi/mat_ottimizzazione_NEW_LGrec.xlsx", rowNames = TRUE)
+
+mp <- matrix(0,nrow=3,ncol=4)
+count <- 0
+
+for(re in rownames(M2))
+{
+  mp[1,4] <- length(which(npdr[,1] <= 10))
+  mp[2,4] <- length(which(npdr[,1] > 10 & npdr[,1] <= 30))
+  mp[3,4] <- length(which(npdr[,1] > 30))
+  
+  i2 <- which(rownames(M2) == re)
+  i4 <- which(rownames(M4) == re)
+  i5 <- which(rownames(M5) == re)
+  i <- which(rownames(npdr) == re)
+  
+  if(length(i) > 0)
+  {
+    if(as.numeric(npdr[i,1]) <= 10)
+    {
+      mp[1,1] <- mp[1,1] + sum(penali(re,data.matrix(M2)))
+      mp[1,2] <- mp[1,2] + sum(penali(re,data.matrix(M4)))
+      mp[1,3] <- mp[1,3] + sum(penali(re,data.matrix(M5)))
+    }
+    
+    else if(as.numeric(npdr[i,1]) > 10 & as.numeric(npdr[i,1]) <= 30)
+    {
+      mp[2,1] <- mp[2,1] + sum(penali(re,data.matrix(M2)))
+      mp[2,2] <- mp[2,2] + sum(penali(re,data.matrix(M4)))
+      mp[2,3] <- mp[2,3] + sum(penali(re,data.matrix(M5)))
+    }
+    
+    else
+    {
+      mp[3,1] <- mp[3,1] + sum(penali(re,data.matrix(M2)))
+      mp[3,2] <- mp[3,2] + sum(penali(re,data.matrix(M4)))
+      mp[3,3] <- mp[3,3] + sum(penali(re,data.matrix(M5)))
+    }
+  }
+  else count <- count + 1
+}
+
+mp <- data.frame(mp)
+colnames(mp) <- c("somma penali tot", "somma penali nonLG", "somma penali LG rec", "numeros. cluster")
+rownames(mp) <- c("cluster <= 10", "cluster <= 30", "cluster > 30")
 
 
+for(i in 1:3)
+{
+  for(j in 1:3)
+  {
+    print(paste(paste(i,j,sep=","), mp[i,j]/mp[i,4], sep=" : "))
+  }
+  print("###############################")
+}
 
