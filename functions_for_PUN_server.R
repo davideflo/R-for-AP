@@ -663,4 +663,62 @@ compare_prediction_given_step <- function(dl.model, testseth2o, step)
   
   
 }
+##########################################################################
+tuning_with_grid <- function(a,h,s)
+{
+  ids <- generate_ids(a,h,s)
+  
+  response = "y"
+  
+  result <- data_frame()
+  
+  for(step in 0:24)
+  {
+    nametrain <- paste0("C:\\Users\\utente\\Documents\\trainset_step_",step,".csv")
+    nametest <- paste0("C:\\Users\\utente\\Documents\\testset_step_",step,".csv") 
+    
+    train <- h2o.importFile(nametrain)
+    test <- h2o.importFile(nametest)
+    
+    predictors <- setdiff(names(train), response)
+    
+    t_s <- as.data.frame(test)
+    y <- unlist(t_s$y)
+    
+    se <- stl(ts(y,frequency=24),s.window="periodic")
+    
+    se.trend <- unlist(se$time.series[,2])
+    
+    ir <- which(ids == paste0(i,j,k))
+    id <- paste(ids[ir],step, sep="|")
+    
+    out <- tryCatch(
+      {
+        grid <- h2o.grid("deeplearning", grid_id = id, x = predictors, y = response, training_frame = train, validation_frame = test, 
+                         hyper_params = list(activation = a, hidden = h, standardize = s, epochs = 100))
+        model_ids <- grid@model_ids
+        models <- lapply(model_ids, function(id) { dl <- h2o.getModel(id); pred <- predict(dl,test);
+        pt <- as.numeric(pred$predict);
+        pt <- as.matrix(pt);
+        pt <- unlist(pt[,1]);
+        dlts <- stl(ts(pt,frequency=24),s.window="periodic");
+        min_season <- dlts$time.series[1:24,1];
+        dl.trend <- unlist(dlts$time.series[,2]);
+        RMSE_trend <- RMSE(dl.trend - se.trend);
+        RMSE_total <- RMSE(pt - y);
+        result <- bind_rows(result, data.frame(id, h2o.r2(dl, train=TRUE, valid=TRUE),h2o.mse(dl, train=TRUE, valid=TRUE), RMSE_trend, RMSE_total));
+        })
+      }, error = function(cond)
+      {
+        message(cond)
+        result <- bind_rows(result, data.frame(id, 0,0,0,0,0,0));
+      }
+    )
+  }
+  colnames(result) <- c("R2.train", "R2.test", "MSE.train", "MSE.test", "RMSE.trend", "RMSE.total")
+  xlsx::write.xlsx(result, paste0("results_tuning",a[1],".xlsx"), row.names=TRUE, col.names = TRUE)
+  return(data.frame(result))
+}
+
+
 

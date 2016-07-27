@@ -124,7 +124,7 @@ stdize <- c(TRUE,FALSE)
 ids <- generate_ids(act,hide,stdize)
 
 start.time <- Sys.time()
-
+#ht <- tuning_with_grid(act, hide, stdize)
 ht <- brute_force_tuning_with_steps(act,hide,stdize)
 
 end.time <- Sys.time()
