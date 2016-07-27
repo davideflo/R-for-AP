@@ -635,14 +635,16 @@ brute_force_tuning_with_steps <- function(a,h,s)
           ir <- which(ids == paste0(i,j,k))
           id <- paste(ids[ir],step, sep="|")
           models <- learn_model_TC(predictors,response,train, id, test, s[k], a[i], h[[j]], se.trend, y, unbounded)
-          results <- bind_rows(results, models)
+          #models <- data.frame(models)
+          results <- bind_rows(results, as.data.frame(models))
           rownames(results)[nrow(results)] <- id
+          rm(train); rm(test)
         }
       }
     }
   }
   colnames(results) <- c("R2.train", "R2.test", "MSE.train", "MSE.test", "RMSE.trend", "RMSE.total")
-  xlsx::write.xlsx(results, "results_tuning.xlsx", row.names=TRUE, col.names = TRUE)
+  xlsx::write.xlsx(results, paste0("results_tuning",a[1],".xlsx"), row.names=TRUE, col.names = TRUE)
   return(data.frame(results))
 }
 ########################################################################

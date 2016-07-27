@@ -69,7 +69,7 @@ csud11 <- create_dataset23(prices11, "sab", "CSUD", meteocsud)
 library(h2o)
 ##### NOTA BENE: se h2o non parte, vai in C:\Users\d_floriello\Documents\R\R-3.3.1\library\h2o\java e fai partire il JAR file!!!!!
 ## http://localhost:54321/flow/index.html ## flow
-h2o.init(nthreads = -1)
+h2o.init(nthreads = -1, max_mem_size = "20g")
 
 ####################################################################
 ############ test some h2o features ################################
@@ -116,16 +116,30 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
 
-act <- c( "Tanh", "TanhWithDropout","Rectifier", "RectifierWithDropout")
+act <- c( "Tanh")
+act2 <- c("Rectifier")
 hide <- list(c(365,52,12,4), c(365,52,12,6,4), c(365,52,12,6,4)*5)
 stdize <- c(TRUE,FALSE)
+
 ids <- generate_ids(act,hide,stdize)
+
 start.time <- Sys.time()
+
 ht <- brute_force_tuning_with_steps(act,hide,stdize)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+print("finished Tanh")
+
+start.time <- Sys.time()
+
+ht2 <- brute_force_tuning_with_steps(act2,hide,stdize)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
 
+print("finished all")
 ####################################################################
 
 
