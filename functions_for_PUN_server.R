@@ -17,6 +17,17 @@ library(TDA)
 library(purrr)
 
 ############################################################
+convert_day <- function(day)
+{
+  if(day == "Sun") return("dom")
+  else if (day == "Mon") return("lun")
+  else if (day == "Tues") return("mar")
+  else if (day == "Wed") return("mer")
+  else if (day == "Thurs") return("gio")
+  else if (day == "Fri") return("ven")
+  else return("sab")
+}
+############################################################
 convert_day_to_angle <- function(day)
 {
   days <- c("dom","lun","mar","mer","gio","ven","sab")
@@ -50,6 +61,15 @@ subsequent_day <- function(day)
   else return("dom")
 }
 #############################################################
+compute_day_at <- function(today, day_ahead)
+{
+  days <- c("dom","lun","mar","mer","gio","ven","sab")
+  ang <- which(days == today)
+  n <- ((ang+day_ahead) %% 7) 
+  if(n == 0) n <- 7
+  return(days[n])
+}
+##############################################################
 add_days <- function(first_day, year)
 {
   dl <- c()
@@ -473,7 +493,7 @@ prepare_meteo <- function(meteotxt, meteo_str)
   variables <- which(colnames(meteotxt) %in% c("Data", "Tmin", "Tmedia", "Tmax", "Pioggia", "Vento_media"))
   meteo_t <- meteotxt[,variables]
   
-  #Îmeteo <- data.frame(rbind(meteo_t,meteo_s))
+  #meteo <- data.frame(rbind(meteo_t,meteo_s))
   # data.table vignette
   # data.table 20.9695 times faster than rbind --> https://cran.r-project.org/web/packages/data.table/index.html
   ll <- list(meteo_t,meteo_s)
@@ -599,7 +619,7 @@ generate_stepped_datasets <- function(prices1, prices2, prices3, meteo)
   }
 }
 ########################################################################
-brute_force_tuning_with_steps <- function(a,h,s)
+brute_force_tuning_with_steps <- function(a,h,s,start,end)
 {
   results <- data_frame()
 
@@ -615,7 +635,7 @@ brute_force_tuning_with_steps <- function(a,h,s)
     {
       for(k in 1:length(s))
       {
-        for(step in 0:24)
+        for(step in start:end)
         {
           nametrain <- paste0("C:\\Users\\utente\\Documents\\trainset_step_",step,".csv")
           nametest <- paste0("C:\\Users\\utente\\Documents\\testset_step_",step,".csv") 
@@ -639,12 +659,13 @@ brute_force_tuning_with_steps <- function(a,h,s)
           results <- bind_rows(results, as.data.frame(models))
           rownames(results)[nrow(results)] <- id
           rm(train); rm(test)
+          print(paste("done step:", step))
         }
       }
     }
   }
   colnames(results) <- c("R2.train", "R2.test", "MSE.train", "MSE.test", "RMSE.trend", "RMSE.total")
-  xlsx::write.xlsx(results, paste0("results_tuning",a[1],".xlsx"), row.names=TRUE, col.names = TRUE)
+  xlsx::write.xlsx(results, paste0("results_tuning",a[1],start,"_",end,".xlsx"), row.names=TRUE, col.names = TRUE)
   return(data.frame(results))
 }
 ########################################################################
@@ -719,6 +740,64 @@ tuning_with_grid <- function(a,h,s)
   xlsx::write.xlsx(result, paste0("results_tuning",a[1],".xlsx"), row.names=TRUE, col.names = TRUE)
   return(data.frame(result))
 }
-
+#############################################################################
+prepare_dataset_for_prediction <- function(path, path_meteo, varn, step)
+{
+  Names <- c(paste0(varn,"-",23:1), paste0("aust-",23:1), paste0("cors-",23:1), paste0("fran-",23:1), paste0("grec-",23:1),
+             paste0("slov-",23:1), paste0("sviz-",23:1), paste0("angleday-",23:1), paste0("holiday-",23:1),
+             paste0("angleora-",23:1),
+             paste0("tmin-",23:1), paste0("tmax-",23:1), paste0("tmed-",23:1), paste0("rain-",23:1), paste0("vento-",23:1),
+             "target_ora", "target_day", "target_holiday")
+  
+  pre_path <- "C:/Users/utente/Documents/PUN/"#test_pun.xlsx"
+  tp <- openxlsx::read.xlsx(path, sheet="DB Dati", colNames=TRUE)
+  db <- tp[(nrow(tp)-23):nrow(tp),]
+  
+  colnames(db) <- c("Date","Year","Quarter","Month","Week","Week.Day","Day","Hour","Lavorativo/Festivo",
+                    "Weekend","PEAK-OFF.PEAK","AEEG","PUN","AUST","BRNN","BSP","CNOR","COAC",  
+                    "CORS","CSUD","FOGN","FRAN","GREC","MFTV","NORD","PRGP","ROSN",  
+                    "SARD","SICI","SLOV","SUD","SVIZ")
+  
+  d <- as.Date(db[1,1], origin="1899-12-31")
+  dt <- unlist(strsplit(as.character(d, "-")))
+  dt <- paste0(dt[3],"/",dt[2],"/",dt[1])
+  
+  day <- tolower(db[1,"Week.Day"])
+  angleday <- convert_day_to_angle(day)
+  hours <- as.numeric(db["Hour"])
+  angle_hours <- convert_hour_to_angle(hours)
+  
+  hol <- add_holidays(dt)
+  
+  y_varn <- as.numeric(db["PUN"])
+  aust <- as.numeric(db["AUST"])
+  cors <- as.numeric(db["CORS"])
+  fran <- as.numeric(db["FRAN"])
+  grec <- as.numeric(db["GREC"])
+  slov <- as.numeric(db["SLOV"])
+  sviz <- as.numeric(db["SVIZ"])
+  
+  meteo <- read.csv2(paste0(pre_path, path_meteo, ".csv"), header = TRUE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)
+  dm <- meteo[nrow(meteo),1]
+  ddm <- unlist(strsplit(as.character(dm, "-")))
+  ddm <- paste0(ddm[3],"/",ddm[2],"/",ddm[1])
+  
+  meteo2 <- meteo[which(meteo[,1] == dm),]
+  tmin <- min(as.numeric(meteo2[,3]))
+  tmax <- max(as.numeric(meteo2[,3]))
+  tmed <- mean(as.numeric(meteo2[,3]))
+  rain <- sum(as.numeric(meteo2[,5]))
+  vm <- mean(as.numeric(meteo2[,4]))
+  
+  target_day <- convert_day_to_angle(subsequent_day(day))
+  target_holiday <- add_holidays(target_day)
+  target_hour <- convert_hour_to_angle(step)
+  
+  df <- data.frame(t(y_varn), t(aust), t(cors), t(fran), t(grec), t(slov), t(sviz), t(rep(angleday,24)), t(rep(hol,24)), t(angle_hours), 
+                   t(rep(tmin,24)), t(rep(tmax,24)), t(rep(tmed,24)), t(rep(rain,24)), t(rep(vm,24)), target_hour, target_day, target_holiday)
+  
+  colnames(df) <- Names
+  return(df)
+}
 
 
