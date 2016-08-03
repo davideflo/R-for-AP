@@ -22,9 +22,10 @@ create_dataset_day_ahead <- function(pun, first_day, varn, meteo, step, day_ahea
              paste0("day-",hb:1))
   
   hbb <- hb - 1
-  for(i in 1:(nrow(pun)-(hb+step)))
+  da <- 24*day_ahead
+  for(i in 1:(nrow(pun)-(hb+step+da)))
   {
-    #print(i)
+    #print(da+i+hb+step)
     y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- dat <- c()
     for(j in i:(i+hbb))
     {
@@ -34,8 +35,7 @@ create_dataset_day_ahead <- function(pun, first_day, varn, meteo, step, day_ahea
     }
     
     ds <- dates(dat)
-    dt <- as.Date(ds[length(ds)])
-    da <- 24*day_ahead
+    #dt <- as.Date(ds[length(ds)])
     
     #target values and dates
     y <- c(y, pun[(da+i+hb+step),varn])
@@ -43,7 +43,8 @@ create_dataset_day_ahead <- function(pun, first_day, varn, meteo, step, day_ahea
     new_date <- dates(pun[(da+i+hb+step),1])
     thol <- add_holidays(new_date)
     dd3 <- unlist(strsplit(new_date,"/"))
-    asdd <- as.Date(paste0(dd3[3],"/",dd3[2],"/",dd3[1]))
+    #print(paste0(dd3[3],"-",dd3[2],"-",dd3[1]))
+    asdd <- as.Date(paste0(dd3[3],"-",dd3[2],"-",dd3[1]))
     tday <- convert_day_to_angle(convert_day(as.character(lubridate::wday(as.Date(asdd),label=TRUE))))
     thour <- convert_hour_to_angle(new_hour)
     
@@ -87,19 +88,23 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
   d_f <- data_frame()
   
   Names <- c(paste0(varn,"-",hb:1), paste0("aust-",hb:1), paste0("cors-",hb:1), paste0("fran-",hb:1), paste0("grec-",hb:1),
-             paste0("slov-",hb:1), paste0("sviz-",hb:1), paste0("angleday-",hb:1), paste0("holiday-",hb:1),
+             paste0("slov-",hb:1), paste0("sviz-",hb:1), "angleday", "holiday",
              paste0("angleora-",hb:1),
-             "tmin","tmax","tmed","rain","vento",
+             "tmin","tmax","tmed","pioggia","vento",
              "y","target_ora", "target_day", "target_holiday","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento",
              "day")
   
   corr <- step + day_ahead*24
   
   well_dates <- dates(pun[,1])
+  dat <- c()
+  
+  day <- first_day
   
   for(i in 1:(nrow(pun)-corr))
   {
-    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- dat <- hol <- c()
+    print(paste("i: ",i))
+    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- hol <- c()
     tmin <- tmax <- tmed <- rain <- vm <- c()
     ttmin <- ttmax <- ttmed <- train <- tvm <- thol <- tday <- c()
     
@@ -109,6 +114,7 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
     
     if(!(dd2 %in% dat))
     {
+      print("preso")
       dat <- c(dat, dd2) 
       p <- at_date[varn] 
       aus <- at_date["AUST"] 
@@ -119,14 +125,18 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
       sviz <- at_date["SVIZ"] 
       ora <- at_date[,2]
       
-      day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
-      
-      vdays <- associate_days(ora, day)
-      vdays2 <- maply(1:length(vdays), function(n) as.character(vdays[n]))
-      aday <- maply(1:length(vdays2), function(n) convert_day_to_angle(vdays2[n]))
+      #day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
+      print(paste("day qui:", day))
+      #vdays <- associate_days(ora, day)
+      #vdays2 <- maply(1:length(vdays), function(n) as.character(vdays[n]))
+      #aday <- maply(1:length(vdays2), function(n) convert_day_to_angle(vdays2[n]))
+      #aday <- convert_day_to_angle(as.character(vdays[hb]))
       ahour <- convert_hour_to_angle(ora)
       
-      hol <- c(hol, add_holidays(dd2))
+      if(i > 1) day <- subsequent_day(day)
+      
+      aday <- convert_day_to_angle(as.character(day))
+      hol <- add_holidays(dd2)
       
       tmin <- associate_meteo_ora(dd2, meteo, "Tmin")
       tmax <- associate_meteo_ora(dd2, meteo, "Tmax")
@@ -137,23 +147,25 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
       dd3 <- unlist(strsplit(dd2,"/"))
       asdd <- as.Date(paste0(dd3[3],"/",dd3[2],"/",dd3[1]))
       target_da <- asdd + day_ahead
-      tda <- unlist(strsplit(target_da,"-"))
-      target_data <- paste0(tda[1],"/",tda[2],"/",tda[3])
+      tda <- unlist(strsplit(as.character(target_da),"-"))
+      target_data <- paste0(tda[3],"/",tda[2],"/",tda[1])
       
-      tr <- which(well_dates == target_data)
+      tr <- which(well_dates %in% target_data)
+      print(tr)
       target_pun <- pun[tr,]
-      
+      #print(target_pun[,1])
       tdts <- dates(target_pun[,1])
-      
-      if(all(tdts)==target_data & length(tr) == 24)
+      #print(target_data)
+      if(all(tdts==target_data) & length(tr) == 24)
       {
-        y <- target_pun[which(target_pun[,2] == step+1),varn]
+        y <- target_pun[which(target_pun[,2] == hb+step+1),varn]
         ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
         ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
         ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
         train <- associate_meteo_ora(target_data, meteo, "Pioggia")
         tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
         thol <- add_holidays(target_data)
+        print(day)
         tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
       }
       
@@ -162,8 +174,8 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
         print("ERROR: target dates not found")
         break
       }
-      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,t(hol),y,t(ahour),tmin,tmax,tmed,rain,vm,
-                       y,convert_hour_to_angle(step+1),tday,thol,ttmin,ttmax,ttmed,train,tvm,day,stringsAsFactors = FALSE)
+      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,hol,t(ahour),tmin,tmax,tmed,rain,vm,
+                       y,convert_hour_to_angle(step+1),tday,thol,ttmin,ttmax,ttmed,train,tvm,as.character(day),stringsAsFactors = FALSE)
 
       colnames(df) <- Names
       

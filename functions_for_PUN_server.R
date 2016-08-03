@@ -306,14 +306,16 @@ variables_at_step <- function(ora,day,current_date,step)
   return(c(new_hour,new_day,new_hol))
 }
 #####################################################
-augmented_dataset <- function(train1, train2, step)
+augmented_dataset <- function(train1, train2, step, day_ahead)
 {
   colnames(train1)[1:2] <- colnames(train2)[1:2] <- c("Data", "ora")
   variables1 <- colnames(train1)
   variables2 <- colnames(train2)
   common <- intersect(variables1, variables2)
   
-  train <- rbind(train1[,which(colnames(train1) %in% common)], train2[1:step,which(colnames(train2) %in% common)])
+  ns <- step + 24*day_ahead
+  
+  train <- rbind(train1[,which(colnames(train1) %in% common)], train2[1:ns,which(colnames(train2) %in% common)])
   
   return(train)
 }
