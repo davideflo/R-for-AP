@@ -45,14 +45,35 @@ end <- Sys.time()
 taken <- end-start
 taken ### 14 minutes
 
-### test 5: new-defined-function with step = day_ahead = 0
+### test 5: new-defined-function with step = day_ahead = 1
 
 start <- Sys.time()
-test5 <- create_dataset_days_ahead(prices10,"ven","CSUD", meteocsud, step = 0, day_ahead = 0, hb = 23)
+test5 <- create_dataset_days_ahead(prices10,"ven","CSUD", meteocsud, step = 1, day_ahead = 1)
 end <- Sys.time()
 taken <- end-start
-taken ### 
+taken ### 13.49 secs
 
+### test 6: new-defined-function with step = 1, day_ahead = 2
 
+aug6 <- augmented_dataset(prices10,prices11,step = 1,day_ahead = 2)
 
+start <- Sys.time()
+test6 <- create_dataset_days_ahead(aug6,"ven","CSUD", meteocsud, step = 1, day_ahead = 2)
+end <- Sys.time()
+taken <- end-start
+taken ### 12.69 secs
+
+### test 7: new-defined-function with step = 24, day_ahead = 5
+
+aug7 <- augmented_dataset(prices10,prices11,step = 24,day_ahead = 5)
+
+start <- Sys.time()
+test7 <- create_dataset_days_ahead(aug7,"ven","CSUD", meteocsud, step = 24, day_ahead = 5)
+end <- Sys.time()
+taken <- end-start
+taken ### 13.99 secs
+
+#####################################################################################################################
+#### generation of all step + day_ahead rolling and fixed datasets
+#### aggregating weather information 
 

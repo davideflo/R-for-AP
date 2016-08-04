@@ -218,7 +218,7 @@ associate_days <- function(ora, day)
   vdays <- rep(day, 24)
   for(i in 1:(length(ora)-1) )
   {
-    if(ora[i] == 24 & ora[i+1] == 1) 
+    if(ora[i] == 24 & ora[i+1] == 1 | ora[i] == 23 & ora[i+1] == 1 | ora[i] == 25 & ora[i+1] == 1) 
     {
       index <- i+1
       for(j in index:24) vdays[j] <- subsequent_day(day)
@@ -801,5 +801,35 @@ prepare_dataset_for_prediction <- function(path, path_meteo, varn, step)
   colnames(df) <- Names
   return(df)
 }
-
+#################################################################
+mediate_meteos <- function(mi,ro,fi,pa,ca,rc,flag_2016)
+{
+  df <- data_frame()
+  vars <- c("tmin", "tmax", "tmed", "pioggia", "vento_media")
+  if(flag_2016) vars[5] <- "ventomedia"
+  for(i in 1:nrow(fi))
+  {
+    dt <- fi[i,which(tolower(colnames(fi)) == "data")]
+    imi <- which(mi[,which(tolower(colnames(mi)) == "data")] == dt)
+    iro <- which(ro[,which(tolower(colnames(ro)) == "data")] == dt)
+    ipa <- which(pa[,which(tolower(colnames(pa)) == "data")] == dt)
+    ica <- which(ca[,which(tolower(colnames(ca)) == "data")] == dt)
+    irc <- which(rc[,which(tolower(colnames(rc)) == "data")] == dt)
+    
+    cv <- c()
+    
+    for(v in vars)
+    {
+      cv <- c(cv, mean( mi[imi, which(tolower(colnames(mi)) == v)],
+                        fi[i, which(tolower(colnames(fi)) == v)],
+                        ro[iro, which(tolower(colnames(ro)) == v)],
+                        pa[ipa, which(tolower(colnames(pa)) == v)],
+                        ca[ica, which(tolower(colnames(ca)) == v)],
+                        rc[irc, which(tolower(colnames(rc)) == v)]))
+    }
+    df <- bind_rows(df, data.frame(as.character(dt),t(cv)))
+  }
+  colnames(df) <- c("Data", "Tmin", "Tmax", "Tmed", "Pioggia", "Vento_media")
+  return(df)
+}
 

@@ -2,13 +2,15 @@
 
 library(readxl)
 library(lubridate)
+library(birk)
 
 source("R_code/functions_for_PUN_server.R")
-
+#### lubridate vignette: https://cran.r-project.org/web/packages/lubridate/vignettes/lubridate.html
 
 ###########################################
-create_dataset_day_ahead <- function(pun, first_day, varn, meteo, step, day_ahead, hb)
+create_rolling_dataset <- function(pun, first_day, varn, meteo, step, day_ahead, hb)
 {
+  ## ALGORITMO ROLLING
   ## step starts from 0, in which case the model predicts the hour after the predictors provided 
   ## and goes to 24, which is the same hour the day after
   ## hb (=hours_back) is how many hours I'm going back to build the training set
@@ -83,13 +85,16 @@ create_dataset_day_ahead <- function(pun, first_day, varn, meteo, step, day_ahea
   return(d_f[,1:354])
 }
 #######################################################
-create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahead, hb=24)
+create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
 {
+  ## ALGORITMO "FIXED"  
+  # here step is the target hour to forecast
+  # in particular, here step and day_ahead start from 1
   d_f <- data_frame()
   
-  Names <- c(paste0(varn,"-",hb:1), paste0("aust-",hb:1), paste0("cors-",hb:1), paste0("fran-",hb:1), paste0("grec-",hb:1),
-             paste0("slov-",hb:1), paste0("sviz-",hb:1), "angleday", "holiday",
-             paste0("angleora-",hb:1),
+  Names <- c(paste0(varn,"-",24:1), paste0("aust-",24:1), paste0("cors-",24:1), paste0("fran-",24:1), paste0("grec-",24:1),
+             paste0("slov-",24:1), paste0("sviz-",24:1), "angleday", "holiday",
+             paste0("angleora-",24:1),
              "tmin","tmax","tmed","pioggia","vento",
              "y","target_ora", "target_day", "target_holiday","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento",
              "day")
@@ -103,7 +108,7 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
   
   for(i in 1:(nrow(pun)-corr))
   {
-    print(paste("i: ",i))
+    #print(paste("i: ",i))
     y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- hol <- c()
     tmin <- tmax <- tmed <- rain <- vm <- c()
     ttmin <- ttmax <- ttmed <- train <- tvm <- thol <- tday <- c()
@@ -114,7 +119,7 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
     
     if(!(dd2 %in% dat))
     {
-      print("preso")
+      #print("preso")
       dat <- c(dat, dd2) 
       p <- at_date[varn] 
       aus <- at_date["AUST"] 
@@ -125,8 +130,31 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
       sviz <- at_date["SVIZ"] 
       ora <- at_date[,2]
       
+      if( nrow(at_date) == 23)
+      {
+        p <- c(unlist(p), unlist(p)[23] - 5.96 ) 
+        aus <- c(unlist(aus), unlist(aus)[23] - 5.96) 
+        cors <- c(unlist(cors), unlist(cors)[23] - 5.96)
+        fran <- c(unlist(fran), unlist(fran)[23] - 5.96) 
+        grec <- c(unlist(grec), unlist(grec)[23] - 5.96) 
+        slov <- c(unlist(slov), unlist(slov)[23] - 5.96)
+        sviz <- c(unlist(sviz), unlist(sviz)[23] - 5.96) 
+        ora <- c(unlist(ora), 24)
+      }
+      
+      else if( nrow(at_date) == 25)
+      {
+        p <- unlist(p)[1:24]
+        aus <- unlist(aus)[1:24] 
+        cors <- unlist(cors)[1:24]
+        fran <- unlist(fran)[1:24]
+        grec <- unlist(grec)[1:24]
+        slov <- unlist(slov)[1:24]
+        sviz <- unlist(sviz)[1:24]
+        ora <- unlist(ora)[1:24]
+      }
       #day <- unlist(ifelse(nrow(d_f) > 0, d_f[nrow(d_f),ncol(d_f)], first_day))
-      print(paste("day qui:", day))
+      #print(paste("day qui:", day))
       #vdays <- associate_days(ora, day)
       #vdays2 <- maply(1:length(vdays), function(n) as.character(vdays[n]))
       #aday <- maply(1:length(vdays2), function(n) convert_day_to_angle(vdays2[n]))
@@ -151,21 +179,50 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
       target_data <- paste0(tda[3],"/",tda[2],"/",tda[1])
       
       tr <- which(well_dates %in% target_data)
-      print(tr)
+      #print(tr)
       target_pun <- pun[tr,]
       #print(target_pun[,1])
       tdts <- dates(target_pun[,1])
       #print(target_data)
       if(all(tdts==target_data) & length(tr) == 24)
       {
-        y <- target_pun[which(target_pun[,2] == hb+step+1),varn]
+        y <- target_pun[which(target_pun[,2] == step),varn]
         ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
         ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
         ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
         train <- associate_meteo_ora(target_data, meteo, "Pioggia")
         tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
         thol <- add_holidays(target_data)
-        print(day)
+        #print(day)
+        tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
+      }
+      
+      else if(all(tdts==target_data) & length(tr) == 23) ### if I'm here, I'm trying to predict some hour on the ending day of daylight saving
+      {
+        th <- step
+        if(th == 24) th <- 23
+        y <- target_pun[which(target_pun[,2] == th),varn] - 5.96
+        ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
+        ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
+        ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
+        train <- associate_meteo_ora(target_data, meteo, "Pioggia")
+        tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
+        thol <- add_holidays(target_data)
+        #print(day)
+        tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
+      }
+      
+      else if(all(tdts==target_data) & length(tr) == 25) ### if I'm here, I'm trying to predict some hour on the starting day of daylight saving
+      {
+       
+        y <- target_pun[which(target_pun[,2] == step),varn]
+        ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
+        ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
+        ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
+        train <- associate_meteo_ora(target_data, meteo, "Pioggia")
+        tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
+        thol <- add_holidays(target_data)
+        #print(day)
         tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
       }
       
@@ -179,19 +236,84 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
 
       colnames(df) <- Names
       
-      ll <- list(d_f,df)
-      d_f <- rbindlist(ll,use.names = TRUE)
+      # ll <- list(d_f,df)
+      # d_f <- rbindlist(ll,use.names = TRUE)
+      d_f <- bind_rows(d_f, df)
     }
     
   }
-  return(d_f[,1:244])
+  return(d_f[,1:208])
+}
+############################################################
+bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
+{
+  ## remember: step coincides with the hour to predict
+  start <- Sys.Date() - 31
+  db <- read_excel("C:/Users/utente/Documents/PUN/DB_pun.xlsx")
+  utc <- as.Date(db$Date)
+  use <- db[which(utc >= start),]
+  gh <- unlist(use[which(use["Hour"] == step),"PUN"])
+  vdiff <- maply(1:B, function(n) mean(maply(1:10, function(h) sample(gh, size = 1, replace = TRUE))) - yhat) #### VERY STRONG HYPOTHESIS ###
+  return(c(yhat+quantile(vdiff,probs=0.025), yhat+quantile(vdiff,probs=0.975)))
+}
+######################################################################
+treat_meteo2016 <- function(met)
+{
+  cols <- which(tolower(colnames(met)) %in% c("data", "tmin","tmax","tmed","pioggia","ventomedia"))
+  met2 <- met[,cols]
+  colnames(met2) <- c("Data", "Tmin","Tmax","Tmed","Pioggia","Vento_media")
+  return(met2)
+}
+######################################################################
+bind_meteos <- function(meteo1, meteo2)
+{
+  cn1 <- colnames(meteo1)
+  cn2 <- colnames(meteo2)
+  common <- intersect(cn1, cn2)
+  
+  met <- rbind(meteo1[,which(cn1 %in% common)],meteo1[,which(cn2 %in% common)])
+  return(met)
+}
+######################################################################
+generate_rolling_dataset <- function(data1,data2,meteo1,meteo2)
+{
+  meteolong <- bind_meteos(meteo1,treat_meteo2016(met2))
+  
+  for(da in 0:5)
+  {
+    for(step in 0:23)
+    {
+      tryCatch(
+      {
+      aug <- augmented_dataset(data1, data2, step = step , day_ahead = da)
+      trainset <- create_rolling_dataset(data1, "ven", "PUN",meteolong,step,da,23)
+      testset <- create_rolling_dataset(data2, "ven", "PUN",meteo2,step,da,23)
+      
+      trainseth2o <- as.h2o(trainset)
+      testseth2o <- as.h2o(testset)
+      
+      name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\trainset_step_",step,"_dayahead_",da,".csv")
+      name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\testset_step_",step,"_dayahead_",da,".csv")  
+      
+      h2o.exportFile(trainseth2o, name1)
+      h2o.exportFile(testseth2o, name2)
+      
+      rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+      print(paste("done step",step,"day ahead", da, "and removed the files"))
+      }, error = function(cond)
+      {
+        message(cond)
+        print(paste("day ahead", da, "and step", step, "failed"))
+      }
+      )
+    }
+  }
 }
 
-
-# tp2 <- read_excel("C:/Users/utente/Documents/PUN/test_pun.xlsx")
+# tp2 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx")
 # > tp2[1,1]
 # [1] "2016-07-31 23:59:59 UTC"
-# > as.POSIXct(tp2[,1], format="%d/%m/%Y %H:%M:%S", tz="ECT")
+# > as.POSIXct(tp2[,1], format="%d/%m/%Y %H:%M:%S", tz="UCT")
 # [1] "2016-07-31 23:59:59 UTC" "2016-08-01 00:59:59 UTC" "2016-08-01 01:59:59 UTC" "2016-08-01 02:59:59 UTC" "2016-08-01 03:59:59 UTC" "2016-08-01 04:59:59 UTC"
 # [7] "2016-08-01 06:00:00 UTC" "2016-08-01 06:59:59 UTC" "2016-08-01 07:59:59 UTC" "2016-08-01 08:59:59 UTC" "2016-08-01 09:59:59 UTC" "2016-08-01 10:59:59 UTC"
 # [13] "2016-08-01 11:59:59 UTC" "2016-08-01 12:59:59 UTC" "2016-08-01 13:59:59 UTC" "2016-08-01 14:59:59 UTC" "2016-08-01 15:59:59 UTC" "2016-08-01 16:59:59 UTC"
@@ -200,7 +322,7 @@ create_dataset_days_ahead <- function(pun, first_day, varn, meteo, step, day_ahe
 # [31] "2016-08-02 05:59:59 UTC" "2016-08-02 06:59:59 UTC" "2016-08-02 07:59:59 UTC" "2016-08-02 08:59:59 UTC" "2016-08-02 09:59:59 UTC" "2016-08-02 10:59:59 UTC"
 # [37] "2016-08-02 11:59:59 UTC" "2016-08-02 12:59:59 UTC" "2016-08-02 13:59:59 UTC" "2016-08-02 14:59:59 UTC" "2016-08-02 15:59:59 UTC" "2016-08-02 16:59:59 UTC"
 # [43] "2016-08-02 17:59:59 UTC" "2016-08-02 18:59:59 UTC" "2016-08-02 19:59:59 UTC" "2016-08-02 20:59:59 UTC" "2016-08-02 21:59:59 UTC" "2016-08-02 22:59:59 UTC"
-# > uct <- as.POSIXct(tp2[,1], format="%d/%m/%Y %H:%M:%S", tz="ECT")
+# > uct <- as.POSIXct(tp2[1,1], format="%d/%m/%Y %H:%M:%S", tz="UTC")
 # > uct[1]
 # [1] "2016-07-31 23:59:59 UTC"
 # > typeof(uct[1])
