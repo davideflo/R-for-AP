@@ -3,7 +3,10 @@
 library(readxl)
 library(lubridate)
 library(birk)
+library(data.table)
+library(mailR)
 
+#source("R_code/send_mail_server.R")
 source("R_code/functions_for_PUN_server.R")
 #### lubridate vignette: https://cran.r-project.org/web/packages/lubridate/vignettes/lubridate.html
 
@@ -80,6 +83,8 @@ create_rolling_dataset <- function(pun, first_day, varn, meteo, step, day_ahead,
     colnames(adf) <- Names
     
     d_f <- bind_rows(d_f, adf)
+    #l <- list(d_f,adf)
+    #d_f <- rbindlist(l, use.names = TRUE)
   }
   colnames(d_f) <- Names
   return(d_f[,1:354])
@@ -101,7 +106,7 @@ create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
   
   corr <- step + day_ahead*24
   
-  well_dates <- dates(pun[,1])
+  well_dates <- dates(unlist(pun[,1]))
   dat <- c()
   
   day <- first_day
@@ -236,8 +241,8 @@ create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
 
       colnames(df) <- Names
       
-      # ll <- list(d_f,df)
-      # d_f <- rbindlist(ll,use.names = TRUE)
+      #ll <- list(d_f,df)
+      #d_f <- rbindlist(ll,use.names = TRUE)
       d_f <- bind_rows(d_f, df)
     }
     
@@ -259,9 +264,9 @@ bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
 ######################################################################
 treat_meteo2016 <- function(met)
 {
-  cols <- which(tolower(colnames(met)) %in% c("data", "tmin","tmax","tmed","pioggia","ventomedia"))
+  cols <- which(tolower(colnames(met)) %in% c("data", "tmin","tmax","tmedia","pioggia","vento_media"))
   met2 <- met[,cols]
-  colnames(met2) <- c("Data", "Tmin","Tmax","Tmed","Pioggia","Vento_media")
+  colnames(met2) <- c("Data", "Tmin","Tmax","Tmedia","Pioggia","Vento_media")
   return(met2)
 }
 ######################################################################
@@ -277,34 +282,125 @@ bind_meteos <- function(meteo1, meteo2)
 ######################################################################
 generate_rolling_dataset <- function(data1,data2,meteo1,meteo2)
 {
-  meteolong <- bind_meteos(meteo1,treat_meteo2016(met2))
-  
+  gc()
+  meteolong <- bind_rows(meteo1,meteo2)
+  count <- 0
   for(da in 0:5)
   {
     for(step in 0:23)
     {
       tryCatch(
       {
-      aug <- augmented_dataset(data1, data2, step = step , day_ahead = da)
-      trainset <- create_rolling_dataset(data1, "ven", "PUN",meteolong,step,da,23)
-      testset <- create_rolling_dataset(data2, "ven", "PUN",meteo2,step,da,23)
-      
-      trainseth2o <- as.h2o(trainset)
-      testseth2o <- as.h2o(testset)
-      
-      name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\trainset_step_",step,"_dayahead_",da,".csv")
-      name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\testset_step_",step,"_dayahead_",da,".csv")  
-      
-      h2o.exportFile(trainseth2o, name1)
-      h2o.exportFile(testseth2o, name2)
-      
-      rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
-      print(paste("done step",step,"day ahead", da, "and removed the files"))
+        start <- Sys.time()
+        aug <- augmented_dataset(data1, data2, step = step , day_ahead = da)
+        trainset <- create_rolling_dataset(data1, "ven", "PUN",meteolong,step,da,23)
+        testset <- create_rolling_dataset(data2, "ven", "PUN",meteo2,step,da,23)
+        
+        trainseth2o <- as.h2o(trainset)
+        testseth2o <- as.h2o(testset)
+        
+        name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\trainset_step_",step,"_dayahead_",da,".csv")
+        name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\rolling\\testset_step_",step,"_dayahead_",da,".csv")  
+        
+        h2o.exportFile(trainseth2o, name1)
+        h2o.exportFile(testseth2o, name2)
+        
+        rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+        print(paste("done step",step,"day ahead", da, "and removed the files"))
+        
+        end <- Sys.time()
+        
+        body <- paste("done step ", step, "and day_ahead", da, "with time = ", end-start)
+        
+        if(!file.exists("monitor_rolling.txt")) write.csv2(body, "monitor_rolling.txt")
+        else write.csv2(body, "monitor_rolling.txt",append = TRUE)
+        
+        
+        # sender <- "davidefloriello.math@gmail.com"
+        # recipients <- c("dav.floriello@gmail.com")
+        # send.mail(from = sender,
+        #           to = recipients,
+        #           subject = "avanzamento creazione dataset",
+        #           body = body,
+        #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
+        #                       user.name = "davidefloriello.math@gmail.com",            
+        #                       passwd = "armaditaggia", ssl = TRUE),
+        #           authenticate = TRUE,
+        #           send = TRUE)
+        # 
+        count <- count + 1
+        print(paste0("passages left: ",24*6 - count))
       }, error = function(cond)
       {
         message(cond)
         print(paste("day ahead", da, "and step", step, "failed"))
       }
+      )
+    }
+  }
+}
+##############################################################################
+generate_fixed_dataset <- function(data1,data2,meteo1,meteo2)
+{
+  gc()
+  meteolong <- bind_rows(meteo1,meteo2)
+  #l <- list(meteo1,meteo2)
+  #meteolong <- rbindlist(l, use.names = TRUE)
+  count <- 0
+  for(da in 1:5)
+  {
+    for(step in 1:24)
+    {
+      tryCatch(
+        {
+          start <- Sys.time()
+          aug <- augmented_dataset(data1, data2, step = step , day_ahead = da)
+          trainset <- create_fixed_dataset(data1, "ven", "PUN",meteolong,step,da)
+          testset <- create_fixed_dataset(data2, "ven", "PUN",meteo2,step,da)
+          
+          trainseth2o <- as.h2o(trainset)
+          testseth2o <- as.h2o(testset)
+          
+          name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\trainset_step_",step,"_dayahead_",da,".csv")
+          name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\testset_step_",step,"_dayahead_",da,".csv")  
+          
+          h2o.exportFile(trainseth2o, name1)
+          h2o.exportFile(testseth2o, name2)
+          
+          rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+          print(paste("done step",step,"day ahead", da, "and removed the files"))
+          
+          end <- Sys.time()
+          end-start
+          
+          body <- paste("done step ", step, "and day_ahead", da, "with time = ", end-start)
+          
+          if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
+          else write.csv2(body, "monitor_fixed.txt",append = TRUE)
+          
+          
+          # 
+          # 
+          # sender <- "davidefloriello.math@gmail.com"
+          # recipients <- c("dav.floriello@gmail.com")
+          # send.mail(from = sender,
+          #           to = recipients,
+          #           subject = "avanzamento creazione dataset",
+          #           body = body,
+          #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
+          #                       user.name = "davidefloriello.math@gmail.com",            
+          #                       passwd = "armaditaggia", ssl = TRUE),
+          #           authenticate = TRUE,
+          #           send = TRUE)
+          # 
+          # 
+          count <- count + 1
+          print(paste0("passages left: ",24*5 - count))
+        }, error = function(cond)
+        {
+          message(cond)
+          print(paste("day ahead", da, "and step", step, "failed"))
+        }
       )
     }
   }

@@ -1,7 +1,7 @@
 ### functions for PUN
 library(openxlsx)
 library(plyr)
-library(dplyr)
+library(dtplyr)
 library(reshape)
 library(stringi)
 library(xlsx)
@@ -10,7 +10,7 @@ library(fda)
 #library(h2o)
 library(TSA)
 library(tseries)
-library(data.table)
+#library(data.table)
 
 #localH2O <- h2o.init()
 library(TDA)
@@ -116,7 +116,7 @@ add_days <- function(first_day, year)
 ###################################################################################
 dates <- function(vec)
 {
-  vec <- as.character(vec)
+  vec <- unlist(as.character(vec))
   dt <- rep(0, length(vec))
   for(i in 1:length(vec))
   {
@@ -805,7 +805,7 @@ prepare_dataset_for_prediction <- function(path, path_meteo, varn, step)
 mediate_meteos <- function(mi,ro,fi,pa,ca,rc,flag_2016)
 {
   df <- data_frame()
-  vars <- c("tmin", "tmax", "tmed", "pioggia", "vento_media")
+  vars <- c("tmin", "tmax", "tmedia", "pioggia", "vento_media")
   if(flag_2016) vars[5] <- "ventomedia"
   for(i in 1:nrow(fi))
   {
@@ -816,20 +816,21 @@ mediate_meteos <- function(mi,ro,fi,pa,ca,rc,flag_2016)
     ica <- which(ca[,which(tolower(colnames(ca)) == "data")] == dt)
     irc <- which(rc[,which(tolower(colnames(rc)) == "data")] == dt)
     
-    cv <- c()
+    cv <- rep(0, length(vars))
     
     for(v in vars)
     {
-      cv <- c(cv, mean( mi[imi, which(tolower(colnames(mi)) == v)],
+      j <- which(vars == v)
+      cv[j] <- mean( c(mi[imi, which(tolower(colnames(mi)) == v)],
                         fi[i, which(tolower(colnames(fi)) == v)],
                         ro[iro, which(tolower(colnames(ro)) == v)],
                         pa[ipa, which(tolower(colnames(pa)) == v)],
                         ca[ica, which(tolower(colnames(ca)) == v)],
-                        rc[irc, which(tolower(colnames(rc)) == v)]))
+                        rc[irc, which(tolower(colnames(rc)) == v)]),na.rm=TRUE)
     }
     df <- bind_rows(df, data.frame(as.character(dt),t(cv)))
   }
-  colnames(df) <- c("Data", "Tmin", "Tmax", "Tmed", "Pioggia", "Vento_media")
+  colnames(df) <- c("Data", "Tmin", "Tmax", "Tmedia", "Pioggia", "Vento_media")
   return(df)
 }
 
