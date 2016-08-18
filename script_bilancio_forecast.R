@@ -234,7 +234,7 @@ tot_ap <- tot - tot_enel
 x16 <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
-pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
+#pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
 
 date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = TRUE)
 #date <- as.Date(date[2,],origin = "1899-12-30")
@@ -242,22 +242,22 @@ date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = TRUE)
 c_stok <- c(21.875, 21.875, 21.875)
 
 
-mkt <- data.frame(t(mkt))
+#mkt <- data.frame(t(mkt))
 stok_prog <- data.frame(t(stok_prog))
-colnames(mkt) <- colnames(date[1,])
+#colnames(mkt) <- colnames(date[1,])
 colnames(stok_prog) <- colnames(date[1,])
 
 
-mmkt <- c(sum_in_year(mkt, "2016"), sum_in_year(mkt, "2017"))
+#mmkt <- c(sum_in_year(mkt, "2016"), sum_in_year(mkt, "2017"))
 mstok_prog <- c(sum_in_year(stok_prog, "2016"), sum_in_year(stok_prog, "2017"))
 
 
-stokm <- rep(mstok_prog/c(x16,x17), c(x16,x17))
+#stokm <- rep(mstok_prog/c(x16,x17), c(x16,x17))
 #term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[5], 92), rep(pg[6], 90), rep(0, 275))
-term <- tt
+#term <- tt
 
 mmkt2 <- c(as.numeric(tot_termine[,3]), 0,0,0,0,0,0,0,0,0)
-ST <- stokm + term
+#ST <- stokm + term
 #op <- tot_fap - (mstok_prog + mmkt2)
 op <- tot_ap - (mstok_prog + mmkt2)
 
