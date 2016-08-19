@@ -15,7 +15,7 @@ for(da in 1:5)
 {
   for(step in 1:24)
   {
-    id <- paste0(step,"|",da)
+    id <- paste0("sda",step,"_",da)
     tryCatch(
       {
         start <- Sys.time()
@@ -23,17 +23,18 @@ for(da in 1:5)
         name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\trainset_step_",step,"_dayahead_",da,".csv")
         name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\testset_step_",step,"_dayahead_",da,".csv")  
         
-        trainseth2o <- h2o.importFile(name1)
-        testseth2o <- h2o.importFile(name2)
+        train <- read.csv2(name1, header = TRUE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)
+        test <- read.csv2(name2, header = TRUE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)
+        
+        trainseth2o <- as.h2o(data.matrix(train))
+        testseth2o <- as.h2o(data.matrix(test))
         
         predictors <- setdiff(names(trainseth2o), response)
         
-        modelname <- paste0("model_",step,"_",da)
         
         model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
                                   activation = "Rectifier", hidden = c(2188,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
         
-        #assign(modelname, model)
         
         h2o.saveModel(model, "C:\\Users\\utente\\Documents\\PUN\\fixed\\models", force = FALSE)
 
