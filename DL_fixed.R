@@ -16,6 +16,7 @@ for(da in 1:5)
   for(step in 1:24)
   {
     id <- paste0("sda",step,"_",da)
+    r2 <- 0
     tryCatch(
       {
         start <- Sys.time()
@@ -29,21 +30,43 @@ for(da in 1:5)
         trainseth2o <- as.h2o(data.matrix(train))
         testseth2o <- as.h2o(data.matrix(test))
         
+        #drop <- names(trainseth2o)[grep("angleora",names(trainseth2o))]
+        #predictors <- setdiff(names(trainseth2o), union(response,drop))
+        
         predictors <- setdiff(names(trainseth2o), response)
         
+        while(r2 <= 0)
+        {
+          
+          model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
+                                    activation = "Rectifier", hidden = c(2188,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
+          
+          r2 <- h2o.r2(model, train = FALSE, valid = TRUE)
         
-        model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
-                                  activation = "Rectifier", hidden = c(2188,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
+        }
         
         
         h2o.saveModel(model, "C:\\Users\\utente\\Documents\\PUN\\fixed\\models", force = FALSE)
 
-        df <- data.frame(as.character(id), h2o.r2(model, train = TRUE, valid = TRUE), h2o.mse(model, train = TRUE, valid = TRUE))
+        df <- data.frame(as.character(id), t(h2o.r2(model, train = TRUE, valid = TRUE)), t(h2o.mse(model, train = TRUE, valid = TRUE)))
         res <- bind_rows(res, df)
                 
         h2o.rm(trainseth2o); h2o.rm(testseth2o);
         h2o.rm(model)
         print(paste("done step",step,"day ahead", da, "and removed the files"))
+        
+        ### ERROR DISTRIBUTION FOR BOOTSTRAP ##########
+        Y <- as.numeric(unlist(test$y))
+        pred <- predict(model, testseth2o)
+        
+        pt <- as.numeric(pred$predict) 
+        pt <- as.matrix(pt)
+        pt <- unlist(pt[,1])
+        
+        diff <- Y - pt
+        
+        xlsx::write.xlsx(data.frame(diff),paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\errors\\distribution_errors_step_",step,"_dayahead_",da,".xlsx"))
+        ###############################################
         
         end <- Sys.time()
         print(end-start)
@@ -65,3 +88,9 @@ for(da in 1:5)
 
 xlsx::write.xlsx(res,"performance_DLFixed_models.xlsx", row.names = TRUE, col.names = TRUE)
 write.table(as.data.frame(missed), "missed_models.txt")
+
+
+
+
+
+
