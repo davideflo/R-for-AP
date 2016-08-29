@@ -8,7 +8,8 @@ library(lubridate)
 ### and excel
 
 ## source
-
+source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
+source("C://Users//utente//Documents//R_code//functions_for_PUN_server.R")
 
 build_meteo_new <- function(date)
 {
@@ -21,7 +22,7 @@ build_meteo_new <- function(date)
   # 2: tmin.+1, tmax.+1, tmed.+1, rain.+1, wind.+1
   # 3: tmin.+2, tmax.+2, tmed.+2, rain.+2, wind.+2
   #
-  res <- matrix(6, nrow = 5, ncol= 5)
+  res <- matrix(0, nrow = 6, ncol= 5)
   
   var_names <- c("mi","ro","fi","ca","pa","rc")
   
@@ -32,22 +33,37 @@ build_meteo_new <- function(date)
   pa <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Palermo.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
   rc <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Reggio Calabria.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
   
-  dt <- as.Date(date)
+  
   for(i in 0:5)
   {
-    temp <- matrix(0,nrow=5,ncol=5)
+    print(i)
+    temp <- matrix(0,nrow=6,ncol=5)
+    dt <- as.Date(date) + i
     for(n in var_names)
     {
       df <- get(n)
-      at <- which(as.Date(df[,1]) == dt)
-      df2 <- df[at,3:ncol(df)]
+      at <- which(as.Date(df[,1], format = "%Y-%m-%d") == dt)
+      df2 <- df[at,]
       
       r <- which(var_names == n)
-      temp[r,1] <- min(unlist(df2[,1+(i*3)]))
-      temp[r,2] <- max(unlist(df2[,1+(i*3)]))
-      temp[r,3] <- mean(unlist(df2[,1+(i*3)]))
-      temp[r,4] <- mean(unlist(df2[,3+(i*3)])) ### RAIN
-      temp[r,5] <- mean(unlist(df2[,2+(i*3)])) ### WIND
+      print(paste("r", r))
+      print(mean(as.numeric(unlist(df2[,4]))))
+      if(i == 0)
+      {
+        temp[r,1] <- min(as.numeric(unlist(df2[,3])))
+        temp[r,2] <- max(as.numeric(unlist(df2[,3])))
+        temp[r,3] <- mean(as.numeric(unlist(df2[,3])))
+        temp[r,4] <- mean(as.numeric(unlist(df2[,5])), na.rm=TRUE) ### RAIN
+        temp[r,5] <- mean(as.numeric(unlist(df2[,4])), na.rm=TRUE) ### WIND
+      }
+      else 
+      {
+        temp[r,1] <- min(as.numeric(unlist(df2[,2])))
+        temp[r,2] <- max(as.numeric(unlist(df2[,2])))
+        temp[r,3] <- mean(as.numeric(unlist(df2[,2])))
+        temp[r,4] <- mean(as.numeric(unlist(df2[,4])), na.rm=TRUE) ### RAIN
+        temp[r,5] <- mean(as.numeric(unlist(df2[,3])), na.rm=TRUE) ### WIND
+      }
     }
     res[i+1,] <- c(unlist(colMeans(temp)))
   }
@@ -62,14 +78,25 @@ build_new <- function(df)
   ## put the prices in rows
   ## compute old and new holidays
   ## old and new angleday 
-  ## all the "new" variables are in last columns
+  ## all the "new" variables are in the last columns
   dt <- Sys.Date() + 1
-  oggi <- which(as.Date(df[,1]) == dt)
+  
+  untime <- maply(1:nrow(df), function(n) unlist(df[n,1]))
+  
+  #utc <- as.POSIXct(untime, format="%d/%m/%Y %H:%M:%S", origin = "1970-01-01", tz="UCT")
+  utc <- as.POSIXct(untime, origin = "1970-01-01")
+  
+  
+  #ad <- as.character(unlist(df[,1]))
+  #add <- unlist(strsplit(ad, " "))
+  #add
+  
+  oggi <- which(as.Date(utc) == dt)
   dft <- df[oggi,]
-  aday1 <- convert_day_to_anfle(subsequent_day(tolower(as.character(dft[1,6]))))
+  aday1 <- convert_day_to_angle(subsequent_day(tolower(as.character(dft[1,6]))))
   
   tda <- unlist(strsplit(as.character(dt),"-"))
-  target_data <- paste0(dt[3],"/",dt[2],"/",dt[1])
+  target_data <- paste0(tda[3],"/",tda[2],"/",tda[1])
   hol <- add_holidays(target_data)
   ahour <- convert_hour_to_angle(1:24)
   
@@ -91,7 +118,7 @@ build_new <- function(df)
   
   else 
   {
-    df2 <- data.frame(t(dft[,14]), t(dft[,15]), t(dft[,20]), t(dft[,23]), t(dft[,24]), t(dft[,31]), t(dft[,33]),aday1, hol, t(ahour))
+    df2 <- data.frame(t(dft[,13]), t(dft[,14]), t(dft[,19]), t(dft[,22]), t(dft[,23]), t(dft[,30]), t(dft[,32]),aday1, hol, t(ahour))
   }
   Names <- c(paste0("pun-",24:1), paste0("aust-",24:1), paste0("cors-",24:1), paste0("fran-",24:1), paste0("grec-",24:1),
              paste0("slov-",24:1), paste0("sviz-",24:1),"angleday","holiday",paste0("anglehour-",24:1))
@@ -104,7 +131,11 @@ build_new <- function(df)
 assemble_pm <- function(pn, meteo)
 {
   res <- matrix(0,nrow=5*24,ncol=207)
-  # build rows by column names
+  # "meteo" comes from build_meteo_new
+  
+  ### DEFINE day
+  wd <- tolower(as.character(lubridate::wday(Sys.Date(), label = TRUE)))
+  
   for(i in 1:120)
   {
     step_p <- ifelse(i %% 24 == 0, 24, i %% 24)
@@ -141,7 +172,7 @@ prediction <- function(path, date, meteo)
 {
   res <- matrix(0, nrow=24, ncol=5)
   ## load pun file
-  pp <- read_excel("DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
+  pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
   ## look for date
   ppnew <- pp[which(pp[,1] == as.Date(date))]
   ## build "new observation"
