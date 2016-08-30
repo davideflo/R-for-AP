@@ -4,11 +4,11 @@
 
 read_file_anagrafica <- function(ao)
 {
-  names <- ao[1,]
-  ao2 <- ao[2:nrow(ao),]
-  colnames(ao2) <- names
-  ao2[is.na(ao2)] <- 0
-  return(ao2)
+  #names <- ao[1,]
+  #ao2 <- ao[2:nrow(ao),]
+  #colnames(ao2) <- names
+  ao[is.na(ao)] <- 0
+  return(ao)
 }
 #######
 extract_rc_4_clusters <- function(ao)

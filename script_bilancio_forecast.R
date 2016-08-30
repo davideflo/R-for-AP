@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report 214_11-07-2016.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("REPORT_214_29-08-16.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
