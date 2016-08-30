@@ -254,12 +254,12 @@ bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
 {
   ## remember: step coincides with the hour to predict
   start <- Sys.Date() - 31
-  db <- read_excel("C:/Users/utente/Documents/PUN/DB_pun.xlsx")
+  db <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
   utc <- as.Date(db$Date)
-  use <- db[which(utc >= start),]
-  gh <- unlist(use[which(use["Hour"] == step),"PUN"])
+  use <- db[which(utc >= start & utc <= (Sys.Date()-1)),]
+  gh <- unlist(use[which(use["Hour"] == step),13])
   vdiff <- maply(1:B, function(n) mean(maply(1:10, function(h) sample(gh, size = 1, replace = TRUE))) - yhat) #### VERY STRONG HYPOTHESIS ###
-  return(c(yhat+quantile(vdiff,probs=0.025), yhat+quantile(vdiff,probs=0.975)))
+  return(c(yhat+quantile(vdiff,probs=0.025), yhat-quantile(vdiff,probs=0.975)))
 }
 ######################################################################
 treat_meteo2016 <- function(met)

@@ -64,7 +64,7 @@ subsequent_day <- function(day)
 compute_day_at <- function(today, day_ahead)
 {
   days <- c("dom","lun","mar","mer","gio","ven","sab")
-  ang <- which(days == today)
+  ang <- which(days == convert_day(tolower(today)))
   n <- ((ang+day_ahead) %% 7) 
   if(n == 0) n <- 7
   return(days[n])
