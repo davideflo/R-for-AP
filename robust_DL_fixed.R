@@ -2,6 +2,15 @@
 
 ##### BUILDING DL-FIXED MODEL
 
+#library.path <- cat(.libPaths())
+#library.path <- "C:/Users/utente/Documents/R/win-library/3.3"
+#library("xlsx", lib.loc = library.path)
+#library(xlsx)
+#library("dplyr", lib.loc = library.path)
+#library("h2o", lib.loc = library.path)
+if(!require(xlsx)){install.packages("xlsx", lib = "C:/Program Files/R/R-3.3.1/library")}
+if(!require(dplyr)){install.packages("dplyr", lib = "C:/Program Files/R/R-3.3.1/library")}
+if(!require(h2o)){install.packages("h2o", lib = "C:/Program Files/R/R-3.3.1/library")}
 library(xlsx)
 library(dplyr)
 library(h2o)
@@ -18,7 +27,10 @@ for(da in 1:5)
   for(step in 1:24)
   {
     id <- paste0("sda",step,"_",da)
-    r2 <- 0
+    r2 <- R2 <- 0
+    i <- step
+    if(i == 21) {R2 <- 0.4}
+    else {R2 <- 0.6}
     tryCatch(
       {
         start <- Sys.time()
@@ -42,7 +54,7 @@ for(da in 1:5)
         
         predictors <- setdiff(names(trainseth2o), response)
         
-        while(r2 <= 0.6 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
+        while(r2 <= R2 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
         {
           
           model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
@@ -50,6 +62,7 @@ for(da in 1:5)
           
           r2 <- h2o.r2(model, train = FALSE, valid = TRUE)
           print(r2)
+          r2 <- as.numeric(r2)
         }
         
         

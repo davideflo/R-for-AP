@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-08-30"
+date <- "2016-09-01"
 
 met <- build_meteo_new(date)
 
@@ -27,15 +27,15 @@ print(end-start)
 #rownames(res) <- c(1:24)
 #colnames(res) <- paste(as.character(Sys.Date() + 1:5))
 
-xlsx::write.xlsx(res,"prediction_PUN.xlsx", row.names = TRUE, col.names = TRUE)
+xlsx::write.xlsx(res,paste0("prediction_PUN",date,".xlsx"), row.names = FALSE, col.names = TRUE)
 
 
 #### BOOTSTRAP WITH ERROR DATABASE
 for(i in 1:24)
 {
   print(paste0("CI for 1 day ahead and step", i))
-  bc <- bootstrap_f_r_errors(res[i,1], i, 1)
-  print(paste("L =", bc[1], "yp", res[i,1], "U =", bc[2]))
+  bc <- bootstrap_f_r_errors(res[i,2], i, 1)
+  print(paste("L =", bc[1], "yp", res[i,2], "U =", bc[2]))
 }
 
 #### BOOTSTRAP WITH PUN DATABASE
