@@ -3,6 +3,7 @@
 library(h2o)
 library(readxl)
 library(lubridate)
+library(dplyr)
 
 ### all variables called date are of the type used by lubridate 
 ### and excel
@@ -197,7 +198,7 @@ prediction <- function(date)
   if(file.exists(file))
   {
     of <- read_excel(file)
-    of <- data_frame(of)
+    of <- data.frame(of)
     diff2 <- data.frame(diff)
     colnames(diff2) <- as.character(odie)
     of <- bind_cols(of,diff2)
@@ -213,15 +214,15 @@ prediction <- function(date)
   prevcorr <- read_excel(paste0("C:\\Users\\utente\\Documents\\prediction_PUN_",odie-1,".xlsx"))
   prev2corr <- unlist(prev[paste0("prediction_",as.character(odie))])
   diffcorr <- prev2corr - pun_oggi
-  file <- "C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx"
-  if(file.exists(file))
+  file2 <- "C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx"
+  if(file.exists(file2))
   {
-    of <- read_excel(file)
-    of <- data_frame(of)
+    of2 <- read_excel(file2)
+    of2 <- data.frame(of2)
     diff2corr <- data.frame(diffcorr)
     colnames(diff2corr) <- as.character(odie)
-    of <- bind_cols(of,diff2corr)
-    xlsx::write.xlsx(of,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx", row.names = FALSE, col.names = TRUE)
+    of2 <- bind_cols(of2,diff2corr)
+    xlsx::write.xlsx(of2,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx", row.names = FALSE, col.names = TRUE)
   }
   else
   {
@@ -244,7 +245,7 @@ prediction <- function(date)
       x2 <- as.numeric(x$predict)
       x3 <- as.matrix(x2)
       x4 <- unlist(x3[,1])
-      yhat <- x4 - diff[step] - diffcorr
+      yhat <- x4 - diff[step] #- diffcorr[step]
       res[step,dam] <- yhat
       restr[step, da] <- x4
       h2o.rm(model)
