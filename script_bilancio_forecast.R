@@ -59,11 +59,6 @@ curve_profili_AP <- compute_profiles_DEF(aggregati_AP, prof_consumo)
 curve_profili_fissi <- compute_profiles_DEF(aggregati_fissi, prof_consumo)
 
 matplot(1:731, t(curve_profili), type="l")
-## acquisto shipper terzi
-btb <- openxlsx::read.xlsx("back_to_back.xlsx", sheet = 1, colNames = TRUE)
-#### mesi: colonne da 6 a 17, acquisto: colonna 36, data inizio e data fine: 23 e 25.
-btb <- btb[2:nrow(btb),]
-terzi <- colSums(profilo_acquisti_shipper_terzi(btb))
 
 ## mercato a termine (carica il file): prima colonna = mercato a termine in volumi; seconda colonna = valore mercato a termine
 tot_termine <- openxlsx::read.xlsx("tot_mercato_termine.xlsx", sheet = 1)
@@ -122,87 +117,28 @@ TP[is.na(TP)] <- 0
 
 tot <- TOT_m3(TP, pm)
 tp <- compute_TP(TP,pm)
-plot(1:24, tp, type = "l", col="red", xlab = "tempo", ylab = "TP", main = "Andamento Transfer Price")
-# calcolo del TP solo per fissi axopower
-AP <- which(ao["SHIPPER"] == "0001808491-AXOPOWER SRL")
-zer <- which(ao["SHIPPER"] == "0") ## se gli NA sono stati sostituiti!!!
-NAP <- ao[-c(AP,zer),]
-AP <- ao[c(AP,zer),]
+#plot(1:24, tp, type = "l", col="red", xlab = "tempo", ylab = "TP", main = "Andamento Transfer Price")
 
 
-# pers_fissi <- c("LGP-BI-IVPR", "LGP-BI-PIUS", "LGP-BI-MITC")
-# nf <- c()
-# for(i in 1:nrow(AP))
-# {
-#   name <- AP[i,"CODICE_PRODOTTO"] 
-#   if(name %in% pers_fissi)
-#   {
-#     nf <- c(nf,i)
-#   }
-#   
-#   lorr <- stri_sub(name, 1, 1)
-#   forv <- stri_sub(name, 6, 6)
-#   if(forv == "F" & lorr != "R")
-#   {
-#     nf <- c(nf,i)
-#   }
-# }
-# apf <- AP[nf,]
-
-#apf2 <- anni_competenza(apf, "01/01/2016")
-#apf3 <- extract_relevant_val(apf2)
-nap <- extract_relevant_val(NAP)
-
-#fissi2 <- compute_combinations_DEF_val(apf3)
-enel <- compute_combinations_DEF_val(nap)
-#enel <- enel[c(1:5,10:32),]
-
-# nf2 <- c()
-# for(i in 1:nrow(fissi2))
-# {
-#   name <- fissi2[i,"prodotto"]
-#   if(name %in% pers_fissi)
-#   {
-#     nf2 <- c(nf2,i)
-#   }
-#   lorr <- stri_sub(name, 1, 1)
-#   forv <- stri_sub(name, 6, 6)
-#   if(forv == "F" & lorr != "R")
-#   {
-#     nf2 <- c(nf2,i)
-#   }
-# }
-# f2 <- fissi2[nf2,]
+# a1 <- c("LGC_MF_1510" , "01/02/2016", "31/01/2017"  ,  "T2E3"   ,"27715",0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0)
+# a2 <- c("RGC_MF_1510",  "01/02/2017", "31/12/2017",    "T2E3",   "27715",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1)
 # 
-# tpf <- compute_TP(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
-# tot_fap <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(f2["prodotto"])),],pm) # solo AP shipper fissi
-in1 <- which(unlist(aggregati["prodotto"]) %in% unlist(enel["prodotto"]))
-in2 <- which(unlist(aggregati["data.inizio"]) %in% unlist(enel["data inizio"]))
-in3 <- which(unlist(aggregati["data.fine"]) %in% unlist(enel["data fine"]))
-in4 <- which(unlist(aggregati["profilo"]) %in% unlist(enel["profilo"]))
-in5 <- which(unlist(aggregati["consumo"]) %in% unlist(enel["consumo"]))
+# 
+# 
+# a <- data.frame(rbind(a1,a2))
+# colnames(a) <- colnames(TP[,])
+# 
+# index <- intersect(intersect(in1,in2), intersect(in3,in4))
+# index <- intersect(index, in5)
 
-a1 <- c("LGC_MF_1510" , "01/02/2016", "31/01/2017"  ,  "T2E3"   ,"27715",0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0)
-a2 <- c("RGC_MF_1510",  "01/02/2017", "31/12/2017",    "T2E3",   "27715",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1)
-
-
-
-a <- data.frame(rbind(a1,a2))
-colnames(a) <- colnames(TP[,])
-
-index <- intersect(intersect(in1,in2), intersect(in3,in4))
-index <- intersect(index, in5)
-
-#TPe <- rbind(TP[index,],a)
-#TPe <- TP[index,]
 TPe <- TP[which(TP["shipper"] == "ENEL TRADE"),]
 
 tot_enel <- TOT_m3(TPe,pm)
 #te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
-             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60)
+             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
@@ -222,10 +158,6 @@ ME <- ME/100
 terzi <- colSums(ME)
 
 ## solo AP
-ap2 <- extract_relevant_val(AP)
-
-ap3 <- compute_combinations_DEF_val(ap2)
-
 tp_ap <- compute_TP(TP[which(TP["shipper"] == "AXOPOWER"),],pm) # solo AP shipper fissi
 #tot_ap <- TOT_m3(TP[which(unlist(TP["prodotto"]) %in% unlist(ap3["prodotto"])),],pm) # solo AP shipper fissi
 tot_ap <- tot - tot_enel
