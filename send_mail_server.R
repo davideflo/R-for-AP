@@ -16,8 +16,8 @@ create_contents_mail <- function(toaddrs,subject,text){
     "msg['Subject'] = 'Download tweets'", 
     
     #SMTP server credentials 
-    "username = 'davidefloriello.math@gmail.com''", 
-    "password = 'armaditaggia'", 
+    "username = '###''", 
+    "password = '###'", 
     
     #Set SMTP server and send email, e.g., google mail SMTP server 
     "server = smtplib.SMTP('smtp.gmail.com:587')", 
