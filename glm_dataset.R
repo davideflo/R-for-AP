@@ -15,8 +15,9 @@ dates2 <- function(vd)
   asdd <- c()
   for(n in 1:length(vd))
   {
+    d <- unlist(strsplit(vd[n],"/"))
     ##asdd <- maply(1:length(vd), function(n) as.Date(paste0(unlist(strsplit(vd[n],"/"))[3],"-",unlist(strsplit(vd[n],"/"))[2],"-",unlist(strsplit(vd[n],"/"))[1])) )
-    asdd <- c(asdd,as.Date(paste0(unlist(strsplit(vd[n],"/"))[3],"-",unlist(strsplit(vd[n],"/"))[2],"-",unlist(strsplit(vd[n],"/"))[1])) )
+    asdd <- c(asdd,as.character(as.Date(paste0(d[3],"-",d[2],"-",d[1]))) )
   }
   return(asdd)
 }
@@ -76,17 +77,17 @@ from_dates_to_char <- function(dt)
 #####################################################################################################################################a
 get_meteo <- function(met)
 {
-  cols <- which(tolower(colnames(met)) %in% c("tmin","tmax","tmedia","pioggia","vento_media"))
+  cols <- which(tolower(colnames(met)) %in% c("tmin","tmax","tmedia","pioggia","ventomedia"))
   dts <- unlist(met[,2])
   
   nums <- grep("/", dts)
   notn <- (nums[length(nums)]+1):nrow(met)
   
-  dts2 <- c(dates2(dts[nums]), maply(1:length(notn), function(n) as.Date(as.numeric(dts[notn[n]]),origin = '1970-01-01')))
+  dts2 <- c(dates2(dts[nums]), maply(1:length(notn), function(n) as.character(as.Date(as.numeric(dts[notn[n]]),origin = '1899-12-30'))))
   
   dts3 <- maply(1:length(dts2), function(n) from_dates_to_char(dts2[n]))
   
   met2 <- data.frame(dts3,met[,cols])
-  colnames(met2) <- c("Data", "Tmin","Tmax","Tmedia","Pioggia","Vento_media")
+  colnames(met2) <- c("Data", "Tmin","Tmax","Tmedia","Vento_media","Pioggia")
   return(met2)
 }
