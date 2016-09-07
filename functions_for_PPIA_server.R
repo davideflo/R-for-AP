@@ -324,7 +324,7 @@ generate_rolling_dataset <- function(data1,data2,meteo1,meteo2)
         #           body = body,
         #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
         #                       user.name = "davidefloriello.math@gmail.com",            
-        #                       passwd = "armaditaggia", ssl = TRUE),
+        #                       passwd = "########", ssl = TRUE),
         #           authenticate = TRUE,
         #           send = TRUE)
         # 
@@ -389,7 +389,7 @@ generate_fixed_dataset <- function(data1,data2,meteo1,meteo2)
           #           body = body,
           #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
           #                       user.name = "davidefloriello.math@gmail.com",            
-          #                       passwd = "armaditaggia", ssl = TRUE),
+          #                       passwd = "################", ssl = TRUE),
           #           authenticate = TRUE,
           #           send = TRUE)
           # 
