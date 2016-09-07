@@ -24,6 +24,7 @@ dates2 <- function(vd)
 ###############################################################################################################################################
 create_glm_dataset <- function(pun, varn, regressorh, targeth, meteo, day_ahead)
 {
+  pun <- data.frame(pun)
   vanames <- c(varn,"aust","cors","fran","grec",
              "slov","sviz","angleday","holiday",
              "tmin","tmax", "tmed", "rain", "vento",
@@ -39,20 +40,33 @@ create_glm_dataset <- function(pun, varn, regressorh, targeth, meteo, day_ahead)
   
   regh <- which(pun[,2] == regressorh)
   tarh <- which(pun[,2] == targeth)
-  start_ix <- 1
+  
+  if(regressorh == 24 | targeth == 24)
+  {
+    index1 <- index2 <- 0
+    for(i in 1:(nrow(pun)-1))
+    {
+      #print(i)
+      #print((pun[i,2] == 23) & (pun[i+1,2] == 1))
+      if((pun[i,2] == 23) & (pun[i+1,2] == 1)) index1 <- i+1
+      if(pun[i,2] == 24 & pun[i+1,2] == 25) index2 <- i
+    }
+    if(regressorh == 24) regh <- sort(c(regh,index1), decreasing = FALSE)
+    if(targeth == 24) tarh <- sort(c(tarh,index1), decreasing = FALSE)
+  }
   
   reg_val <- pun[regh[1:(length(regh)-day_ahead)], variables]
-  if(day_ahead > 0) {y <- pun[tarh[(1+day_ahead):length(tarh)],varn]; start_ix <- day_ahead}
+  if(day_ahead > 0) {y <- pun[tarh[(1+day_ahead):length(tarh)],varn]}
   else {y <- pun[tarh,varn]}
   
   dts <- dates(pun[,1])
-  hol <- add_holidays(asdts3)
   
   asdts <- dates2(dts)
   asdts2 <- unique(asdts)
   asdts3 <- maply(1:length(asdts2), function(n) from_dates_to_char(asdts2[n]))
   day <- maply(1:length(asdts2), function(n) convert_day_to_angle(convert_day(as.character(lubridate::wday(asdts2[n],label=TRUE)))))
-  
+  hol <- add_holidays(asdts3)
+    
   tmin <- tmax <- tmed <- rain <- vm <- ttmin <- ttmax <- ttmed <- train <- tvm <- c()
   
   for(n in 1:(length(asdts3)-day_ahead))

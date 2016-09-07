@@ -29,4 +29,8 @@ meteoav16 <- mediate_meteos(mi6, ro6, fi6, pa6, ca6, rc6, FALSE)
 
 library(h2o)
 
+create_glm_dataset(prices16, "PUN", 24, 1, meteoav16, 1)
+
 generate_glm_datasets(prices16, meteoav16)
+
+test <- read.csv2("C:/Users/utente/Documents/PUN/Default Dataset_2016-09-07.csv", header = FALSE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)
