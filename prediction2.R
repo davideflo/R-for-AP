@@ -27,12 +27,12 @@ build_meteo_new <- function(date)
   
   var_names <- c("mi","ro","fi","ca","pa","rc")
   
-  mi <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Milano.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
-  ro <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Roma.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
-  fi <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Firenze.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
-  ca <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Cagliari.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
-  pa <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Palermo.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
-  rc <- read.csv2("C:\\Users\\utente\\Documents\\PUN\\Reggio Calabria.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  mi <- read.csv2("C:\\Users\\utente\\Downloads\\Milano.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  ro <- read.csv2("C:\\Users\\utente\\Downloads\\Roma.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  fi <- read.csv2("C:\\Users\\utente\\Downloads\\Firenze.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  ca <- read.csv2("C:\\Users\\utente\\Downloads\\Cagliari.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  pa <- read.csv2("C:\\Users\\utente\\Downloads\\Palermo.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
+  rc <- read.csv2("C:\\Users\\utente\\Downloads\\Reggio Calabria.csv", header = FALSE, sep=",", colClasses = "character", stringsAsFactors = FALSE)
   
   
   for(i in 0:5)
