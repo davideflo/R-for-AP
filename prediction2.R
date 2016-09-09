@@ -277,3 +277,117 @@ bootstrap_f_r_errors <- function(yhat, step, day_ahead, B = 100)
   vdiff <- maply(1:B, function(n) mean(maply(1:10, function(h) sample(gh, size = 1, replace = TRUE)))) ### UNDERESTIMATED ###
   return(c(yhat+quantile(vdiff,probs=0.025), yhat+quantile(vdiff,probs=0.975)))
 }
+#######################################################
+prediction_weekend <- function(date)
+{
+  odie <- Sys.Date()
+  res <- restr <- matrix(0, nrow=24, ncol=15)
+  
+  pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
+  
+  if(convert_day(lubridate::wday(as.Date(date), label=TRUE)) == 'lun')
+  {
+    for(d in 2:1)
+    {
+      odie <- date <- odie - d
+      
+      meteonew <- build_meteo_new(date)
+      pn <- build_new(pp)
+      apm <- assemble_pm(pn, meteonew)
+      xnew <- as.h2o(apm)
+
+      #### correction phase
+      untime <- maply(1:nrow(pp), function(n) unlist(pp[n,1]))
+      utc <- as.POSIXct(untime, origin = "1970-01-01")
+      lasty <- max(which(as.Date(utc) == (odie-1)))
+      pun_oggi <- unlist(pp[c(lasty,which(as.Date(utc) == odie)),13])
+      pun_oggi <- pun_oggi[1:24]
+      # correction 1
+      prev <- read_excel(paste0("C:\\Users\\utente\\Documents\\prediction_PUN_not_corrected_",odie-1,".xlsx")) 
+      prev2 <- unlist(prev[paste0("prediction_",as.character(odie))])
+      diff <- prev2 - pun_oggi
+      file <- "C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted.xlsx"
+      if(file.exists(file))
+      {
+        of <- read_excel(file)
+        of <- data.frame(of)
+        diff2 <- data.frame(diff)
+        colnames(diff2) <- as.character(odie)
+        of <- bind_cols(of,diff2)
+        xlsx::write.xlsx(of,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted.xlsx", row.names = FALSE, col.names = TRUE)
+      }
+      else
+      {
+        diff2 <- data.frame(diff)
+        colnames(diff2) <- as.character(odie)
+        xlsx::write.xlsx(diff2,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted.xlsx", row.names = FALSE, col.names = TRUE)
+      }
+      # correction 2
+      prevcorr <- read_excel(paste0("C:\\Users\\utente\\Documents\\prediction_PUN_",odie-1,".xlsx"))
+      prev2corr <- unlist(prev[paste0("prediction_",as.character(odie))])
+      diffcorr <- (prev2corr - pun_oggi)/2
+      file2 <- "C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx"
+      if(file.exists(file2))
+      {
+        of2 <- read_excel(file2)
+        of2 <- data.frame(of2)
+        diff2corr <- data.frame(diffcorr)
+        colnames(diff2corr) <- as.character(odie)
+        of2 <- bind_cols(of2,diff2corr)
+        xlsx::write.xlsx(of2,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx", row.names = FALSE, col.names = TRUE)
+      }
+      else
+      {
+        diff2 <- data.frame(diffcorr)
+        colnames(diff2corr) <- as.character(odie)
+        xlsx::write.xlsx(diff2corr,"C:\\Users\\utente\\Documents\\PUN\\differences_true_predicted_corr.xlsx", row.names = FALSE, col.names = TRUE)
+      }
+      ## call all models and make predictions
+      for(da in 1:5)
+      {
+        for(step in 1:24)
+        {
+          
+          dal <- da + (da-1)*2
+          dam <- da + (da-1)*2 + 1
+          dau <- da*3
+          id <- paste0("sda",step,"_",da)
+          model <- h2o.loadModel(paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\models\\",id))
+          x <- predict(model,xnew[da,])
+          x2 <- as.numeric(x$predict)
+          x3 <- as.matrix(x2)
+          x4 <- unlist(x3[,1])
+          yhat <- x4 - diff[step] #- diffcorr[step]
+          res[step,dam] <- yhat
+          restr[step, da] <- x4
+          h2o.rm(model)
+          bc <- bootstrap_f_r(yhat,step,da)
+          res[step,dal] <- bc[1]
+          res[step,dau] <- bc[2]
+        }
+      }
+     
+      res <- data.frame(res)
+      rownames(res) <- 1:24
+      restr <- data.frame(restr)
+      rownames(restr) <- 1:24  
+      names <- c()
+      for(n in 1:5)
+      {
+        names <- c(names,paste0(c("L_", "prediction_", "U_"), as.character(odie+n)))
+      }
+      colnames(res) <- names
+      colnames(restr) <- names
+      xlsx::write.xlsx(restr,paste0("prediction_PUN_not_corrected_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
+      xlsx::write.xlsx(res,paste0("prediction_PUN_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
+      
+    }
+    
+    return(res) ## return only the last one, but the predictions are saved anyway
+  }
+  else
+  {
+    print("it's not monday => no need to update the pun over the weekend")
+    return(NULL)
+  }
+}

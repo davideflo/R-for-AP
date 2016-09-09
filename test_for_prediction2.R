@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-08"
+date <- "2016-09-09"
 
 met <- build_meteo_new(date)
 
@@ -28,6 +28,8 @@ print(end-start)
 #colnames(res) <- paste(as.character(Sys.Date() + 1:5))
 
 xlsx::write.xlsx(res,paste0("prediction_PUN_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
+
+res2 <- prediction_weekend(date)
 
 
 #### BOOTSTRAP WITH ERROR DATABASE
