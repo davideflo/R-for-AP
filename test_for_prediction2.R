@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-09"
+date <- "2016-09-12"
 
 met <- build_meteo_new(date)
 
@@ -19,7 +19,14 @@ apm <- assemble_pm(pn, met)
 sum(is.na(apm)) ## 0! OK 
 
 start <- Sys.time()
-res <- prediction(date) ### 6.153753 mins --- 9.241325 mins with bootstrap CIs
+if(convert_day(lubridate::wday(Sys.Date(),label=TRUE)) != "lun")
+{
+  res <- prediction(date) ### 6.153753 mins --- 9.241325 mins with bootstrap CIs
+} else
+{
+  res <- prediction_weekend() ### 16.39544 mins
+  res <- prediction(date)
+}
 end <- Sys.time()
 print(end-start)
 
@@ -48,3 +55,16 @@ for(i in 1:24)
   print(paste("L =", bc[1], "yp", res[i,1], "U =", bc[2]))
 }
 
+start <- Sys.time()
+test <- get_Prediction(date)
+end <- Sys.time()
+end - start
+
+start <- Sys.time()
+test2 <- get_Prediction(as.Date(date), TRUE)
+end <- Sys.time()
+end - start
+
+hm <- call_corrector_hourly(get_last_month(pp,date),date)
+gm <- call_corrector_mean(get_last_month(pp,date),date)
+res2 <- res[,2] + hm
