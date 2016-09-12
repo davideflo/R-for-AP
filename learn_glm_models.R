@@ -19,7 +19,7 @@ for(da in 0:2)
     th <- th_a[rh]
     id <- paste0("rhda",rh,"_",da)
     id2 <- paste0("bis_rhda",rh,"_",da)
-    r2 <- r22 <- 0
+    r2 <- r22 <- counter <- counter2 <- 0
     tryCatch(
       {
         start <- Sys.time()
@@ -44,7 +44,7 @@ for(da in 0:2)
         
         predictors <- setdiff(names(trainseth2o), response)
         
-        while(r2 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
+        while(r2 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2) | counter <= 20)
         {
           
           model <- h2o.glm(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
@@ -53,9 +53,10 @@ for(da in 0:2)
                     
           r2 <- h2o.r2(model, train = FALSE, valid = TRUE)
           print(paste("r2 modello completo:",r2))
+          counter <- counter + 1
         }
         
-        while(r22 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
+        while(r22 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2) | counter <= 20)
         {
           
           model2 <- h2o.glm(x = predictors, y = response, training_frame = trainset2h2o, model_id = id2, validation_frame = testseth2o, standardize = TRUE,
@@ -64,6 +65,7 @@ for(da in 0:2)
           
           r22 <- h2o.r2(model2, train = FALSE, valid = TRUE)
           print(paste("r2 modello 2:",r22))
+          counter2 <- counter2 + 1
         }
         
         h2o.saveModel(model, "C:\\Users\\utente\\Documents\\PUN\\glm\\models", force = TRUE)
