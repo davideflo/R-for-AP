@@ -6,6 +6,7 @@ library(gamair)
 
 source("C://Users//utente//Documents//R_code//functions_for_PUN_server.R")
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
+source("C://Users//utente//Documents//prediction2.R")
 
 
 pun16 <- read_excel("C:/Users/utente/Documents/PUN/Anno 2016_08.xlsx", sheet="Prezzi-Prices")
@@ -57,3 +58,11 @@ fit <- gamm(daily_mean ~ s(day.of.year, bs = "cc"), data = DM)
 wseas <- find_weekly_seasonality(DM)
 plot(wseas, type= "l", col = "blue")
 
+pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
+
+pp_last <- get_last_month(pp, Sys.Date())
+seasonDB <- find_weekly_seasonality_DB(pp_last)
+plot(seasonDB, type="l", col="red")
+points(seasonDB,pch=16,col="black")
+
+sdDB <- find_daily_sd_DB(pp_last)
