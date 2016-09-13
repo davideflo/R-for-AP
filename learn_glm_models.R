@@ -44,7 +44,7 @@ for(da in 0:2)
         
         predictors <- setdiff(names(trainseth2o), response)
         
-        while(r2 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2) | counter <= 20)
+        while(r2 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2) )
         {
           
           model <- h2o.glm(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
@@ -52,11 +52,12 @@ for(da in 0:2)
 
                     
           r2 <- h2o.r2(model, train = FALSE, valid = TRUE)
-          print(paste("r2 modello completo:",r2))
           counter <- counter + 1
+          
+          if(counter > 20) break
         }
         
-        while(r22 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2) | counter <= 20)
+        while(r22 <= 0.5 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
         {
           
           model2 <- h2o.glm(x = predictors, y = response, training_frame = trainset2h2o, model_id = id2, validation_frame = testseth2o, standardize = TRUE,
@@ -66,6 +67,8 @@ for(da in 0:2)
           r22 <- h2o.r2(model2, train = FALSE, valid = TRUE)
           print(paste("r2 modello 2:",r22))
           counter2 <- counter2 + 1
+          
+          if(counter2 > 20) break
         }
         
         h2o.saveModel(model, "C:\\Users\\utente\\Documents\\PUN\\glm\\models", force = TRUE)
