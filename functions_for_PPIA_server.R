@@ -408,12 +408,31 @@ generate_fixed_dataset <- function(data1,data2,meteo1,meteo2)
 #######################################################
 to_dates <- function(vd)
 {
-  vec <- unlist(as.character(vec))
-  dt <- maply(1:length(vec),  paste0(stri_sub(vec[i],from = 1,to = 4),"-",stri_sub(vec[i],from = 5,to = 6),"-",stri_sub(vec[i],from = 7,to = 8)))
+  vec <- unlist(as.character(vd))
+  dt <- maply(1:length(vec), function(i) paste0(stri_sub(vec[i],from = 1,to = 4),"-",stri_sub(vec[i],from = 5,to = 6),"-",stri_sub(vec[i],from = 7,to = 8)))
   return(dt)
 }
 ########################################################
-create_fixed_dataset_week <- function(pun, first_day, varn, meteo)
+mode <- function(v) 
+{
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+########################################################
+find_next_monday <- function(day)
+{
+  nm <- 0
+  for(n in 1:7)
+  {
+    if( convert_day(as.character(lubridate::wday(day+n, label = TRUE))) == "lun" )
+    {
+      nm <- day + n
+    }
+  }
+  return(nm)
+}
+########################################################
+create_fixed_dataset_week <- function(pun, varn, meteo)
 {
   ## ALGORITMO "FIXED" a week in advance  
   # here step is the target hour to forecast
@@ -422,134 +441,103 @@ create_fixed_dataset_week <- function(pun, first_day, varn, meteo)
   
   Names <- c(paste0(varn,"-",7:1), paste0("aust-",7:1), paste0("cors-",7:1), paste0("fran-",7:1), paste0("grec-",7:1),
              paste0("slov-",7:1), paste0("sviz-",7:1), "holiday", "mese",
-             "tmin","tmax","tmed","pioggia","vento",
-             "y", "target_holiday","target_mese","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento",
-             "day")
+             paste0("tmin-",7:1),paste0("tmax-",7:1),paste0("tmed-",7:1),paste0("pioggia-",7:1),paste0("vento-",7:1),
+             "y", "target_holiday","target_mese","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento")
   
   step <- 0
   day_ahead <- 7
   
   corr <- step + day_ahead * 24
   
-  well_dates <- to_dates(unlist(pun[,1]))
+  well_dates <- as.Date(to_dates(unlist(pun[,1])))
   
   dats <- unique(well_dates)
+  dats <- dats[8:length(dats)]
   
-  day <- first_day
+  ix <- which(dats == find_next_monday(dats[1]))
   
-  for(d in dats )
+  week_to_predict <- find_next_monday(dats[1] + 7) #### must be the first monday after dats[1] + 7
+  start <- week_to_predict
+  end <- start + 6
+  
+  for(d in dats[ix:length(dats)] )
   {
+    d <- as.Date(d, origin = '1970-01-01')
     
-    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- hol <- c()
+    print(d)
+     
+    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- c()
     tmin <- tmax <- tmed <- rain <- vm <- c()
-    ttmin <- ttmax <- ttmed <- train <- tvm <- thol <- tday <- c()
+    ttmin <- ttmax <- ttmed <- train <- tvm <- c()
+
+    hol <- thol <- 0
     
-    if(d < dats[length(dats)]-7)
+    if(d < dats[length(dats)]-6)
     {
-      week_to_predict <- start <- end <- 0
       
-      if( convert_day((as.character(lubridate::wday(d, label = TRUE)))) == "lun" & convert_day((as.character(lubridate::wday(d-1, label = TRUE)))) == "mar")
+      
+      if( convert_day((as.character(lubridate::wday(d, label = TRUE)))) == "lun" & convert_day((as.character(lubridate::wday(d-6, label = TRUE)))) == "mar")
       {
         week_to_predict <- d + 7
         start <- week_to_predict
-        end <- start + 7
+        end <- start + 6
       }
       
-      p <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"PUN"])))
-      aus <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"AUST"])))
-      cors <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"CORS"])))
-      fran <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"FRAN"])))
-      grec <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"GREC"])))
-      slov <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"SLOV"])))
-      sviz <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d+n),"SVIZ"])))
+      p <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"PUN"])))
+      aus <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"AUST"])))
+      cors <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"CORS"])))
+      fran <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"FRAN"])))
+      grec <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"GREC"])))
+      slov <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"SLOV"])))
+      sviz <- maply(0:6, function(n) mean(unlist(pun[which(well_dates == d-n),"SVIZ"])))
       
-      y <- maply(0:6, function(n) mean(unlist(pun[which(well_dates >= start & well_dates <= end),"PUN"])))
+      y <- mean(unlist(pun[which(well_dates >= start & well_dates <= end),"PUN"]))
 
-      ### convert dates for meteo      
-      tda <- unlist(strsplit(as.character(target_da),"-"))
-      target_data <- paste0(tda[3],"/",tda[2],"/",tda[1])
+      mese <- mode(maply(0:6, function(n) month(d-n)))      
+      tmese <- mode(maply(0:6, function(n) month(week_to_predict+n)))
       
-    }
-    #print(paste("i: ",i))
-    
-    
-
-      tmin <- associate_meteo_ora(dd2, meteo, "Tmin")
-      tmax <- associate_meteo_ora(dd2, meteo, "Tmax")
-      tmed <- associate_meteo_ora(dd2, meteo, "Tmedia")
-      rain <- associate_meteo_ora(dd2, meteo, "Pioggia")
-      vm <- associate_meteo_ora(dd2, meteo, "Vento_media")
-      
-      dd3 <- unlist(strsplit(dd2,"/"))
-      asdd <- as.Date(paste0(dd3[3],"/",dd3[2],"/",dd3[1]))
-      target_da <- asdd + day_ahead
-      
-      tr <- which(well_dates %in% target_data)
-      #print(tr)
-      target_pun <- pun[tr,]
-      #print(target_pun[,1])
-      tdts <- dates(target_pun[,1])
-      #print(target_data)
-      if(all(tdts==target_data) & length(tr) == 24)
+      for(j in 0:6)
       {
-        y <- target_pun[which(target_pun[,2] == step),varn]
-        ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
-        ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
-        ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
-        train <- associate_meteo_ora(target_data, meteo, "Pioggia")
-        tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
-        thol <- add_holidays(target_data)
-        #print(day)
-        tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
-      }
-      
-      else if(all(tdts==target_data) & length(tr) == 23) ### if I'm here, I'm trying to predict some hour on the ending day of daylight saving
-      {
-        th <- step
-        if(th == 24) th <- 23
-        y <- target_pun[which(target_pun[,2] == th),varn] - 5.96
-        ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
-        ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
-        ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
-        train <- associate_meteo_ora(target_data, meteo, "Pioggia")
-        tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
-        thol <- add_holidays(target_data)
-        #print(day)
-        tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
-      }
-      
-      else if(all(tdts==target_data) & length(tr) == 25) ### if I'm here, I'm trying to predict some hour on the starting day of daylight saving
-      {
+        tda <- unlist(strsplit(as.character(d-j),"-"))
+        tdata <- paste0(tda[3],"/",tda[2],"/",tda[1])
         
-        y <- target_pun[which(target_pun[,2] == step),varn]
-        ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
-        ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
-        ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
-        train <- associate_meteo_ora(target_data, meteo, "Pioggia")
-        tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
-        thol <- add_holidays(target_data)
-        #print(day)
-        tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
+        tmin <- c(tmin, associate_meteo_ora(tdata, meteo, "Tmin"))
+        tmax <- c(tmax, associate_meteo_ora(tdata, meteo, "Tmax"))
+        tmed <- c(tmed, associate_meteo_ora(tdata, meteo, "Tmedia"))
+        rain <- c(rain, associate_meteo_ora(tdata, meteo, "Pioggia"))
+        vm <- c(vm, associate_meteo_ora(tdata, meteo, "Vento_media"))
+        
+        hol <- hol + add_holidays(tdata)
+        
+        twtp <- unlist(strsplit(as.character(week_to_predict+j),"-"))
+        tdata2 <- paste0(twtp[3],"/",twtp[2],"/",twtp[1])
+        
+        ttmin <- c(ttmin, associate_meteo_ora(tdata2, meteo, "Tmin"))
+        ttmax <- c(ttmax, associate_meteo_ora(tdata2, meteo, "Tmax"))
+        ttmed <- c(ttmed, associate_meteo_ora(tdata2, meteo, "Tmedia"))
+        train <- c(train, associate_meteo_ora(tdata2, meteo, "Pioggia"))
+        tvm <- c(tvm, associate_meteo_ora(tdata2, meteo, "Vento_media"))
+        
+        thol <- thol + add_holidays(tdata2)
       }
+
+      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),hol,mese,t(tmin),t(tmax),t(tmed),t(rain),t(vm),
+                       y,thol,tmese,mean(ttmin),mean(ttmax),mean(ttmed),mean(train),mean(tvm),stringsAsFactors = FALSE)
       
-      else
-      {
-        print("ERROR: target dates not found")
-        break
-      }
-      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,hol,t(ahour),tmin,tmax,tmed,rain,vm,
-                       y,convert_hour_to_angle(step+1),tday,thol,ttmin,ttmax,ttmed,train,tvm,as.character(day),stringsAsFactors = FALSE)
       
       colnames(df) <- Names
       
-      #ll <- list(d_f,df)
-      #d_f <- rbindlist(ll,use.names = TRUE)
       d_f <- bind_rows(d_f, df)
+      
     }
-    
+    #print(paste("i: ",i)
+
   }
-  return(d_f[,1:208])
+
+  return(d_f)
 }
+  
+
 ########################################################################################################
 # tp2 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx")
 # > tp2[1,1]
