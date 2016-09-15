@@ -33,4 +33,4 @@ create_glm_dataset(prices16, "PUN", 24, 1, meteoav16, 1)
 
 generate_glm_datasets(prices16, meteoav16)
 
-test <- read.csv2("C:/Users/utente/Documents/PUN/Default Dataset_2016-09-07.csv", header = FALSE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)
+#test <- read.csv2("C:/Users/utente/Documents/PUN/Default Dataset_2016-09-07.csv", header = FALSE, sep = ",", colClasses = "character", stringsAsFactors = FALSE)

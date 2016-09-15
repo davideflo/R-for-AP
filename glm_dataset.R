@@ -109,7 +109,7 @@ get_meteo <- function(met)
   dts3 <- maply(1:length(dts2), function(n) from_dates_to_char(dts2[n]))
   
   met2 <- data.frame(dts3,met[,cols])
-  colnames(met2) <- c("Data", "Tmin","Tmax","Tmedia","Vento_media","Pioggia")
+  colnames(met2) <- c("Data", "Tmedia","Tmin","Tmax","Vento_media","Pioggia")
   return(met2)
 }
 ##########################################################################################################################################
