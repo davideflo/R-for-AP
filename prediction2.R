@@ -49,21 +49,33 @@ build_meteo_new <- function(date)
       r <- which(var_names == n)
       #print(paste("r", r))
       #print(mean(as.numeric(unlist(df2[,4]))))
+      row4 <- row5 <- c()
+      for(k in 1:nrow(df2))
+      {
+        if(df2[k,5] == "")
+        {
+          row4 <- c(row4, k) 
+        } else
+        {
+          row5 <- c(row5, k)
+        }
+      }
+      
       if(i == 0)
       {
-        temp[r,1] <- min(as.numeric(unlist(df2[,3])))
-        temp[r,2] <- max(as.numeric(unlist(df2[,3])))
-        temp[r,3] <- mean(as.numeric(unlist(df2[,3])))
-        temp[r,4] <- mean(as.numeric(unlist(df2[,5])), na.rm=TRUE) ### RAIN
-        temp[r,5] <- mean(as.numeric(unlist(df2[,4])), na.rm=TRUE) ### WIND
+        temp[r,1] <- min(as.numeric(unlist(df2[row5,3])))
+        temp[r,2] <- max(as.numeric(unlist(df2[row5,3])))
+        temp[r,3] <- mean(as.numeric(unlist(df2[row5,3])))
+        temp[r,4] <- mean(as.numeric(unlist(df2[row5,5])), na.rm=TRUE) ### RAIN
+        temp[r,5] <- mean(as.numeric(unlist(df2[row5,4])), na.rm=TRUE) ### WIND
       }
       else 
       {
-        temp[r,1] <- min(as.numeric(unlist(df2[,2])))
-        temp[r,2] <- max(as.numeric(unlist(df2[,2])))
-        temp[r,3] <- mean(as.numeric(unlist(df2[,2])))
-        temp[r,4] <- mean(as.numeric(unlist(df2[,4])), na.rm=TRUE) ### RAIN
-        temp[r,5] <- mean(as.numeric(unlist(df2[,3])), na.rm=TRUE) ### WIND
+        temp[r,1] <- min(as.numeric(unlist(df2[row4,2])))
+        temp[r,2] <- max(as.numeric(unlist(df2[row4,2])))
+        temp[r,3] <- mean(as.numeric(unlist(df2[row4,2])))
+        temp[r,4] <- mean(as.numeric(unlist(df2[row4,4])), na.rm=TRUE) ### RAIN
+        temp[r,5] <- mean(as.numeric(unlist(df2[row4,3])), na.rm=TRUE) ### WIND
       }
     }
     res[i+1,] <- c(unlist(colMeans(temp)))
@@ -278,9 +290,9 @@ bootstrap_f_r_errors <- function(yhat, step, day_ahead, B = 100)
   return(c(yhat+quantile(vdiff,probs=0.025), yhat+quantile(vdiff,probs=0.975)))
 }
 #######################################################
-prediction_weekend <- function()
+prediction_weekend <- function(date)
 {
-  odie <- Sys.Date()
+  odie <- as.Date(date)
   res <- restr <- matrix(0, nrow=24, ncol=15)
   
   pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
