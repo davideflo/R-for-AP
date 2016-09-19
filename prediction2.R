@@ -196,7 +196,8 @@ prediction <- function(date)
   xnew <- as.h2o(apm)
   
   #### correction phase
-  odie <- Sys.Date()
+  #odie <- Sys.Date()
+  odie <- as.Date(date)
   untime <- maply(1:nrow(pp), function(n) unlist(pp[n,1]))
   utc <- as.POSIXct(untime, origin = "1970-01-01")
   lasty <- max(which(as.Date(utc) == (odie-1)))
@@ -287,7 +288,7 @@ bootstrap_f_r_errors <- function(yhat, step, day_ahead, B = 100)
   db <- read_excel(paste0("C:/Users/utente/Documents/PUN/fixed/errors/distribution_errors_step_",step,"_dayahead_",day_ahead,".xlsx"))
   gh <- as.numeric(unlist(db[,2]))
   vdiff <- maply(1:B, function(n) mean(maply(1:10, function(h) sample(gh, size = 1, replace = TRUE)))) ### UNDERESTIMATED ###
-  return(c(yhat+quantile(vdiff,probs=0.025), yhat+quantile(vdiff,probs=0.975)))
+  return(c(yhat+quantile(vdiff,probs=0.025, na.rm = FALSE), yhat+quantile(vdiff,probs=0.975), na.rm = FALSE))
 }
 #######################################################
 prediction_weekend <- function(date)

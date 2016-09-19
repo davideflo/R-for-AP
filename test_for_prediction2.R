@@ -3,10 +3,10 @@
 source("C://Users//utente//Documents//prediction2.R")
 source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
-
+### se lancio piu volte il java aumenta la memoria !!!
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-16"
+date <- "2016-09-19"
 
 met <- build_meteo_new(date)
 
@@ -24,7 +24,7 @@ if(convert_day(lubridate::wday(Sys.Date(),label=TRUE)) != "lun")
   res <- prediction(date) ### 6.153753 mins --- 9.241325 mins with bootstrap CIs
 } else
 {
-  res <- prediction_weekend() ### 16.39544 mins
+  res <- prediction_weekend(date) ### 16.39544 mins
   res <- prediction(date)
 }
 end <- Sys.time()
