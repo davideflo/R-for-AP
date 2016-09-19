@@ -259,7 +259,7 @@ bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
   use <- db[which(utc >= start & utc <= (Sys.Date()-1)),]
   gh <- unlist(use[which(use["Hour"] == step),13])
   vdiff <- maply(1:B, function(n) mean(maply(1:10, function(h) sample(gh, size = 1, replace = TRUE))) - yhat) #### VERY STRONG HYPOTHESIS ###
-  return(c(yhat+quantile(vdiff,probs=0.025), yhat-quantile(vdiff,probs=0.975)))
+  return(c(yhat+quantile(vdiff,probs=0.025, na.rm = TRUE), yhat-quantile(vdiff,probs=0.975, na.rm = TRUE)))
 }
 ######################################################################
 treat_meteo2016 <- function(met)
