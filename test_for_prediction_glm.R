@@ -3,7 +3,7 @@
 source("C://Users//utente//Documents//R_code//prediction_for_glm.R")
 source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
-date <- "2016-09-16"
+date <- "2016-09-20"
 
 met <- build_meteo_new(date)
 
@@ -15,4 +15,7 @@ apm <- assemble_pm_glm(pn, met)
 
 sum(is.na(apm)) ## 0! OK 
 
-res <- predict_with_glm(date)
+start <- Sys.time()
+res2 <- predict_with_glm(date)
+end <- Sys.time()
+end - start

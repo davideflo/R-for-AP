@@ -70,7 +70,7 @@ build_new <- function(df, rh)
   
   values <- unlist(df2[1,(24*0:6) + rh])
   
-  df3 <- data.frame(t(values), today, hol, tomorrow, thol)
+  df3 <- data.frame(t(values), today, hol, tomorrow, hol2)
   
   Names <- c("pun","aust","cors","fran","grec","slov","sviz","angleday","holiday","target_day", "target_holiday")
   colnames(df3) <- Names
@@ -82,12 +82,14 @@ build_new <- function(df, rh)
 assemble_pm_glm <- function(pn, meteo)
 {
   # "meteo" comes from build_meteo_new
-  
+  res <- data_frame()
   ### DEFINE day
   wd <- tolower(as.character(lubridate::wday(Sys.Date(), label = TRUE)))
   
-  res <- data.frame(pn[1,1:9], meteo[1,], pn[1,10:11], meteo[2,])
-  
+  res1 <- data.frame(pn[1,1:9], meteo[1,], pn[1,10:11], meteo[2,])
+  res <- bind_rows(res, res1)
+  res2 <- data.frame(pn[1,1:9], meteo[1,], pn[1,10:11], meteo[3,])
+  res <- bind_rows(res, res2)
   
   Names <- c("pun","aust","cors","fran","grec","slov","sviz","angleday", "holiday",
              "tmin","tmax","tmed","pioggia","vento",
@@ -101,7 +103,7 @@ assemble_pm_glm <- function(pn, meteo)
 ##########################################################
 predict_with_glm <- function(date)
 {
-  res <- restr <- matrix(0, nrow = 24, ncol = 2)
+  res <- restr <- matrix(0, nrow = 24, ncol = 4)
   ## load pun file
   pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
   ## look for date
@@ -118,33 +120,36 @@ predict_with_glm <- function(date)
   pun_oggi <- pun_oggi[1:24]
   ## call all models and make predictions
   
-  for(rh in 1:24)
+  for(da in 1:2)
   {
-    pn <- build_new(pp, rh)
-    apm <- assemble_pm_glm(pn, meteonew)
-    xnew <- as.h2o(apm)
-    
-    #print(paste("step:",step,"da:", da))
-    id <- paste0("rhda",rh,"_",1)
-    id2 <- paste0("bis_rhda",rh,"_",1)
-    model <- h2o.loadModel(paste0("C:\\Users\\utente\\Documents\\PUN\\glm\\models\\",id))
-    model2 <- h2o.loadModel(paste0("C:\\Users\\utente\\Documents\\PUN\\glm\\models\\",id2))
-    
-    x <- predict(model,xnew[1,])
-    x2 <- as.numeric(x$predict)
-    x3 <- as.matrix(x2)
-    x4 <- unlist(x3[,1])
-    yhat <- x4 
-    res[rh,1] <- yhat
-#    restr[, da] <- x4
-    x <- predict(model2,xnew[1,])
-    x2 <- as.numeric(x$predict)
-    x3 <- as.matrix(x2)
-    x4 <- unlist(x3[,1])
-    yhat <- x4 
-    res[rh,2] <- yhat
-    
-    h2o.rm(model); h2o.rm(model2)
+    for(rh in 1:24)
+    {
+      pn <- build_new(pp, rh)
+      apm <- assemble_pm_glm(pn, meteonew)
+      xnew <- as.h2o(apm)
+      
+      #print(paste("step:",step,"da:", da))
+      id <- paste0("rhda",rh,"_",da)
+      id2 <- paste0("bis_rhda",rh,"_",da)
+      model <- h2o.loadModel(paste0("C:\\Users\\utente\\Documents\\PUN\\glm\\models\\",id))
+      model2 <- h2o.loadModel(paste0("C:\\Users\\utente\\Documents\\PUN\\glm\\models\\",id2))
+      
+      x <- predict(model,xnew[da,])
+      x2 <- as.numeric(x$predict)
+      x3 <- as.matrix(x2)
+      x4 <- unlist(x3[,1])
+      yhat <- x4 
+      res[rh,(2*da-1)] <- yhat
+  #    restr[, da] <- x4
+      x <- predict(model2,xnew[da,])
+      x2 <- as.numeric(x$predict)
+      x3 <- as.matrix(x2)
+      x4 <- unlist(x3[,1])
+      yhat <- x4 
+      res[rh,(2*da)] <- yhat
+      
+      h2o.rm(model); h2o.rm(model2)
+    }
   }
 
   res <- data.frame(res)
@@ -152,7 +157,8 @@ predict_with_glm <- function(date)
 #  restr <- data.frame(restr)
 #  rownames(restr) <- 1:24  
 
-  names <- c(paste0("prediction_",as.character(odie+1),"modello_completo"),paste0("prediction_",as.character(odie+1),"modello2"))
+  names <- c(paste0("prediction_",as.character(odie+1),"modello_completo"),paste0("prediction_",as.character(odie+1),"modello2"),
+             paste0("prediction_",as.character(odie+2),"modello_completo"),paste0("prediction_",as.character(odie+2),"modello2"))
   colnames(res) <- names
   # colnames(restr) <- names
   # xlsx::write.xlsx(restr,paste0("prediction_PUN_not_corrected_",date,".xlsx"), row.names = FALSE, col.names = TRUE)

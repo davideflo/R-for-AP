@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 ### se lancio piu volte il java aumenta la memoria !!!
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-19"
+date <- "2016-09-20"
 
 met <- build_meteo_new(date)
 
