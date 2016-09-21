@@ -75,6 +75,27 @@ testset <- test[stest,]
 xlsx::write.xlsx(trainset,"C:\\Users\\utente\\Documents\\PUN\\week\\trainset_week.xlsx", row.names = FALSE, col.names = TRUE)
 xlsx::write.xlsx(testset,"C:\\Users\\utente\\Documents\\PUN\\week\\testset_week.xlsx", row.names = FALSE, col.names = TRUE)
 
+
+####### only 2016 ########
+test <- create_fixed_dataset_week(prices16, "PUN", meteoav16)
+test <- data.frame(test)
+head(test)
+tail(test)
+
+dim(test)
+test <- test[1:(nrow(test)-3),]
+
+strain <- sample.int(nrow(test), ceiling(0.8*nrow(test))) 
+stest <- setdiff(1:nrow(test), strain)
+stest <- sample(stest)
+
+trainset <- test[strain,]
+testset <- test[stest,]
+
+xlsx::write.xlsx(trainset,"C:\\Users\\utente\\Documents\\PUN\\week\\trainset_week_2016.xlsx", row.names = FALSE, col.names = TRUE)
+xlsx::write.xlsx(testset,"C:\\Users\\utente\\Documents\\PUN\\week\\testset_week_2016.xlsx", row.names = FALSE, col.names = TRUE)
+
+
 ####################################################################################################################
 ######################################## build the models ############################################
 
@@ -107,6 +128,79 @@ h2o.coef(model_glm)
 
 plot(model_glm)  
   
+h2o.r2(model_glm, train = TRUE, valid = TRUE)
+
+
+h2o.saveModel(model_DL, "C:\\Users\\utente\\Documents\\PUN\\week", force = TRUE)
+h2o.saveModel(model_glm, "C:\\Users\\utente\\Documents\\PUN\\week", force = TRUE)
+
+
+### ERROR DISTRIBUTION  - MODEL_GLM - ##########
+pred <- predict(model_glm, testseth2o)
+
+pt <- as.numeric(pred$predict) 
+pt <- as.matrix(pt)
+pt <- unlist(pt[,1])
+
+diff <- yy - pt
+
+sum((diff-mean(diff))/sd(diff) > sd(diff))/length(diff)
+
+for(v in 1:10)
+{
+  print(paste("error", v))
+  print(paste("normalized percentage",sum((diff-mean(diff))/sd(diff) > v)/length(diff)))
+  print(paste("error percentage",sum(abs(diff) > v)/length(diff)))
+}
+
+hist(diff)
+###############################################
+### ERROR DISTRIBUTION - MODEL_DL - ##########
+pred2 <- predict(model2, testseth2o)
+
+pt2 <- as.numeric(pred2$predict) 
+pt2 <- as.matrix(pt2)
+pt2 <- unlist(pt2[,1])
+
+diff2 <- Y - pt2
+
+
+h2o.rm(trainseth2o); h2o.rm(testseth2o)
+h2o.rm(model_DL); h2o.rm(model_glm)
+
+#######################################################################################################################
+#######################################################################################################################
+######################################## build the models - 2016 - ############################################
+
+response <- "y"
+
+Y <- as.numeric(unlist(trainset["y"]))
+yy <- as.numeric(unlist(testset["y"]))
+
+trainseth2o <- as.h2o(trainset)
+testseth2o <- as.h2o(testset)
+
+predictors <- setdiff(names(trainseth2o), response)
+
+
+model_DL <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = "model_DL_2016", validation_frame = testseth2o, standardize = TRUE,
+                             activation = "Rectifier", hidden = c(2415*4,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
+
+plot(model_DL)
+
+h2o.r2(model_DL, train = TRUE, valid = TRUE)
+h2o.mse(model_DL, train = TRUE, valid = TRUE)
+
+
+model_glm <- h2o.glm(x = predictors, y = response, training_frame = trainseth2o, model_id = "model_glm_2016", validation_frame = testseth2o, standardize = TRUE,
+                     family = "gaussian", alpha = 0, lambda = 0.01, lambda_search = TRUE, intercept = TRUE)
+
+full <- h2o.getGLMFullRegularizationPath(model_glm)
+sort(full$coefficients_std)
+h2o.coef(model_glm)
+
+plot(model_glm)  
+
 h2o.r2(model_glm, train = TRUE, valid = TRUE)
 
 
