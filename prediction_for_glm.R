@@ -14,7 +14,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PUN_server.R")
 source("C://Users//utente//Documents//prediction2.R")
 
 #########################################################
-build_new <- function(df, rh)
+build_new_g <- function(df, rh)
 {
   ## put the prices in rows
   ## compute old and new holidays
@@ -124,7 +124,7 @@ predict_with_glm <- function(date)
   {
     for(rh in 1:24)
     {
-      pn <- build_new(pp, rh)
+      pn <- build_new_g(pp, rh)
       apm <- assemble_pm_glm(pn, meteonew)
       xnew <- as.h2o(apm)
       
