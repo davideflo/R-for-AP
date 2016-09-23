@@ -4,7 +4,7 @@ library(h2o)
 
 source("C://Users//utente//Documents//fwp.R")
 
-date <- "2016-09-22"
+date <- "2016-09-23"
 
 met <- build_meteo_week(date)
 met2 <- build_meteo_set(date)

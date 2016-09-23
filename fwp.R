@@ -168,9 +168,9 @@ assemble_pm_week <- function(pp, date)
   res <- data.frame(df[1,1:51],t(rev(unlist(met[,1]))),t(rev(unlist(met[,2]))),t(rev(unlist(met[,3]))),t(rev(unlist(met[,4]))),t(rev(unlist(met[,5]))),df[1,52:53],
                     t(mets))
   
-  colnames(res) <- c(paste0("pun-",7:1), paste0("aust-",7:1), paste0("cors-",7:1), paste0("fran-",7:1), paste0("grec-",7:1),
-                     paste0("slov-",7:1), paste0("sviz-",7:1), "holiday", "mese",
-                     paste0("tmin-",7:1),paste0("tmax-",7:1),paste0("tmed-",7:1),paste0("pioggia-",7:1),paste0("vento-",7:1),
+  colnames(res) <- c(paste0("pun.",7:1), paste0("aust.",7:1), paste0("cors.",7:1), paste0("fran.",7:1), paste0("grec.",7:1),
+                     paste0("slov.",7:1), paste0("sviz.",7:1), "holiday", "mese",
+                     paste0("tmin.",7:1),paste0("tmax.",7:1),paste0("tmed.",7:1),paste0("pioggia.",7:1),paste0("vento.",7:1),
                      "target_holiday","target_mese","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento")
   
   return(res)
