@@ -193,7 +193,7 @@ h2o.mse(model_DL, train = TRUE, valid = TRUE)
 
 
 model_glm <- h2o.glm(x = predictors, y = response, training_frame = trainseth2o, model_id = "model_glm_2016", validation_frame = testseth2o, standardize = TRUE,
-                     family = "gaussian", alpha = 0, lambda = 0.01, lambda_search = TRUE, intercept = TRUE)
+                     family = "gaussian", alpha = 1/2, lambda = 0.01, lambda_search = TRUE, intercept = TRUE)
 
 full <- h2o.getGLMFullRegularizationPath(model_glm)
 sort(full$coefficients_std)

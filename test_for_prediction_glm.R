@@ -3,7 +3,7 @@
 source("C://Users//utente//Documents//R_code//prediction_for_glm.R")
 source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
-date <- "2016-09-22"
+date <- "2016-09-23"
 
 met <- build_meteo_new(date)
 

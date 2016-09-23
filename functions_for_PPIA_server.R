@@ -120,7 +120,7 @@ create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
     
     dd <- pun[i,1]
     dd2 <- dates(dd)
-    at_date <- pun[which(pun[,1] == dd),]
+    at_date <- pun[which(unlist(pun[,1]) == unlist(dd)),]
     
     if(!(dd2 %in% dat))
     {
@@ -187,7 +187,7 @@ create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
       #print(tr)
       target_pun <- pun[tr,]
       #print(target_pun[,1])
-      tdts <- dates(target_pun[,1])
+      tdts <- dates(unlist(target_pun[,1]))
       #print(target_data)
       if(all(tdts==target_data) & length(tr) == 24)
       {
@@ -394,6 +394,59 @@ generate_fixed_dataset <- function(data1,data2,meteo1,meteo2)
           #           send = TRUE)
           # 
           # 
+          count <- count + 1
+          print(paste0("passages left: ",24*5 - count))
+        }, error = function(cond)
+        {
+          message(cond)
+          print(paste("day ahead", da, "and step", step, "failed"))
+        }
+      )
+    }
+  }
+}
+##############################################################################
+generate_fixed_dataset_2016 <- function(data,meteo)
+{
+  gc()
+  count <- 0
+  for(da in 1:5)
+  {
+    for(step in 1:24)
+    {
+      tryCatch(
+        {
+          start <- Sys.time()
+          Trainset <- create_fixed_dataset(data, "ven", "PUN",meteo,step,da)
+          
+          strain <- sample.int(nrow(Trainset), ceiling(0.8*nrow(Trainset))) 
+          stest <- setdiff(1:nrow(Trainset), strain)
+          stest <- sample(stest)
+          
+          trainset <- Trainset[strain,]
+          testset <- Trainset[stest,]
+          
+          
+          trainseth2o <- as.h2o(trainset)
+          testseth2o <- as.h2o(testset)
+          
+          name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\trainset_step_",step,"_dayahead_",da,".csv")
+          name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\testset_step_",step,"_dayahead_",da,".csv")  
+          
+          h2o.exportFile(trainseth2o, name1)
+          h2o.exportFile(testseth2o, name2)
+          
+          rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+          print(paste("done step",step,"day ahead", da, "and removed the files"))
+          
+          end <- Sys.time()
+          end-start
+          
+          body <- paste("done step ", step, "and day_ahead", da, "with time = ", end-start)
+          
+          if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
+          else write.csv2(body, "monitor_fixed.txt",append = TRUE)
+          
           count <- count + 1
           print(paste0("passages left: ",24*5 - count))
         }, error = function(cond)

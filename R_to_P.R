@@ -54,3 +54,24 @@ library(h2o)
 
 generate_fixed_dataset(prices, prices16, meteoav, meteoav16)
 
+#############################################
+prices16 <- read_excel("C:/Users/utente/Documents/PUN/Anno 2016_08.xlsx", sheet="Prezzi-Prices")
+
+mi6 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1)
+ro6 <- read_excel("C:/Users/utente/Documents/PUN/Roma 2016.xlsx", sheet= 1)
+fi6 <- read_excel("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1)
+pa6 <- read_excel("C:/Users/utente/Documents/PUN/Palermo 2016.xlsx", sheet= 1)
+ca6 <- read_excel("C:/Users/utente/Documents/PUN/Cagliari 2016.xlsx", sheet= 1)
+rc6 <- read_excel("C:/Users/utente/Documents/PUN/Reggio Calabria 2016.xlsx", sheet= 1)
+
+mi6 <- get_meteo(mi6)
+ro6 <- get_meteo(ro6)
+fi6 <- get_meteo(fi6)
+pa6 <- get_meteo(pa6)
+ca6 <- get_meteo(ca6)
+rc6 <- get_meteo(rc6)
+
+meteoav16 <- mediate_meteos(mi6, ro6, fi6, pa6, ca6, rc6, FALSE)
+
+generate_fixed_dataset_2016(prices16, meteoav16)
+
