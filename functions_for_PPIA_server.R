@@ -250,6 +250,117 @@ create_fixed_dataset <- function(pun, first_day, varn, meteo, step, day_ahead)
   return(d_f[,1:208])
 }
 ############################################################
+create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
+{
+  ## ALGORITMO "FIXED" - AVERAGED - immediately predicts average price of next day  
+  # day_ahead starts from 1
+  d_f <- data_frame()
+  
+  Names <- c(paste0(varn,"-",24:1), paste0("aust-",24:1), paste0("cors-",24:1), paste0("fran-",24:1), paste0("grec-",24:1),
+             paste0("slov-",24:1), paste0("sviz-",24:1), "angleday", "holiday",
+             "tmin","tmax","tmed","pioggia","vento",
+             "y", "target_day", "target_holiday","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento",
+             "day")
+  
+  corr <- day_ahead*24
+  
+  well_dates <- dates(unlist(pun[,1]))
+  dat <- c()
+  
+  day <- first_day
+  
+  for(i in 1:(nrow(pun)-corr))
+  {
+    #print(paste("i: ",i))
+    y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- hol <- c()
+    tmin <- tmax <- tmed <- rain <- vm <- c()
+    ttmin <- ttmax <- ttmed <- train <- tvm <- thol <- tday <- c()
+    
+    dd <- pun[i,1]
+    dd2 <- dates(dd)
+    at_date <- pun[which(unlist(pun[,1]) == unlist(dd)),]
+    
+    if(!(dd2 %in% dat))
+    {
+      dat <- c(dat, dd2) 
+      p <- at_date[varn] 
+      aus <- at_date["AUST"] 
+      cors <- at_date["CORS"]
+      fran <- at_date["FRAN"] 
+      grec <- at_date["GREC"] 
+      slov <- at_date["SLOV"]
+      sviz <- at_date["SVIZ"] 
+      ora <- at_date[,2]
+      
+      if( nrow(at_date) == 23)
+      {
+        p <- c(unlist(p), unlist(p)[23] - 5.96 ) ### 5.96 is the mean difference between the 24th and the first hour of the day
+        aus <- c(unlist(aus), unlist(aus)[23] - 5.96) 
+        cors <- c(unlist(cors), unlist(cors)[23] - 5.96)
+        fran <- c(unlist(fran), unlist(fran)[23] - 5.96) 
+        grec <- c(unlist(grec), unlist(grec)[23] - 5.96) 
+        slov <- c(unlist(slov), unlist(slov)[23] - 5.96)
+        sviz <- c(unlist(sviz), unlist(sviz)[23] - 5.96) 
+        ora <- c(unlist(ora), 24)
+      }
+      
+      else if( nrow(at_date) == 25)
+      {
+        p <- unlist(p)[1:24]
+        aus <- unlist(aus)[1:24] 
+        cors <- unlist(cors)[1:24]
+        fran <- unlist(fran)[1:24]
+        grec <- unlist(grec)[1:24]
+        slov <- unlist(slov)[1:24]
+        sviz <- unlist(sviz)[1:24]
+        ora <- unlist(ora)[1:24]
+      }
+      
+      if(i > 1) day <- subsequent_day(day)
+      
+      aday <- convert_day_to_angle(as.character(day))
+      hol <- add_holidays(dd2)
+      
+      tmin <- associate_meteo_ora(dd2, meteo, "Tmin")
+      tmax <- associate_meteo_ora(dd2, meteo, "Tmax")
+      tmed <- associate_meteo_ora(dd2, meteo, "Tmedia")
+      rain <- associate_meteo_ora(dd2, meteo, "Pioggia")
+      vm <- associate_meteo_ora(dd2, meteo, "Vento_media")
+      
+      dd3 <- unlist(strsplit(dd2,"/"))
+      asdd <- as.Date(paste0(dd3[3],"/",dd3[2],"/",dd3[1]))
+      target_da <- asdd + day_ahead
+      tda <- unlist(strsplit(as.character(target_da),"-"))
+      target_data <- paste0(tda[3],"/",tda[2],"/",tda[1])
+      
+      tr <- which(well_dates %in% target_data)
+      
+      target_pun <- pun[tr,]
+      
+      tdts <- dates(unlist(target_pun[,1]))
+      
+      y <- mean(unlist(target_pun[,varn]))
+      ttmin <- associate_meteo_ora(target_data, meteo, "Tmin")
+      ttmax <- associate_meteo_ora(target_data, meteo, "Tmax")
+      ttmed <- associate_meteo_ora(target_data, meteo, "Tmedia")
+      train <- associate_meteo_ora(target_data, meteo, "Pioggia")
+      tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
+      thol <- add_holidays(target_data)
+        
+      tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
+      
+      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,hol,tmin,tmax,tmed,rain,vm,
+                       y,tday,thol,ttmin,ttmax,ttmed,train,tvm,as.character(day),stringsAsFactors = FALSE)
+      
+      colnames(df) <- Names
+      
+      d_f <- bind_rows(d_f, df)
+    }
+    
+  }
+  return(data.frame(d_f[,1:183]))
+}
+############################################################
 bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
 {
   ## remember: step coincides with the hour to predict
@@ -315,19 +426,6 @@ generate_rolling_dataset <- function(data1,data2,meteo1,meteo2)
         if(!file.exists("monitor_rolling.txt")) write.csv2(body, "monitor_rolling.txt")
         else write.csv2(body, "monitor_rolling.txt",append = TRUE)
         
-        
-        # sender <- "davidefloriello.math@gmail.com"
-        # recipients <- c("dav.floriello@gmail.com")
-        # send.mail(from = sender,
-        #           to = recipients,
-        #           subject = "avanzamento creazione dataset",
-        #           body = body,
-        #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
-        #                       user.name = "davidefloriello.math@gmail.com",            
-        #                       passwd = "########", ssl = TRUE),
-        #           authenticate = TRUE,
-        #           send = TRUE)
-        # 
         count <- count + 1
         print(paste0("passages left: ",24*6 - count))
       }, error = function(cond)
@@ -378,22 +476,6 @@ generate_fixed_dataset <- function(data1,data2,meteo1,meteo2)
           if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
           else write.csv2(body, "monitor_fixed.txt",append = TRUE)
           
-          
-          # 
-          # 
-          # sender <- "davidefloriello.math@gmail.com"
-          # recipients <- c("dav.floriello@gmail.com")
-          # send.mail(from = sender,
-          #           to = recipients,
-          #           subject = "avanzamento creazione dataset",
-          #           body = body,
-          #           smtp = list(host.name = "smtp.gmail.com", port = 465, 
-          #                       user.name = "davidefloriello.math@gmail.com",            
-          #                       passwd = "################", ssl = TRUE),
-          #           authenticate = TRUE,
-          #           send = TRUE)
-          # 
-          # 
           count <- count + 1
           print(paste0("passages left: ",24*5 - count))
         }, error = function(cond)
@@ -589,7 +671,54 @@ create_fixed_dataset_week <- function(pun, varn, meteo)
 
   return(d_f)
 }
-  
+##########################################################################
+generate_fixed_dataset_average <- function(data1,data2,meteo1,meteo2)
+{
+  gc()
+  meteolong <- bind_rows(meteo1,meteo2)
+  count <- 0
+  for(da in 1:5)
+  {
+    tryCatch(
+      {
+        start <- Sys.time()
+        aug <- augmented_dataset(data1, data2, step = 0 , day_ahead = da)
+        trainset <- create_fixed_dataset_average(aug, "gio", "PUN",meteolong,da)
+        testset <- trainset[489:nrow(trainset),]
+        trainset <- trainset[1:488,]
+          
+        trainseth2o <- as.h2o(trainset)
+        testseth2o <- as.h2o(testset)
+          
+        name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\AVtrainset_dayahead_",da,".csv")
+        name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\AVtestset_dayahead_",da,".csv")  
+          
+        h2o.exportFile(trainseth2o, name1)
+        h2o.exportFile(testseth2o, name2)
+          
+        rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+        print(paste("done day ahead", da, "and removed the files"))
+          
+        end <- Sys.time()
+        end-start
+          
+        body <- paste("done day_ahead", da, "with time = ", end-start)
+          
+        if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
+        else write.csv2(body, "monitor_fixed.txt",append = TRUE)
+          
+        count <- count + 1
+        print(paste0("passages left: ",5 - count))
+      }, error = function(cond)
+      {
+        message(cond)
+        print(paste("day ahead", da, "failed"))
+      }
+    )
+  }
+}
+##############################################################################
+
 
 ########################################################################################################
 # tp2 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx")
