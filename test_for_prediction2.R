@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 ### se lancio piu volte il java aumenta la memoria ?
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-22"
+date <- "2016-09-28"
 
 met <- build_meteo_new(date)
 
@@ -26,15 +26,18 @@ if(convert_day(lubridate::wday(Sys.Date(),label=TRUE)) != "lun")
 {
   res <- prediction_weekend(date) ### 16.39544 mins
   res <- prediction(date)
+  colMeans(res)
   xlsx::write.xlsx(res,paste0("prediction_PUN_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
 }
 end <- Sys.time()
 print(end-start)
 
-#res <- data.frame(res)
-#rownames(res) <- c(1:24)
-#colnames(res) <- paste(as.character(Sys.Date() + 1:5))
+pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati")
 
+pn <- build_new_average(pp)
+
+apm <- assemble_pm_average(pn, met)
+##AVres <- prediction_average(date) 
 
 res2 <- prediction_weekend(date)
 
