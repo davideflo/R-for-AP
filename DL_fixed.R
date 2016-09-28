@@ -125,14 +125,23 @@ for(da in 1:5)
         trainseth2o <- as.h2o(train)
         testseth2o <- as.h2o(test)
         
+ #       print(head(train));print(tail(train))
+#        print(head(test));print(tail(test))
+        
         predictors <- setdiff(names(trainseth2o), response)
         
-        while(r2 <= 0 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
+        while(r2 <= 0.3 | is.na(r2) | is.nan(r2) | !is.numeric(r2))
         {
-          
-          model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
-                                    activation = "Rectifier", hidden = c(8760,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
-          
+          if(da == 1)
+          {
+            model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
+                                      activation = "Rectifier", hidden = c(8760,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
+          }
+          else
+          {
+            model <- h2o.deeplearning(x = predictors, y = response, training_frame = trainseth2o, model_id = id, validation_frame = testseth2o, standardize = TRUE,
+                                      activation = "Tanh", hidden = c(8760,365,52,12,6), epochs = 100, max_w2 = 100, l1=1e-5)
+          }
           r2 <- h2o.r2(model, train = FALSE, valid = TRUE)
           print(r2)
         }
@@ -171,7 +180,7 @@ for(da in 1:5)
         message(cond)
         traceback()
         missed <- c(missed, id)
-        print(paste("day ahead", da, "and step", step, "failed"))
+        print(paste("day ahead", da, "failed"))
         
       }
     )

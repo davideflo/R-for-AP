@@ -347,7 +347,10 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
       tvm <- associate_meteo_ora(target_data, meteo, "Vento_media")
       thol <- add_holidays(target_data)
         
-      tday <- convert_day_to_angle(compute_day_at(day, day_ahead))
+      tday <- convert_day_to_angle(convert_day(lubridate::wday(target_da, label = TRUE)))
+      
+      if(hol > 0) {hol <- 1}
+      if(thol > 0) {thol <- 1}
       
       df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,hol,tmin,tmax,tmed,rain,vm,
                        y,tday,thol,ttmin,ttmax,ttmed,train,tvm,as.character(day),stringsAsFactors = FALSE)
@@ -684,8 +687,9 @@ generate_fixed_dataset_average <- function(data1,data2,meteo1,meteo2)
         start <- Sys.time()
         aug <- augmented_dataset(data1, data2, step = 0 , day_ahead = da)
         trainset <- create_fixed_dataset_average(aug, "gio", "PUN",meteolong,da)
-        testset <- trainset[489:nrow(trainset),]
-        trainset <- trainset[1:488,]
+        from <- nrow(trainset) - floor(0.2*nrow(trainset))
+        testset <- trainset[from:nrow(trainset),]
+        trainset <- trainset[1:(from-1),]
           
         trainseth2o <- as.h2o(trainset)
         testseth2o <- as.h2o(testset)
@@ -707,6 +711,53 @@ generate_fixed_dataset_average <- function(data1,data2,meteo1,meteo2)
         if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
         else write.csv2(body, "monitor_fixed.txt",append = TRUE)
           
+        count <- count + 1
+        print(paste0("passages left: ",5 - count))
+      }, error = function(cond)
+      {
+        message(cond)
+        print(paste("day ahead", da, "failed"))
+      }
+    )
+  }
+}
+##########################################################################
+generate_fixed_dataset_average_2016 <- function(data, meteo)
+{
+  gc()
+  count <- 0
+  for(da in 1:5)
+  {
+    tryCatch(
+      {
+        start <- Sys.time()
+        trainset <- create_fixed_dataset_average(data, "ven", "PUN",meteo,da)
+        
+        sam <- sample.int(nrow(trainset), size = ceiling(0.8*nrow(trainset)))
+        
+        testset <- trainset[setdiff(1:nrow(trainset),sam),]
+        trainset <- trainset[sam,]
+        
+        trainseth2o <- as.h2o(trainset)
+        testseth2o <- as.h2o(testset)
+        
+        name1 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\AVtrainset_dayahead_",da,".csv")
+        name2 <- paste0("C:\\Users\\utente\\Documents\\PUN\\fixed\\2016\\AVtestset_dayahead_",da,".csv")  
+        
+        h2o.exportFile(trainseth2o, name1)
+        h2o.exportFile(testseth2o, name2)
+        
+        rm(trainset); rm(trainseth2o); rm(testset); rm(testseth2o);
+        print(paste("done day ahead", da, "and removed the files"))
+        
+        end <- Sys.time()
+        end-start
+        
+        body <- paste("done day_ahead", da, "with time = ", end-start)
+        
+        if(!file.exists("monitor_fixed.txt")) write.csv2(body, "monitor_fixed.txt")
+        else write.csv2(body, "monitor_fixed.txt",append = TRUE)
+        
         count <- count + 1
         print(paste0("passages left: ",5 - count))
       }, error = function(cond)
