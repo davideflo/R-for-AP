@@ -10,18 +10,6 @@ source("R_code//functions_for_PUN_server.R")
 source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 
 ###############################################################################################################################################
-dates2 <- function(vd)
-{
-  asdd <- c()
-  for(n in 1:length(vd))
-  {
-    d <- unlist(strsplit(vd[n],"/"))
-    ##asdd <- maply(1:length(vd), function(n) as.Date(paste0(unlist(strsplit(vd[n],"/"))[3],"-",unlist(strsplit(vd[n],"/"))[2],"-",unlist(strsplit(vd[n],"/"))[1])) )
-    asdd <- c(asdd,as.character(as.Date(paste0(d[3],"-",d[2],"-",d[1]))) )
-  }
-  return(asdd)
-}
-###############################################################################################################################################
 create_glm_dataset <- function(pun, varn, regressorh, targeth, meteo, day_ahead)
 {
   pun <- data.frame(pun)

@@ -12,7 +12,6 @@ library(readxl)
 source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 source("C://Users//utente//Documents//glm_dataset.R")
 
-
 prices10 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2010.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices12 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2012.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
 prices11 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Anno 2011.xlsx", sheet="Prezzi-Prices", colNames=TRUE)
@@ -100,4 +99,6 @@ meteoav16 <- mediate_meteos(mi6, ro6, fi6, pa6, ca6, rc6, FALSE)
 
 #generate_fixed_dataset_average(prices15, prices16, meteoav, meteoav16)
 
+start <- Sys.time()
 generate_fixed_dataset_average_2016(prices16, meteoav16)
+Sys.time() - start

@@ -16,6 +16,18 @@ library(tseries)
 library(TDA)
 library(purrr)
 
+###############################################################################################################################################
+dates2 <- function(vd)
+{
+  asdd <- c()
+  for(n in 1:length(vd))
+  {
+    d <- unlist(strsplit(vd[n],"/"))
+    ##asdd <- maply(1:length(vd), function(n) as.Date(paste0(unlist(strsplit(vd[n],"/"))[3],"-",unlist(strsplit(vd[n],"/"))[2],"-",unlist(strsplit(vd[n],"/"))[1])) )
+    asdd <- c(asdd,as.character(as.Date(paste0(d[3],"-",d[2],"-",d[1]))) )
+  }
+  return(asdd)
+}
 ############################################################
 convert_day <- function(day)
 {

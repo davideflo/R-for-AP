@@ -8,8 +8,36 @@ library(mailR)
 
 #source("R_code/send_mail_server.R")
 source("R_code/functions_for_PUN_server.R")
-#### lubridate vignette: https://cran.r-project.org/web/packages/lubridate/vignettes/lubridate.html
 
+#### lubridate vignette: https://cran.r-project.org/web/packages/lubridate/vignettes/lubridate.html
+###########################################
+mean_up_to_now <- function(pun, date)
+{
+  dd <- unlist(strsplit(date,"/"))
+  asdd <- as.Date(paste0(dd[3],"-",dd[2],"-",dd[1]))
+  dp <- dates2(dates(unlist(pun[,1])))
+  ix <- which(dp < asdd)
+  
+  mm <- mean(unlist(pun[ix,"PUN"]))
+  if(is.nan(mm)){
+    mm <- 0
+  }
+  return(mm)
+}
+###########################################
+yesterday_mean <- function(pun, date)
+{
+  dd <- unlist(strsplit(date,"/"))
+  asdd <- as.Date(paste0(dd[3],"-",dd[2],"-",dd[1]))
+  dp <- dates2(dates(unlist(pun[,1])))
+  ix <- which(dp == (asdd-1))
+  mm <- mean(unlist(pun[ix,"PUN"]))
+  if(is.nan(mm))
+  {
+    mm <- 0
+  }
+  return(mm)
+}
 ###########################################
 create_rolling_dataset <- function(pun, first_day, varn, meteo, step, day_ahead, hb)
 {
@@ -257,7 +285,7 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
   d_f <- data_frame()
   
   Names <- c(paste0(varn,"-",24:1), paste0("aust-",24:1), paste0("cors-",24:1), paste0("fran-",24:1), paste0("grec-",24:1),
-             paste0("slov-",24:1), paste0("sviz-",24:1), "angleday", "holiday",
+             paste0("slov-",24:1), paste0("sviz-",24:1), "mean_uptonow", "yesterday_mean","angleday", "holiday",
              "tmin","tmax","tmed","pioggia","vento",
              "y", "target_day", "target_holiday","target_tmin","target_tmax","target_tmed","target_pioggia","target_vento",
              "day")
@@ -275,6 +303,7 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
     y <- p <- aus <- cors <- fran <- grec <- slov <- sviz <- ora <- hol <- c()
     tmin <- tmax <- tmed <- rain <- vm <- c()
     ttmin <- ttmax <- ttmed <- train <- tvm <- thol <- tday <- c()
+    mutn <- ym <- 0
     
     dd <- pun[i,1]
     dd2 <- dates(dd)
@@ -291,6 +320,8 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
       slov <- at_date["SLOV"]
       sviz <- at_date["SVIZ"] 
       ora <- at_date[,2]
+      mutn <- mean_up_to_now(pun, dd2)
+      ym <- yesterday_mean(pun, dd2)
       
       if( nrow(at_date) == 23)
       {
@@ -352,7 +383,7 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
       if(hol > 0) {hol <- 1}
       if(thol > 0) {thol <- 1}
       
-      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),aday,hol,tmin,tmax,tmed,rain,vm,
+      df <- data.frame(t(p),t(aus),t(cors),t(fran),t(grec),t(slov),t(sviz),mutn,ym,aday,hol,tmin,tmax,tmed,rain,vm,
                        y,tday,thol,ttmin,ttmax,ttmed,train,tvm,as.character(day),stringsAsFactors = FALSE)
       
       colnames(df) <- Names
@@ -361,7 +392,7 @@ create_fixed_dataset_average <- function(pun, first_day, varn, meteo, day_ahead)
     }
     
   }
-  return(data.frame(d_f[,1:183]))
+  return(data.frame(d_f[,1:185]))
 }
 ############################################################
 bootstrap_f_r <- function(yhat, step, day_ahead, B = 100)
