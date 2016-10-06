@@ -6,7 +6,7 @@ source("C://Users//utente//Documents//R_code//functions_for_PPIA_server.R")
 ### se lancio piu volte il java aumenta la memoria ?
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
-date <- "2016-09-28"
+date <- "2016-10-06"
 
 met <- build_meteo_new(date)
 
@@ -19,16 +19,9 @@ apm <- assemble_pm(pn, met)
 sum(is.na(apm)) ## 0! OK 
 
 start <- Sys.time()
-if(convert_day(lubridate::wday(Sys.Date(),label=TRUE)) != "lun")
-{
-  res <- prediction(date) ### 6.153753 mins --- 9.241325 mins with bootstrap CIs
-} else
-{
-  res <- prediction_weekend(date) ### 16.39544 mins
-  res <- prediction(date)
-  colMeans(res)
-  xlsx::write.xlsx(res,paste0("prediction_PUN_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
-}
+res <- prediction(date)
+colMeans(res)
+xlsx::write.xlsx(res,paste0("prediction_PUN_",date,".xlsx"), row.names = FALSE, col.names = TRUE)
 end <- Sys.time()
 print(end-start)
 
@@ -37,27 +30,12 @@ pp <- read_excel("C:\\Users\\utente\\Documents\\PUN\\DB_Borse_Elettriche_PER MI.
 pn <- build_new_average(pp)
 
 apm <- assemble_pm_average(pn, met)
-##AVres <- prediction_average(date) 
+AVres <- prediction_average(date) 
 
 res2 <- prediction_weekend(date)
 
-
-#### BOOTSTRAP WITH ERROR DATABASE
-for(i in 1:24)
-{
-  print(paste0("CI for 1 day ahead and step", i))
-  bc <- bootstrap_f_r_errors(res[i,2], i, 1)
-  print(paste("L =", bc[1], "yp", res[i,2], "U =", bc[2]))
-}
-
-#### BOOTSTRAP WITH PUN DATABASE
-for(i in 1:24)
-{
-  print(paste0("CI for 1 day ahead and step", i))
-  bc <- bootstrap_f_r(res[i,1], i, 1)
-  print(paste("L =", bc[1], "yp", res[i,1], "U =", bc[2]))
-}
-
+#########################################################
+ 
 start <- Sys.time()
 test <- get_Prediction(date)
 end <- Sys.time()
