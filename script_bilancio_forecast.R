@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("REPORT_214_29-08-16.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report_214_28_10_2016.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -137,22 +137,27 @@ tot_enel <- TOT_m3(TPe,pm)
 #te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
-             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65)
+             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,24.73,16.00,16.90,16.90,16.90)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
 ## acquisto da shipper terzi GIUSTO:
 mat_enel <- cbind(TPe["prodotto"],TOT_m3mat(TPe,pm))
+
+### missing products:
+pe <- unique(unlist(mat_enel[,1]))
+length(pe) - sum(pe%in%prodenel)
+
 ME <- matrix(0,nrow=nrow(mat_enel),ncol=24)
 for(i in 1:nrow(mat_enel))
 {
   print(i)
-#  if(i != 2)
-#  {
+  print(mat_enel[i,1])
+
   x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
   ME[i,] <- x
-#  }
+
 }
 ME <- ME/100
 terzi <- colSums(ME)
@@ -168,7 +173,7 @@ x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 #pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
 
-date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = TRUE)
+date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = FALSE)
 #date <- as.Date(date[2,],origin = "1899-12-30")
 
 c_stok <- c(21.875, 21.875, 21.875)
@@ -177,7 +182,7 @@ c_stok <- c(21.875, 21.875, 21.875)
 #mkt <- data.frame(t(mkt))
 stok_prog <- data.frame(t(stok_prog))
 #colnames(mkt) <- colnames(date[1,])
-colnames(stok_prog) <- colnames(date[1,])
+colnames(stok_prog) <- unlist(date[,2])
 
 
 #mmkt <- c(sum_in_year(mkt, "2016"), sum_in_year(mkt, "2017"))
