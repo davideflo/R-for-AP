@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report_214_28_10_2016.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report_214_25-11-2016.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -54,11 +54,11 @@ vendite[is.na(vendite)] <- 0
 vendite[is.na(vendite)] <- 0
 aggregati <- vendite[,1:5]
 ## calcola le curve di consumo
-curve_profili <- compute_profiles_DEF(aggregati, prof_consumo)
-curve_profili_AP <- compute_profiles_DEF(aggregati_AP, prof_consumo)
-curve_profili_fissi <- compute_profiles_DEF(aggregati_fissi, prof_consumo)
-
-matplot(1:731, t(curve_profili), type="l")
+# curve_profili <- compute_profiles_DEF(aggregati, prof_consumo)
+# curve_profili_AP <- compute_profiles_DEF(aggregati_AP, prof_consumo)
+# curve_profili_fissi <- compute_profiles_DEF(aggregati_fissi, prof_consumo)
+# 
+# matplot(1:731, t(curve_profili), type="l")
 
 ## mercato a termine (carica il file): prima colonna = mercato a termine in volumi; seconda colonna = valore mercato a termine
 tot_termine <- openxlsx::read.xlsx("tot_mercato_termine.xlsx", sheet = 1)
@@ -137,8 +137,8 @@ tot_enel <- TOT_m3(TPe,pm)
 #te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
-             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,24.73,16.00,16.90,16.90,16.90)
+             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
@@ -199,18 +199,18 @@ mmkt2 <- c(as.numeric(tot_termine[,3]), 0,0,0,0,0,0,0,0,0)
 op <- tot_ap - (mstok_prog + mmkt2)
 
 #grafici
-plot(1:731, colSums(curve_profili), type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno totale, mercato a termine e stoccaggio")
-plot(1:731, totg, type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno, mercato a termine e stoccaggio")
-abline(h=0, col = "red", lwd=2)
-rect(0, 0, 31,pg[1]+(mstok_prog[1]/31), col = "grey")
-rect(31, 0, 60,pg[2]+(mstok_prog[2]/29), col = "grey")
-rect(60, 0, 91,pg[3]+(mstok_prog[3]/31), col = "grey")
-rect(91, 0, 274,pg[4], col = "grey")
-rect(274, 0, 366,pg[5], col = "grey")
-rect(366, 0, 456,pg[6], col = "grey")
-lines(1:731, totg, type="l", lwd = 2)
-
-plot(1:24, op, type="l", lwd = 2, xlab="tempo", ylab="open position",main="open position")
+# plot(1:731, colSums(curve_profili), type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno totale, mercato a termine e stoccaggio")
+# plot(1:731, totg, type="l", lwd = 2, xlab="tempo", ylab="fabbisogno",main="fabbisogno, mercato a termine e stoccaggio")
+# abline(h=0, col = "red", lwd=2)
+# rect(0, 0, 31,pg[1]+(mstok_prog[1]/31), col = "grey")
+# rect(31, 0, 60,pg[2]+(mstok_prog[2]/29), col = "grey")
+# rect(60, 0, 91,pg[3]+(mstok_prog[3]/31), col = "grey")
+# rect(91, 0, 274,pg[4], col = "grey")
+# rect(274, 0, 366,pg[5], col = "grey")
+# rect(366, 0, 456,pg[6], col = "grey")
+# lines(1:731, totg, type="l", lwd = 2)
+# 
+# plot(1:24, op, type="l", lwd = 2, xlab="tempo", ylab="open position",main="open position")
 
 #mop <- c(sum_in_year(open_position, "2016"), sum_in_year(open_position, "2017"))
 ## per lo stoccaggio il prezzo = euro/MWh. Ecco da dove arriva la discrepanza. Bisogna o calcolare il prezzo al m3 o tenere in MWh l'unita di misura
