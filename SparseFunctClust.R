@@ -119,8 +119,32 @@ FKMSparseClustering.permute <- function(data, x, K, mbound = NULL, method=c('kme
 	}
 	return(list(GAP = max(GAP), m = qualim[which.max(GAP)]))
 	}
-	
-	
+######################################################################################
+plotGroupMeans <- function(df, Cs)
+{
+  cluster <- unique(Cs)
+  M <- matrix(0, nrow= length(cluster), ncol = 24)
+  
+  
+  for(k in 1:length(cluster))
+  {
+    M[k,] <- as.matrix(colMeans(df[which(Cs == k),]))
+  }
+  matplot(t(M), type = "l", lwd = 2)
+}
+#####################################################################################
+GetGroupVariance <- function(df, Cs)
+{
+  cluster <- unique(Cs)
+  M <- matrix(0, nrow= length(cluster), ncol = 24)
+  
+  for(k in 1:length(cluster))
+  {
+    M[k,] <- as.matrix(apply(df[which(Cs == k),], 2, var))
+  }
+#  matplot(t(M), type = "l", lwd = 2)
+  return(M)
+}
 	
 	
 	
