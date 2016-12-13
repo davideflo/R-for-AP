@@ -90,17 +90,36 @@ BestFittingPolynomial <- function(y, x, maxdegree)
   return(m)
 }
 ####################################################################
-FitDerivatives <- function(df)
+FitDerivatives <- function(df, flag = TRUE)
 {
-  argvals <- seq(0,1,len=24)
-  nbasis <- 20
-  basisobj <- create.bspline.basis(c(0,1),nbasis)
-  M <- matrix(0, nrow = nrow(df), ncol = 24)
-  for(i in 1:nrow(df))
+  if(flag)
   {
-    Ys <- smooth.basis(argvals=argvals, y=unlist(df[i,]), fdParobj=basisobj,returnMatrix=TRUE)
-    Dxhat <- eval.fd(argvals, Ys$fd, Lfd=1)
-    M[i,] <- unlist(Dxhat[,1])
+    argvals <- seq(0,1,len=240)
+    nbasis <- 20
+    basisobj <- create.bspline.basis(c(0,1),nbasis)
+    M <- matrix(0, nrow = nrow(df), ncol = 240)
+    for(i in 1:nrow(df))
+    {
+      interp_df <- approx(argvals[c(1,11,21,31,41,51,61,71,81,91,101,111,121,131,141,151,161,171,181,191,201,211,221,240)], unlist(df[i,]), xout = argvals)
+      Ys <- smooth.basis(argvals=argvals, y=interp_df$y, fdParobj=basisobj,returnMatrix=TRUE)
+      Dxhat <- eval.fd(argvals, Ys$fd, Lfd=1)
+      Dxhat_smooth <- smooth.basis(argvals=argvals, y=Dxhat, fdParobj=basisobj,returnMatrix=TRUE)
+      M[i,] <- unlist(Dxhat_smooth$y[,1])
+    }
+    return(M)
   }
-  return(M)
+  else
+  {
+    argvals <- seq(0,1,len=24)
+    nbasis <- 20
+    basisobj <- create.bspline.basis(c(0,1),nbasis)
+    M <- matrix(0, nrow = nrow(df), ncol = 24)
+    for(i in 1:nrow(df))
+    {
+      Ys <- smooth.basis(argvals=argvals, y=unlist(df[i,]), fdParobj=basisobj,returnMatrix=TRUE)
+      Dxhat <- eval.fd(argvals, Ys$fd, Lfd=1)
+      M[i,] <- unlist(Dxhat[,1])
+    }
+    return(M)
+  }
 }

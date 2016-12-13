@@ -133,10 +133,11 @@ plotGroupMeans <- function(df, Cs)
   matplot(t(M), type = "l", lwd = 2)
 }
 #####################################################################################
-GetGroupVariance <- function(df, Cs)
+GetGroupVariance <- function(df, Cs, flag = TRUE)
 {
   cluster <- unique(Cs)
-  M <- matrix(0, nrow= length(cluster), ncol = 24)
+  if(flag) M <- matrix(0, nrow= length(cluster), ncol = 240)
+  else M <- matrix(0, nrow= length(cluster), ncol = 24)
   
   for(k in 1:length(cluster))
   {

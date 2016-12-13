@@ -8,6 +8,7 @@ library(gamair)
 library(mgcv)
 library(feather)
 library(lubridate)
+library(fdakma)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -58,9 +59,6 @@ GV <- GetGroupVariance(dfn, wk$CLUSTER)
 matplot(sqrt(t(GV)), type = 'l', lwd = 2)
 
 
-polyfit <- function(i) x <- AIC(lm(y~poly(x,i))) 
-as.integer(optimize(polyfit,interval = c(1,length(x)-1))$minimum)
-
 fit <- lm(y ~ poly(x, 7, raw=TRUE))
 BestFittingPolynomial(y, x, 23)
 
@@ -80,12 +78,21 @@ lines(argvals, y,type="l", col = "blue")
 der <- FitDerivatives(dfn)
 chs <- CHStatistics(der, 20, 0.8)
 plot(chs, type = 'l', lwd = 2, col = 'orange')
-wk <- FKMSparseClustering(der, 1:24, 2, 0.8, 'kmea', maxiter = 100)
+wk <- FKMSparseClustering(der, 1:24, 3, 0.8, 'kmea', maxiter = 100)
 plot(wk$W, type = 'l', lwd = 2, col = 'gold')
 plotGroupMeans(dfn, wk$CLUSTER)
 GV <- GetGroupVariance(der, wk$CLUSTER)
 matplot(sqrt(t(GV)), type = 'l', lwd = 2)
 matplot(t(der), type = 'l', lwd = 2)
+
+par(mfrow = c(2,1))
+plot(apply(dfn[which(wk$CLUSTER == 2),], 2, sd), type = 'l', lwd = 2, col = 'navy')
+plot(apply(dfn[which(wk$CLUSTER == 1),], 2, sd), type = 'l', lwd = 2, col = 'red')
+layout(1)
+
+kma_ex <- kma(x=1:24, y0=scale(dfn, center = TRUE, scale = TRUE), y1=scale(FitDerivatives(dfn, FALSE),center = TRUE, scale = TRUE), 
+              n.clust = 2,warping.method = 'affine',similarity.method = 'd1.pearson',center.method = 'k-means')
+kma.show.results(kma_ex)
 
 length(which(wk$CLUSTER == 1))
 length(which(wk$CLUSTER == 2))
