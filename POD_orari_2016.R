@@ -9,6 +9,7 @@ library(mgcv)
 library(feather)
 library(lubridate)
 library(fdakma)
+library(data.table)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -102,3 +103,44 @@ length(which(wk$CLUSTER == 5))
 length(which(wk$CLUSTER == 6))
 
 plot(colMeans(dfn[which(wk$CLUSTER == 5),]), type = "l") 
+
+TreatData("cnord")
+TreatData("csud")
+TreatData("sud")
+TreatData("sici")
+TreatData("sard")
+
+
+datasa <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard"))
+
+dim(datasa)
+es <- FilterByDate(datasa, "2016-01-14")[,3:26]
+layout(1)
+matplot(t(es), type = 'l', lwd = 2)
+
+
+tssard <- TSAggregator(datasa)
+
+plot(tssard, type = 'l', lwd = 2, col = 'blue')
+
+
+DT <- data.table(sard = tssard, hour = 1:length(tssard))
+
+sardsd <- GetSD(tssard, '2016-01-01', '2016-11-01')
+plot(sardsd, type = 'l', lwd = 2)
+lag.plot(sardsd[,2])
+lag.plot(tssard)
+acf(tssard)
+acf(sardsd[,2])
+
+msd <- c()
+for(m in 1:10)
+{
+  print(m)
+  atm <- as.data.frame(sardsd[which(lubridate::month(as.POSIXct(unlist(sardsd[,1]), origin = '1970-01-01')) == m),])
+  msd <- c(msd, sd(atm[,2]))
+}
+plot(msd, type = 'l')
+
+
+plot(GetHourlySD(datasa), type = 'l', lwd = 2, col = 'red')

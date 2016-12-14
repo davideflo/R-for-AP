@@ -123,3 +123,66 @@ FitDerivatives <- function(df, flag = TRUE)
     return(M)
   }
 }
+#########################################################################################
+TreatData <- function(name)
+{
+  data <- as.data.frame(read_feather(paste0("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_",name)))
+  data <- ConvertDate(data)
+  Agg <- HourAggregator(data)
+  write_feather(Agg, paste0("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_",name))
+}
+########################################################################################
+TSAggregator <- function(df)
+{
+  days <- as.character(seq.Date(from = as.Date('2016-01-01'), to = as.Date('2016-10-31'), by = 'day'))
+  ts <- c()
+  for(d in days)
+  {
+    atd <- FilterByDate(df, d)[,3:26]
+    ts <- c(ts, unlist(colSums(atd, na.rm = TRUE)))
+  }
+  return(ts)
+}
+#########################################################################################
+GetSD <- function(ts, from, to)
+{ ### to is one day ahead ###
+  dsd <- c()
+  Date <- seq.POSIXt(from=as.POSIXct(from), to = as.POSIXct(to), by='hour')
+  DT <- data.table(Date[1:(length(Date)-1)], ts, c(1:length(ts)))
+  colnames(DT) <- c("Date", "cons", "day.of.year")
+  return(DT[,sd(cons),by=floor_date(Date,"day")])
+}
+#########################################################################################
+GetHourlySD <- function(df)
+{
+  days <- as.character(seq.Date(from = as.Date('2016-01-01'), to = as.Date('2016-10-31'), by = 'day'))
+  ts <- c()
+  for(d in days)
+  {
+    atd <- (1/1000)*FilterByDate(df, d)[,3:26]
+    ts <- c(ts, unlist(apply(atd, 2, sd, na.rm = TRUE)))
+  }
+  return(ts)
+}
+#############################################################################################
+AggregateMLR <- function(df)
+{
+  d_f <- data_frame()
+  days <- unique(df$Giorno)
+  seqd <- seq.Date(from = as.Date('2016-01-01'), to = as.Date('2016-10-31'), by = 'day')
+  for(d in days)
+  {
+    dd <- which(seqd == d)
+    atd <- df[which(df$Giorno == d),3:26]
+    df2 <- data.frame(seqd[dd], t((1/1000)*colSums(atd, na.rm = TRUE)))
+    d_f <- bind_rows(d_f, df2)
+  }
+  colnames(d_f) <- c("date", as.character(1:24))
+  return(d_f)
+}
+  
+  
+  
+  
+  
+  
