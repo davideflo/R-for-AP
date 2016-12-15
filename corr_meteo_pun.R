@@ -7,6 +7,7 @@ library(gamair)
 source("C://Users//utente//Documents//R_code//functions_for_PUN_server.R")
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//prediction2.R")
+source("C://Users//utente//Documents//glm_dataset.R")
 
 
 pun16 <- read_excel("C:/Users/utente/Documents/PUN/Anno 2016_08.xlsx", sheet="Prezzi-Prices")

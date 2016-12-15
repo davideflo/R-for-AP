@@ -144,3 +144,99 @@ plot(msd, type = 'l')
 
 
 plot(GetHourlySD(datasa), type = 'l', lwd = 2, col = 'red')
+
+
+######### does the load correlate with meteo? 
+
+source("C://Users//utente//Documents//glm_dataset.R")
+
+mi6 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1)
+ro6 <- read_excel("C:/Users/utente/Documents/PUN/Roma 2016.xlsx", sheet= 1)
+fi6 <- read_excel("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1)
+pa6 <- read_excel("C:/Users/utente/Documents/PUN/Palermo 2016.xlsx", sheet= 1)
+ca6 <- read_excel("C:/Users/utente/Documents/PUN/Cagliari 2016.xlsx", sheet= 1)
+rc6 <- read_excel("C:/Users/utente/Documents/PUN/Reggio Calabria 2016.xlsx", sheet= 1)
+
+mi6 <- get_meteo(mi6)
+ro6 <- get_meteo(ro6)
+fi6 <- get_meteo(fi6)
+pa6 <- get_meteo(pa6)
+ca6 <- get_meteo(ca6)
+rc6 <- get_meteo(rc6)
+
+### DT2 da MLReg.R ###
+
+DT8 <- DT2[which(lubridate::month(as.Date(unlist(DT2[,1]))) <= 8),]
+data.table(DT8)
+
+ca6[98, 'Tmedia'] <- 17
+ca6[99, 'Tmedia'] <- 15
+ca6[98, 'Vento_media'] <- 14
+ca6[99, 'Vento_media'] <- 18
+
+
+corrs <- rep(0, 24)
+for(i in 1:24)
+{
+  print(paste("correlation between ", i,"th hour and mean Temp:", cor(unlist(DT8[as.character(i)]), ca6$Tmedia, na.rm = TRUE)))
+  corrs[i] <- cor(unlist(DT8[as.character(i)]), ca6$Tmedia, na.rm = TRUE)
+}
+
+barplot(corrs)
+
+corrv <- rep(0, 24)
+for(i in 1:24)
+{
+  print(paste("correlation between ", i,"th hour and wind:", cor(unlist(DT8[as.character(i)]), ca6$Vento_media, na.rm = TRUE)))
+  corrv[i] <- cor(unlist(DT8[as.character(i)]), ca6$Vento_media, na.rm = TRUE)
+}
+
+barplot(corrv, col = 'skyblue2')
+
+sbil <- read_excel("C:/Users/utente/Documents/misure/aggregato_sbilanciamento.xlsx")
+
+### same on CNORD
+
+### DT2 da MLReg.R ###
+
+DT8 <- DT2[which(lubridate::month(as.Date(unlist(DT2[,1]))) <= 8),]
+data.table(DT8)
+
+fi6[101,'Tmedia'] <- 13 
+fi6[93,'Tmedia'] <- 16
+  
+  
+corrs <- rep(0, 24)
+for(i in 1:24)
+{
+  print(paste("correlation between ", i,"th hour and mean Temp:", cor(unlist(DT8[as.character(i)]), fi6$Tmedia, na.rm = TRUE)))
+  corrs[i] <- cor(unlist(DT8[as.character(i)]), fi6$Tmedia, na.rm = TRUE)
+}
+
+barplot(corrs, col = 'skyblue3')
+
+sbilcn <- sbil[which(sbil$`CODICE RUC` == 'UC_DP1608_CNOR'),]
+sbilcn$`DATA RIFERIMENTO CORRISPETTIVO` <- seq.POSIXt(as.POSIXct('2015-01-01'), as.POSIXct('2016-10-01'), by = 'hour')[1:15335]
+sbilcn16 <- sbilcn[which(lubridate::year(as.Date(unlist(sbilcn$`DATA RIFERIMENTO CORRISPETTIVO`))) == 2016),]
+sbilcn168 <- sbilcn16[which(lubridate::month(as.Date(unlist(sbilcn16$`DATA RIFERIMENTO CORRISPETTIVO`))) <= 8),]
+sbilcn168 <- sbilcn168[1:(nrow(sbilcn168)-1),]
+data.table(sbilcn168)
+
+
+corrsb <- rep(0, 24)
+for(i in 1:24)
+{
+  print(i)
+  if(i == 2) next
+  else if(i == 24)
+  {
+    corrsb[i] <- cor(unlist(sbilcn168[which(lubridate::hour(unlist(sbilcn168$`DATA RIFERIMENTO CORRISPETTIVO`)) == 0),'SBILANCIAMENTO FISICO [MWh]']), fi6$Tmedia, na.rm = TRUE)
+  }
+  else
+  {
+    print(paste("correlation between ", i,"th hour and mean Temp:", cor(unlist(sbilcn168[which(lubridate::hour(unlist(sbilcn168$`DATA RIFERIMENTO CORRISPETTIVO`)) == i),'SBILANCIAMENTO FISICO [MWh]']), fi6$Tmedia, na.rm = TRUE)))
+    corrsb[i] <- cor(unlist(sbilcn168[which(lubridate::hour(unlist(sbilcn168$`DATA RIFERIMENTO CORRISPETTIVO`)) == i),'SBILANCIAMENTO FISICO [MWh]']), fi6$Tmedia, na.rm = TRUE)
+  }
+}
+
+barplot(corrsb, col = 'salmon2')

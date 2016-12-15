@@ -2,7 +2,7 @@
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
 
 
-DT <-  as.data.table(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard"))
+DT <-  as.data.table(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
 
 
 DT[, date_time := ymd(DT[["Giorno"]])]
