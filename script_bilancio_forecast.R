@@ -37,6 +37,10 @@ ao <- ao[rows,]                                                                 
 #########################################################################################################
 ## aggrega i prodotti
 aggregati <- compute_combinations_DEF_val(ao)
+##################################################################################################################################
+aggregati <- compute_combinations_DEF_val_Agenti(ao)                                                                             #
+xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato con agenzie.xlsx", row.names = FALSE, col.names = TRUE)     #
+##################################################################################################################################
 xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato.xlsx", row.names = FALSE, col.names = TRUE)
 #aggregati_AP <- compute_combinations_DEF(ao_AP)
 #aggregati_fissi <- compute_combinations_DEF(ap_fissi)

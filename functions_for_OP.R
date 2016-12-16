@@ -1442,3 +1442,105 @@ TOT_m3mat <- function(prod, pm)
   }
   return(totm)
 }
+#############################################################################################
+compute_combinations_DEF_val_Agenti <- function(attivi)
+{
+  aggregati <- data.frame()
+  attivi2 <- anni_competenza(attivi, "01/01/2016")
+  prodotti <- as.character(unique(unlist(attivi["CODICE_PRODOTTO"])))
+  #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
+  no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
+  tot_consumo <- sum(as.numeric(attivi[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
+  check <- 0
+  for(prod in prodotti)
+  {
+    print(prod)
+    aggregati2 <- data_frame()
+    rows <- which(attivi["CODICE_PRODOTTO"] == prod)
+    Tabella2 <- attivi[rows,]
+    
+    agentiloc <- as.character(unique(unlist(Tabella2["AGENZIA"])))
+    
+    for(al in agentiloc)
+    {
+      print(al)
+      righe <- which(Tabella2["AGENZIA"] == al)
+      tabella2 <- Tabella2[righe,]    
+    
+      data_inizio <- unique(unlist(tabella2["D_VALIDO_DAL_T"]))
+      for(di in data_inizio)
+      {
+        print(di)
+        rows2 <- which(tabella2["D_VALIDO_DAL_T"] == di)
+        data2 <- tabella2[rows2,]
+        data_fine <- unique(unlist(data2["D_VALIDO_AL_T"]))
+        for(df in data_fine)
+        {
+          print(df)
+          rows3 <- which(data2["D_VALIDO_AL_T"] == df)
+          data3 <- data2[rows3,]
+          prof <- unique(unlist(data3["PROFILO_PRELIEVO"]))
+          sf  <- sv <- 0
+          for(p in prof)
+          {
+            print(p)
+            rows4 <- which(data3["PROFILO_PRELIEVO"] == p)
+            data4 <- data3[rows4,]
+            j <- 1
+            
+            nas <- which(is.na(data4["CONSUMO_DISTRIBUTORE"]))
+            zeri <- which(data4["CONSUMO_DISTRIBUTORE"] == "0")
+            rest <- setdiff(1:length(rows4), union(nas, zeri))
+            
+            #print(paste("rows4:", length(rows4)))
+            first_letter <- stri_sub(prod, 1, 1)
+            FV <- stri_sub(prod, 6, 6)
+            sf <- sum(as.numeric(data4[rest,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE) + sum(as.numeric(data4[union(nas,zeri),"CONSUMO_CONTR_ANNUO"]), na.rm = TRUE)
+            sv <- sum(as.numeric(data4[rest,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE) + sum(as.numeric(data4[union(nas,zeri),"CONSUMO_CONTR_ANNUO"]), na.rm = TRUE)
+            #print(paste("sf:", sf))  
+            cfv <- change_F_to_V2(j, data4)
+            print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
+            if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
+            {
+              CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
+              CN2 <- data.frame(CN, al)
+              colnames(CN2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+              print(CN2)
+              #aggregati2 <- bind_rows(aggregati2, CN2)
+              aggregati2 <- rbind(aggregati2, CN2)
+              colnames(aggregati2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+              if(!is.na(sf)) {check <- check + sf}
+            }
+            else
+            {
+              tkm <- take_maximum_date("01/01/2016",di)
+              ## se non tkm metti di
+              min_fin <- take_minimum_date("31/12/2017", df)
+              fisso <- data.frame(cbind(prod, tkm, min_fin, as.character(p), as.character(as.numeric(sf)), al))
+              
+              colnames(fisso) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+              #aggregati2 <- bind_rows(aggregati2, fisso)
+              aggregati2 <- rbind(aggregati2, fisso)
+              colnames(aggregati2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+              if(!is.na(sf)) {check <- check + sf}
+            }
+            #print(paste(prod, ": check", check, "sf", sf))
+          }
+        }
+      }
+    }
+    if(nrow(aggregati2) > 0) 
+    {
+      colnames(aggregati2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+      aggregati2$consumo <- as.numeric(as.character(aggregati2$consumo))
+      #aggregati <- bind_rows(aggregati, aggregati2)
+      aggregati <- rbind(aggregati, aggregati2)
+    }
+  }
+  colnames(aggregati) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
+  print(paste("consumo totale:", tot_consumo))
+  print(paste("consumo combinazioni:", check))
+  print(paste("il consumo totale e' rispettato:", (as.numeric(check) - as.numeric(tot_consumo)) == 0))
+  return(aggregati)
+}
+
