@@ -164,6 +164,8 @@ pa6 <- get_meteo(pa6)
 ca6 <- get_meteo(ca6)
 rc6 <- get_meteo(rc6)
 
+meteoav16 <- data.frame(mediate_meteos(mi6, ro6, fi6, pa6, ca6, rc6, FALSE))
+
 ### DT2 da MLReg.R ###
 
 DT8 <- DT2[which(lubridate::month(as.Date(unlist(DT2[,1]))) <= 8),]
@@ -222,6 +224,12 @@ sbilcn168 <- sbilcn16[which(lubridate::month(as.Date(unlist(sbilcn16$`DATA RIFER
 sbilcn168 <- sbilcn168[1:(nrow(sbilcn168)-1),]
 data.table(sbilcn168)
 
+#################################################################################
+sbilcn <- sbil[which(sbil$`CODICE RUC` == 'UC_DP1608_CNOR'),]
+
+plot(sbilcn$`FABBISOGNO REALE`, type = 'l')
+#################################################################################
+
 
 corrsb <- rep(0, 24)
 for(i in 1:24)
@@ -240,3 +248,44 @@ for(i in 1:24)
 }
 
 barplot(corrsb, col = 'salmon2')
+
+#####################################################################
+### make dataset
+meteoav16$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+dataset <- MakeDatasetMLR(DT8, meteoav16, 6)
+data.table(dataset)
+
+test <- sample.int(240, 50)
+testset <- dataset[test,]
+trainset <- dataset[setdiff(1:240,test), ]
+
+fit <- lm(y ~ 0 + ., data = trainset)
+summary(fit)
+
+plot(fit)
+
+plot(trainset$y, type = 'l', lwd = 2)
+lines(fit$fitted.values, type = 'l', lwd = 2, col = 'pink')
+
+max(fit$residuals)
+
+ynh <- predict(fit, testset[,1:27])
+testy <- testset$y
+
+plot(testy, type = 'l', lwd = 2)
+lines(ynh, type = 'l', lwd = 2, col = 'purple')
+
+mape(trainset$y, fit$fitted.values)
+mape(testy, ynh)
+vectorMape(trainset$y, fit$fitted.values)
+max(vectorMape(trainset$y, fit$fitted.values))
+vectorMape(testy, ynh)
+max(vectorMape(testy, ynh))
+
+###################################################
+
+cnord <- read_excel("C:/Users/utente/Documents/misure/cnord.xlsx")
+
+
+

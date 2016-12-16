@@ -2,6 +2,8 @@
 
 
 source("C://Users//utente//Documents//R_code//SparseFunctClust.R")
+source("R_code/functions_for_PUN_server.R")
+
 
 ConvertDate <- function(df)
 {
@@ -181,8 +183,66 @@ AggregateMLR <- function(df)
   return(d_f)
 }
 #############################################################################################
+associate_meteo_data <- function(data, meteo, meteovar)
+{
+  ir <- which(unlist(meteo["Data"]) == data)
+  vm <- as.numeric(meteo[ir,meteovar])
+  return(vm)
+}
+#############################################################################################
+MakeDatasetMLR <- function(df, meteo, H)
+{
+  d_f <- data_frame()
+  succH <- 0
+  if(H == 24)
+  {
+    succH <- 1
+  }
+  else
+  {
+    succH <- H + 1
+  }  
   
-  
+  dts <- seq.POSIXt(as.POSIXct('2016-01-01'), as.POSIXct(meteo[nrow(meteo),1]), by = 'day')
+  Giorno <- 'date'
+  for(i in 5:length(dts))
+  {
+    print(dts[i])
+    y <- unlist(df[which(as.Date(unlist(df[Giorno])) == as.Date(dts[i])), as.character(H)])
+    target_day <- lubridate::wday(as.Date(dts[i]))
+    target_week <- lubridate::week(as.Date(dts[i]))
+    target_T <- associate_meteo_data(as.Date(dts[i]), meteo, 'Tmedia')
+    if(H == 0)
+    {
+      x <- unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i]))-2), ])
+      #wasday <- lubridate::wday(as.Date(dts[i])-2)
+    }
+    else
+    {
+      x <- c(unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-3)), as.character(succH:24)]),
+             unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-2)), as.character(1:H)]))
+    }
+    df2 <- data.frame(t(x), target_day, target_week, target_T, y)
+    colnames(df2) <- c(paste0('H-',24:1), 'target_day', 'target_week', 'target_T', 'y')
+    d_f <- bind_rows(d_f, df2)
+  }
+  return(d_f)
+}
+################################################################################################################
+el_string <- function(string)
+{
+  ss <- unlist(strsplit(string, "/" ))
+  sn <- paste0(unlist(strsplit(ss[3], " "))[1], "-", ss[2], "-", ss[1], " ", unlist(strsplit(ss[3], " "))[2])
+  return(sn)
+}
+################################################################################################################
+toPOs_sbil <- function(drc)
+{
+  tp <- maply(1:length(drc), function(n) {print(as.POSIXct(drc[n], format="%Y-%m-%dT%H:%M")); as.POSIXct(drc[n], format="%Y-%m-%d T%H:%M")}  )
+  return(tp)
+}
+################################################################################################################
+
   
   
   

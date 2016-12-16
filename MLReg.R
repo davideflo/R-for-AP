@@ -188,6 +188,11 @@ mape <- function(real, pred){
   return(100 * mean(abs((real - pred)/real)))
 }
 
+vectorMape <- function(real, pred)
+{
+  return(100 * abs((real - pred)/real))
+}
+
 # Training set of lenght of two weeks - experimentaly set. Make forecast to 50 weeks.
 
 n_weeks <- floor(length(n_date)/7) - 2
