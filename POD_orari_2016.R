@@ -287,5 +287,182 @@ max(vectorMape(testy, ynh))
 
 cnord <- read_excel("C:/Users/utente/Documents/misure/cnord.xlsx")
 
+colnames(cnord)[1] <- "date"
+cnord$date <- seq.Date(as.Date('2015-01-01'), as.Date('2016-10-31'), by = 'day')
+
+cnord8 <- cnord[which(unlist(cnord$date) <= as.Date("2016-08-31")),]
+
+meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_firenze_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+fi6 <- get_meteo(fi6)
+
+meteocnord[,2:ncol(meteocnord)] <- data.matrix(meteocnord[,2:ncol(meteocnord)])
+
+meteocnord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+fi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+meteoU <- rbind(meteocnord, fi6)
+
+dtcn <- MakeDatasetMLR_2(cnord8, meteoU,6)
+data.table(dtcn)
+data.frame(dtcn)
+
+trainset <- dtcn[1:484,]
+testset <- dtcn[485:605,]
+
+fitn <- lm(y ~ 0 + ., data = trainset)
+summary(fitn)
+
+plot(fitn)
+
+mean(fitn$residuals)
+sd(fitn$residuals)
+max(fitn$residuals)
+median(fitn$residuals)
+
+plot(trainset$y, type = 'l', lwd = 2)
+lines(fitn$fitted.values, type = 'l', lwd = 2, col = 'skyblue3')
+
+hist(fitn$residuals, col = 'blue2')
+skewness(fitn$residuals)
+kurtosis(fitn$residuals)
+
+yhats <- predict(fitn, testset[,1:29])
+
+reshat <- testset$y - yhats
+
+mean(reshat)
+sd(reshat)
+median(reshat)
+max(reshat)
+skewness(reshat)
+kurtosis(reshat)
+
+plot(testset$y, type = 'l', lwd = 2)
+lines(yhats, type = 'l', lwd = 2, col = 'pink2')
+
+mape(trainset$y, fitn$fitted.values)
+vectorMape(trainset$y, fitn$fitted.values)
+max(vectorMape(trainset$y, fitn$fitted.values))
+mape(testset$y, yhats)
+vectorMape(testset$y, yhats)
+max(vectorMape(testset$y, yhats))
 
 
+qqnorm(reshat); qqline(reshat, col = 2)
+#qqplot(y)
+
+ggplot(data = data.table(Fitted_values = yhats, Residuals = reshat),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+fitr <- lm(reshat ~ I(yhats) + I(yhats^2) + I(yhats^3))
+summary(fitr)
+cor(reshat, yhats)
+
+rcauchy(length(reshat))
+ks.test(rcauchy(length(reshat)), reshat, alternative = "two.sided")
+#ks.test(rt(length(yhats), df = 2), yhats, alternative = "two.sided")
+
+hist(reshat, breaks = 20, col = 'grey')
+
+plot(density(reshat), type = 'l', col = "green", lwd = 2)
+points(reshat, rep(0,length(reshat)), col = "blue3", pch = 16)
+
+shapiro.test(reshat)
+
+#### only days and temp
+fitn2 <- lm(y ~ 0 + target_day + target_week + target_T + change_date + holiday + target_day:target_week, data = trainset)
+summary(fitn2)
+
+plot(fitn2)
+
+plot(trainset$y, type = 'l', lwd = 2)
+lines(fitn2$fitted.values, type = 'l', lwd = 2, col = 'skyblue3')
+
+mean(fitn2$residuals)
+sd(fitn2$residuals)
+max(fitn2$residuals)
+median(fitn2$residuals)
+
+mape(trainset$y, fitn2$fitted.values)
+vectorMape(trainset$y, fitn2$fitted.values)
+max(vectorMape(trainset$y, fitn2$fitted.values))
+
+ggplot(data = data.table(Fitted_values = fitn2$fitted.values, Residuals = fitn2$residuals),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+
+##### influsso dei non orari 
+
+aggcn <- AggregateMLR(DT)
+aggcn <- aggcn[which(aggcn$date <= as.Date('2016-08-31')),]
+dtcn2 <- cnord8[which(cnord$date >= as.Date('2016-01-01') & cnord$date <= as.Date('2016-08-31')),]
+
+data.table(aggcn)
+data.table(dtcn2)
+
+#dtcn2[1,2:25] - aggcn[1,2:25]
+
+nhi = NHI(dtcn2, aggcn) 
+
+data.table(nhi)
+matplot(t(nhi), type="l")
+matplot(t(aggcn), type="l")
+matplot(t(dtcn2[,2:25]), type="l")
+
+colMeans(nhi[,2:25]/(nhi[,2:25] + aggcn[,2:25]))
+colMeans(aggcn[,2:25]/(nhi[,2:25] + aggcn[,2:25]))
+
+
+wds <- maply(1:nrow(nhi), function(n) lubridate::wday(as.Date(unlist(nhi[n,1]))))
+wks <- maply(1:nrow(nhi), function(n) lubridate::week(as.Date(unlist(nhi[n,1]))))
+
+DTNH <- bind_cols(nhi, data.frame(wds), data.frame(wks))
+
+head(data.table(DTNH))
+
+fitgam <- gamm(DTNH$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35), data = DTNH)
+
+plot(fitgam$gam,scale = 0)
+summary(fitgam$gam)
+
+### with temperature
+DTNHT <- bind_cols(nhi, data.frame(wds), data.frame(wks), data.frame(fi6$Tmedia))
+
+fitgamt <- gamm(DTNH$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(fi6$Tmedia, bs = "cc"), data = DTNHT)
+
+plot(fitgamt$gam,scale = 0)
+summary(fitgamt$gam)
+
+plot(DTNH$`20`, type = "l", lwd = 2, col = 'blue3')
+lines(fitgamt$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+resgam <- fitgamt$gam$residuals
+
+mean(resgam)
+median(resgam)
+sd(resgam)
+kurtosis(resgam)
+skewness(resgam)
+max(resgam)
+
+qqnorm(resgam); qqline(resgam, col = 2)
+qqnorm(rcauchy(length(resgam))); qqline(rcauchy(length(resgam)), col = 2)
+
+
+ggplot(data = data.table(Fitted_values = fitgamt$gam$fitted.values, Residuals = resgam),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+shapiro.test(resgam)

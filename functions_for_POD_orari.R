@@ -242,8 +242,92 @@ toPOs_sbil <- function(drc)
   return(tp)
 }
 ################################################################################################################
-
+add_holidays_Date <- function(vd)
+{
+  ##### codifica numerica delle vacanze
+  ## 1 Gennaio = 1, Epifania = 2
+  ## Pasqua = 3, Pasquetta = 4
+  ## 25 Aprile = 5, 1 Maggio = 6, 2 Giugno = 7,
+  ## Ferragosto = 8, 1 Novembre = 9
+  ## 8 Dicembre = 10, Natale = 11, S.Stefano = 12, S.Silvestro = 13
+  holidays <- 0
+  pasqua <- as.Date(c("2010-04-04", "2011-04-24", "2012-04-08", "2013-03-31", "2014-04-20", "2015-04-05", "2016-03-27"))
+  pasquetta <- as.Date(c("2010-04-05", "2011-04-25", "2012-04-09", "2013-04-01", "2014-04-21", "2015-04-06", "2016-03-28"))
   
+  if(lubridate::month(vd) == 1 & lubridate::day(vd) == 1) holidays <- 1
+  if(lubridate::month(vd)  == 1 & lubridate::day(vd) == 6) holidays <- 1
+  if(lubridate::month(vd)  == 4 & lubridate::day(vd) == 25) holidays <- 1
+  if(lubridate::month(vd)  == 5 & lubridate::day(vd) == 1) holidays <- 1
+  if(lubridate::month(vd)  == 6 & lubridate::day(vd) == 2) holidays <- 1
+  if(lubridate::month(vd)  == 8 & lubridate::day(vd) == 15) holidays <- 1
+  if(lubridate::month(vd)  == 11 & lubridate::day(vd) == 1) holidays <- 1
+  if(lubridate::month(vd)  == 12 & lubridate::day(vd) == 8) holidays <- 1
+  if(lubridate::month(vd)  == 12 & lubridate::day(vd) == 25) holidays <- 1
+  if(lubridate::month(vd)  == 12 & lubridate::day(vd) == 26) holidays <- 1
+  if(lubridate::month(vd)  == 12 & lubridate::day(vd) == 31) holidays <- 1
+  if(vd %in% pasqua) holidays <- 1
+  if(vd %in% pasquetta) holidays <- 1
+  
+  return(holidays)
+}
+################################################################################################################
+MakeDatasetMLR_2 <- function(df, meteo, H)
+{
+  d_f <- data_frame()
+  succH <- 0
+  if(H == 24)
+  {
+    succH <- 1
+  }
+  else
+  {
+    succH <- H + 1
+  }  
+  
+  dts <- seq.Date(as.Date('2015-01-01'), as.Date(meteo[nrow(meteo),1]), by = 'day')
+  Giorno <- 'date'
+  for(i in 5:length(dts))
+  {
+    print(dts[i])
+    y <- unlist(df[which(as.Date(unlist(df[Giorno])) == as.Date(dts[i])), as.character(H)])
+    target_day <- lubridate::wday(as.Date(dts[i]))
+    target_week <- lubridate::week(as.Date(dts[i]))
+    target_T <- associate_meteo_data(as.Date(dts[i]), meteo, 'Tmedia')
+    cd <- unlist(df[which(as.Date(unlist(df[Giorno])) == as.Date(dts[i])), "CD"])
+    holidays <- add_holidays_Date(dts[i])
+    if(H == 0)
+    {
+      x <- unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i]))-2), ])
+      #wasday <- lubridate::wday(as.Date(dts[i])-2)
+    }
+    else
+    {
+      x <- c(unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-3)), as.character(succH:24)]),
+             unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-2)), as.character(1:H)]))
+    }
+    df2 <- data.frame(t(x), target_day, target_week, target_T, cd, holidays, y)
+    colnames(df2) <- c(paste0('H-',24:1), 'target_day', 'target_week', 'target_T', 'change_date', 'holiday', 'y')
+    d_f <- bind_rows(d_f, df2)
+  }
+  return(d_f)
+}
+####################################################################################################################
+NHI <- function(sbil, df)
+{
+  d_f <- data_frame()
+  for(d in 1:nrow(sbil))
+  {
+    print(d)
+    atd <- sbil[d,'date']
+    atr <- df[which(unlist(df['date']) == unlist(atd)),2:25]
+    print(unlist(sbil[d,2:25]) - unlist(atr))
+    df2 <- data.frame(atd, t(unlist(sbil[d,2:25]) - unlist(atr)))
+    colnames(df2) <- c('date', as.character(1:24))
+    d_f <- bind_rows(d_f, df2)
+  }
+  return(d_f)
+}
+
   
   
   
