@@ -13,6 +13,8 @@ library(data.table)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
+source("C://Users//utente//Documents//glm_dataset.R")
+
 
 data <- read_excel("C:/Users/utente/Documents/misure/AggregPDO_orari_2016.xlsx")
 zona <- read_excel("C:/Users/utente/Documents/misure/mappa-pod.xlsx")
@@ -148,7 +150,6 @@ plot(GetHourlySD(datasa), type = 'l', lwd = 2, col = 'red')
 
 ######### does the load correlate with meteo? 
 
-source("C://Users//utente//Documents//glm_dataset.R")
 
 mi6 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1)
 ro6 <- read_excel("C:/Users/utente/Documents/PUN/Roma 2016.xlsx", sheet= 1)
@@ -466,3 +467,186 @@ ggplot(data = data.table(Fitted_values = fitgamt$gam$fitted.values, Residuals = 
   labs(title = "Fitted vs Residuals")
 
 shapiro.test(resgam)
+
+#########
+nord <- read_excel("C:/Users/utente/Documents/misure/nord.xlsx")
+
+colnames(nord)[1] <- "date"
+nord$date <- seq.Date(as.Date('2015-01-01'), as.Date('2016-10-31'), by = 'day')
+
+nord8 <- nord[which(unlist(nord$date) <= as.Date("2016-08-31")),]
+
+meteonord <- read.csv2("C:/Users/utente/Documents/PUN/storico_milano_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+mi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1, colNames=TRUE)
+mi6 <- get_meteo(mi6)
+
+meteonord[,2:ncol(meteonord)] <- data.matrix(meteonord[,2:ncol(meteonord)])
+
+meteonord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+mi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+meteoU <- rbind(meteonord, mi6)
+
+dtcn <- MakeDatasetMLR_2(nord8, meteoU,20)
+data.table(dtcn)
+data.frame(dtcn)
+
+trainset <- dtcn[1:484,]
+testset <- dtcn[485:605,]
+
+fitnord <- lm(y ~ 0 + ., data = trainset)
+summary(fitnord)
+
+plot(fitnord)
+
+mean(fitnord$residuals)
+sd(fitnord$residuals)
+max(fitnord$residuals)
+median(fitnord$residuals)
+
+plot(trainset$y, type = 'l', lwd = 2)
+lines(fitnord$fitted.values, type = 'l', lwd = 2, col = 'skyblue3')
+
+hist(fitnord$residuals, col = 'blue2')
+skewness(fitnord$residuals)
+kurtosis(fitnord$residuals)
+
+yhats <- predict(fitnord, testset[,1:29])
+
+reshat <- testset$y - yhats
+
+mean(reshat)
+sd(reshat)
+median(reshat)
+max(reshat)
+skewness(reshat)
+kurtosis(reshat)
+
+plot(testset$y, type = 'l', lwd = 2)
+lines(yhats, type = 'l', lwd = 2, col = 'pink2')
+
+mape(trainset$y, fitnord$fitted.values)
+vectorMape(trainset$y, fitnord$fitted.values)
+max(vectorMape(trainset$y, fitnord$fitted.values))
+mape(testset$y, yhats)
+vectorMape(testset$y, yhats)
+max(vectorMape(testset$y, yhats))
+
+
+qqnorm(reshat); qqline(reshat, col = 2)
+
+
+ggplot(data = data.table(Fitted_values = yhats, Residuals = reshat),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+#### ### ### ### ###
+fitnord2 <- lm(y ~ 0 + . + target_day:target_week, data = trainset)
+summary(fitnord2)
+
+plot(fitnord2)
+
+mean(fitnord2$residuals)
+sd(fitnord2$residuals)
+max(fitnord2$residuals)
+median(fitnord2$residuals)
+
+plot(trainset$y, type = 'l', lwd = 2)
+lines(fitnord2$fitted.values, type = 'l', lwd = 2, col = 'skyblue3')
+
+hist(fitnord2$residuals, col = 'blue2')
+skewness(fitnord2$residuals)
+kurtosis(fitnord2$residuals)
+
+yhats <- predict(fitnord2, testset[,1:29])
+
+reshat <- testset$y - yhats
+
+mean(reshat)
+sd(reshat)
+median(reshat)
+max(reshat)
+skewness(reshat)
+kurtosis(reshat)
+
+plot(testset$y, type = 'l', lwd = 2)
+lines(yhats, type = 'l', lwd = 2, col = 'pink2')
+
+mape(trainset$y, fitnord$fitted.values)
+vectorMape(trainset$y, fitnord$fitted.values)
+max(vectorMape(trainset$y, fitnord$fitted.values))
+mape(testset$y, yhats)
+vectorMape(testset$y, yhats)
+max(vectorMape(testset$y, yhats))
+
+
+qqnorm(reshat); qqline(reshat, col = 2)
+
+
+ggplot(data = data.table(Fitted_values = yhats, Residuals = reshat),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+
+DT[, date_time := ymd(DT[["Giorno"]])]
+DT[, date := as.Date(DT[["date"]], "%Y-%m-%d")]
+DT[, ':='(timestamp = NULL, estimated = NULL, anomaly = NULL)]
+str(DT)
+
+
+
+nord16 <- nord[which(unlist(nord['date']) >= as.Date('2016-01-01') & unlist(nord['date']) <= as.Date('2016-08-31')),1:25]
+
+wds <- maply(1:nrow(nord16), function(n) lubridate::wday(as.Date(unlist(nord16[n,1]))))
+wks <- maply(1:nrow(nord16), function(n) lubridate::week(as.Date(unlist(nord16[n,1]))))
+
+
+DT <- bind_cols(nord16, data.frame(wds), data.frame(wks), data.frame(mi6$Tmedia))
+fitgamn <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(mi6$Tmedia, bs = "cc"), data = DT)
+
+plot(fitgamn$gam,scale = 0)
+summary(fitgamn$gam)
+
+plot(DT$`20`, type = "l", lwd = 2, col = 'blue3')
+lines(fitgamn$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+acf(fitgamn$gam$residuals)
+pacf(fitgamn$gam$residuals)
+
+ctrl <- list(niterEM = 0, msVerbose = TRUE, optimMethod="L-BFGS-B")
+m1 <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(mi6$Tmedia, bs = "cc"), data = DT, correlation = corARMA(form = ~ 1|wks, p = 1),control = ctrl)
+
+summary(m1)
+
+plot(DT$`20`, type = "l", lwd = 2, col = 'blue3')
+lines(m1$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+m2 <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(mi6$Tmedia, bs = "cc"), data = DT, correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+m3 <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(mi6$Tmedia, bs = "cc"), data = DT, correlation = corARMA(form = ~ 1|wks, p = 3),control = ctrl)
+
+anova(fitgamn$lme, m1$lme, m2$lme, m3$lme) ### wks gives better models than wds. but only slightly better
+
+plot(m1$gam, scale = 0)
+
+qqnorm(m1$gam$residuals); qqline(m1$gam$residuals, col = 2)
+hist(m1$gam$residuals, breaks = 20)
+
+ggplot(data = data.table(Fitted_values = m1$gam$fitted.values, Residuals = m1$gam$residuals),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+
+m1 <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(wks:wds, bs = "cc") + s(mi6$Tmedia, bs = "cc"), data = DT, correlation = corARMA(form = ~ 1|wks, p = 1),control = ctrl)
+
+
+
+
+
