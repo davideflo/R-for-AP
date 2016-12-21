@@ -646,7 +646,167 @@ ggplot(data = data.table(Fitted_values = m1$gam$fitted.values, Residuals = m1$ga
 
 m1 <- gamm(DT$`20` ~ s(wds, bs = "cc", k = 7) + s(wks, bs = "cc", k = 35) + s(wks:wds, bs = "cc") + s(mi6$Tmedia, bs = "cc"), data = DT, correlation = corARMA(form = ~ 1|wks, p = 1),control = ctrl)
 
+#######################################################################
+######### HOURLY NORD LOAD CURVES #########################
+
+dtn <- AggregateMLR(datan)
+data.table(datan)
+
+dtn8 <- dtn[which(unlist(dtn$date) <= as.Date("2016-08-31")),]
+
+dtn8 <- cbind(dtn8, CD = rep(0,nrow(dtn8)))
+
+meteonord <- read.csv2("C:/Users/utente/Documents/PUN/storico_milano_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+mi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1, colNames=TRUE)
+mi6 <- get_meteo(mi6)
+
+meteonord[,2:ncol(meteonord)] <- data.matrix(meteonord[,2:ncol(meteonord)])
+
+meteonord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+mi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+meteoU <- rbind(meteonord, mi6)
+
+DTN <- MakeDatasetMLR_2(dtn8, meteoU,20, '2016-01-01')
+data.table(DTN)
+
+fit1 <- lm(y ~ 0 + . , data = DTN)
+summary(fit1)
+
+plot(fit1)
+
+plot(DTN$y, type = 'l', lwd = 2)
+lines(fit1$fitted.values, type = 'l', lwd = 2, col = 'skyblue')
+
+hist(fit1$residuals)
 
 
+wds <- maply(1:nrow(DTN), function(n) lubridate::wday(unlist(DTN[n,1])))
+wks <- maply(1:nrow(DTN), function(n) lubridate::week(unlist(DTN[n,1])))
+
+
+fitgamn <- gamm(DTN$y ~ s(DTN$`H-24`, bs = "cc") + s(DTN$`H-23`, bs = "cc") + s(DTN$`H-22`, bs = "cc") + s(DTN$`H-21`, bs = "cc") + s(DTN$`H-20`, bs = "cc") +
+                  s(DTN$`H-19`, bs = "cc") +s(DTN$`H-18`, bs = "cc") +s(DTN$`H-17`, bs = "cc") +s(DTN$`H-16`, bs = "cc") +s(DTN$`H-15`, bs = "cc") +
+                  s(DTN$`H-14`, bs = "cc") +s(DTN$`H-13`, bs = "cc") +s(DTN$`H-12`, bs = "cc") +s(DTN$`H-11`, bs = "cc") +s(DTN$`H-10`, bs = "cc") +
+                  s(DTN$`H-9`, bs = "cc") +s(DTN$`H-8`, bs = "cc") +s(DTN$`H-7`, bs = "cc") +s(DTN$`H-6`, bs = "cc") +s(DTN$`H-5`, bs = "cc") +
+                  s(DTN$`H-4`, bs = "cc") +s(DTN$`H-3`, bs = "cc") +s(DTN$`H-2`, bs = "cc") +s(DTN$`H-1`, bs = "cc") +
+                  s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN)
+
+plot(fitgamn$gam,scale = 0)
+summary(fitgamn$gam)
+
+plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+lines(fitgamn$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+ggplot(data = data.table(Fitted_values = fitgamn$gam$fitted.values, Residuals = fitgamn$gam$residuals),
+       aes(Fitted_values, Residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  labs(title = "Fitted vs Residuals")
+
+cov(fitgamn$gam$fitted.values, fitgamn$gam$residuals)/(sd(fitgamn$gam$fitted.values)*sd(fitgamn$gam$residuals))
+
+qqnorm(fitgamn$gam$residuals) ; qqline(fitgamn$gam$residuals)
+
+mape(DTN$y, fitgamn$gam$fitted.values)
+vectorMape(DTN$y, fitgamn$gam$fitted.values)
+max(vectorMape(DTN$y, fitgamn$gam$fitted.values))
+
+acf(fitgamn$gam$residuals, lag.max = 60)
+pacf(fitgamn$gam$residuals)
+
+ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
+m2 <- gamm(DTN$y ~ s(DTN$`H-24`, bs = "cc") + s(DTN$`H-23`, bs = "cc") + s(DTN$`H-22`, bs = "cc") + s(DTN$`H-21`, bs = "cc") + s(DTN$`H-20`, bs = "cc") +
+                  s(DTN$`H-19`, bs = "cc") +s(DTN$`H-18`, bs = "cc") +s(DTN$`H-17`, bs = "cc") +s(DTN$`H-16`, bs = "cc") +s(DTN$`H-15`, bs = "cc") +
+                  s(DTN$`H-14`, bs = "cc") +s(DTN$`H-13`, bs = "cc") +s(DTN$`H-12`, bs = "cc") +s(DTN$`H-11`, bs = "cc") +s(DTN$`H-10`, bs = "cc") +
+                  s(DTN$`H-9`, bs = "cc") +s(DTN$`H-8`, bs = "cc") +s(DTN$`H-7`, bs = "cc") +s(DTN$`H-6`, bs = "cc") +s(DTN$`H-5`, bs = "cc") +
+                  s(DTN$`H-4`, bs = "cc") +s(DTN$`H-3`, bs = "cc") +s(DTN$`H-2`, bs = "cc") +s(DTN$`H-1`, bs = "cc") +
+                  s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN,
+                  correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+
+summary(m2$gam) 
+plot(m2$gam, scale = 0)
+
+plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+lines(m2$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+mape(DTN$y, m2$gam$fitted.values)
+vectorMape(DTN$y, m2$gam$fitted.values)
+max(vectorMape(DTN$y, m2$gam$fitted.values))
+
+
+m3 <- gamm(DTN$y ~ 0 +DTN$`H-24` + DTN$`H-23` + DTN$`H-22` + DTN$`H-21` + DTN$`H-20` +
+             DTN$`H-19` + DTN$`H-18` + DTN$`H-17` + DTN$`H-16` + DTN$`H-15` +
+             DTN$`H-14` + DTN$`H-13` + DTN$`H-12` + DTN$`H-11` + DTN$`H-10` +
+             DTN$`H-9` + DTN$`H-8` + DTN$`H-7` + DTN$`H-6` + DTN$`H-5` +
+             DTN$`H-4` + DTN$`H-3` + DTN$`H-2` + DTN$`H-1` +
+             s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN,
+           correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+
+summary(m3$gam) I
+plot(m3$gam, scale = 0)
+
+plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+lines(m3$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+
+mape(DTN$y, m3$gam$fitted.values)
+vectorMape(DTN$y, m3$gam$fitted.values)
+max(vectorMape(DTN$y, m3$gam$fitted.values))
+
+
+m4 <- lm(y ~ 0 + . + target_day:target_week, data = DTN)
+summary(m4)
+
+plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+lines(m4$fitted.values, type = "l", lwd = 2, col = 'red')
+
+anova(fitgamn$mle, m2$mle, m3$mle) ### wks gives better models than wds. but only slightly better
+
+
+#########################################################################################################
+#########################################################################################################
+#################################### GAMM models other zones ############################################
+#########################################################################################################
+#########################################################################################################
+datacn <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
+#colnames(datacn)[2] <- 'date'
+
+df <- AggregateMLR(datacn)
+
+meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_firenze_aggiornato.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+fi6 <- get_meteo(fi6)
+
+meteocnord[,2:ncol(meteocnord)] <- data.matrix(meteocnord[,2:ncol(meteocnord)])
+
+meteocnord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+fi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+meteoU <- rbind(meteocnord, fi6)
+
+fitcn <- GetModel(df, meteoU, 20, '2016-01-01')
+
+######################################################################################
+######################################################################################
+datas <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
+#colnames(datacn)[2] <- 'date'
+
+df <- AggregateMLR(datas)
+
+meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+ro6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+ro6 <- get_meteo(ro6)
+
+meteocnord[,2:ncol(meteocnord)] <- data.matrix(meteocnord[,2:ncol(meteocnord)])
+
+meteocnord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+ro6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+meteoU <- rbind(meteocnord, ro6)
+
+fits <- GetModel(df, ro6, 20, '2016-01-01')
+
+predict(fits, )
 
 

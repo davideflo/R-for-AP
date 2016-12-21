@@ -271,7 +271,7 @@ add_holidays_Date <- function(vd)
   return(holidays)
 }
 ################################################################################################################
-MakeDatasetMLR_2 <- function(df, meteo, H)
+MakeDatasetMLR_2 <- function(df, meteo, H, initial_date)
 {
   d_f <- data_frame()
   succH <- 0
@@ -284,7 +284,7 @@ MakeDatasetMLR_2 <- function(df, meteo, H)
     succH <- H + 1
   }  
   
-  dts <- seq.Date(as.Date('2015-01-01'), as.Date(meteo[nrow(meteo),1]), by = 'day')
+  dts <- seq.Date(as.Date(initial_date), as.Date(meteo[nrow(meteo),1]), by = 'day')
   Giorno <- 'date'
   for(i in 5:length(dts))
   {
@@ -327,7 +327,49 @@ NHI <- function(sbil, df)
   }
   return(d_f)
 }
-
+####################################################################################################################
+GetModel <- function(df, meteo, H, data_inizio)
+{
+  df8 <- df[which(unlist(df$date) <= as.Date("2016-08-31")),]
+  df8 <- cbind(df8, CD = rep(0,nrow(df8)))
+  
+  DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio)
+  
+  m3 <- gamm(DTN$y ~ 0 + DTN$`H-24` + DTN$`H-23` + DTN$`H-22` + DTN$`H-21` + DTN$`H-20` +
+               DTN$`H-19` + DTN$`H-18` + DTN$`H-17` + DTN$`H-16` + DTN$`H-15` +
+               DTN$`H-14` + DTN$`H-13` + DTN$`H-12` + DTN$`H-11` + DTN$`H-10` +
+               DTN$`H-9` + DTN$`H-8` + DTN$`H-7` + DTN$`H-6` + DTN$`H-5` +
+               DTN$`H-4` + DTN$`H-3` + DTN$`H-2` + DTN$`H-1` +
+               s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN,
+             correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+  
+  print(summary(m3$gam))
+  plot(m3$gam, scale = 0)
+  
+  plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+  lines(m3$gam$fitted.values, type = "l", lwd = 2, col = 'red')
+  
+  print(paste("length fitted values:",length(m3$gam$fitted.values)))
+  print(paste("length real values:",length(DTN$y)))
+  print(m3$gam$fitted.values)
+    
+  ggplot(data = data.table(Fitted_values = m3$gam$fitted.values, Residuals = m3$gam$residuals),
+         aes(Fitted_values, Residuals)) +
+    geom_point(size = 1.5) +
+    geom_smooth() +
+    geom_hline(yintercept = 0, color = "red", size = 0.8) +
+    labs(title = "Fitted vs Residuals")
+  
+  yy <- DTN$y[-c(89,97)]
+  #yy <- DTN$y
+  
+  print(mape(yy, m3$gam$fitted.values))
+  print(vectorMape(yy, m3$gam$fitted.values))
+  print(max(vectorMape(yy, m3$gam$fitted.values)))
+  
+  return(m3)
+  
+}
   
   
   
