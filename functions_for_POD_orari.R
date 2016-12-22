@@ -334,6 +334,7 @@ GetModel <- function(df, meteo, H, data_inizio)
   df8 <- cbind(df8, CD = rep(0,nrow(df8)))
   
   DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio)
+  ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
   
   m3 <- gamm(DTN$y ~ 0 + DTN$`H-24` + DTN$`H-23` + DTN$`H-22` + DTN$`H-21` + DTN$`H-20` +
                DTN$`H-19` + DTN$`H-18` + DTN$`H-17` + DTN$`H-16` + DTN$`H-15` +
@@ -341,7 +342,7 @@ GetModel <- function(df, meteo, H, data_inizio)
                DTN$`H-9` + DTN$`H-8` + DTN$`H-7` + DTN$`H-6` + DTN$`H-5` +
                DTN$`H-4` + DTN$`H-3` + DTN$`H-2` + DTN$`H-1` +
                s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN,
-             correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+             correlation = corARMA(form = ~ 1|target_week, p = 2),control = ctrl)
   
   print(summary(m3$gam))
   plot(m3$gam, scale = 0)
@@ -370,6 +371,14 @@ GetModel <- function(df, meteo, H, data_inizio)
   return(m3)
   
 }
-  
+####################################################################################
+mape <- function(real, pred){
+  return(100 * mean(abs((real - pred)/real)))
+}
+####################################################################################
+vectorMape <- function(real, pred)
+{
+  return(100 * abs((real - pred)/real))
+}
   
   

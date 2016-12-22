@@ -795,18 +795,47 @@ datas <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misur
 df <- AggregateMLR(datas)
 
 meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
-ro6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
-ro6 <- get_meteo(ro6)
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+fi6 <- get_meteo(fi6)
 
 meteocnord[,2:ncol(meteocnord)] <- data.matrix(meteocnord[,2:ncol(meteocnord)])
 
 meteocnord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
-ro6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+fi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
 
 meteoU <- rbind(meteocnord, ro6)
 
-fits <- GetModel(df, ro6, 20, '2016-01-01')
+fits <- GetModel(df, fi6, 20, '2016-01-01')
 
-predict(fits, )
+######################################################################
+df8 <- df[which(unlist(df$date) <= as.Date("2016-08-31")),]
+df8 <- cbind(df8, CD = rep(0,nrow(df8)))
+DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio) 
+######################################################################
 
+predict.gam(fits$gam, DTN[,-c(28,30)])
+
+yy <- DTN$y[-c(89,97)]
+
+plot(yy, type = 'l', lwd = 2, col = 'blue')
+lines(fits$gam$fitted.values, type = 'l', lwd = 2, col = 'red')
+
+
+cnordMO <- read_excel("C:\\Users\\utente\\Documents\\misure\\MOcnord2.xlsx")
+
+cnordMO[,1] <- seq.Date(as.Date('2015-01-01'), as.Date('2016-10-31'), by = 'day')
+colnames(cnordMO)[1] <- 'date'
+
+cnordMO8 <- cnordMO[which(cnordMO$date >= as.Date('2016-01-01') & cnordMO$date <= as.Date('2016-08-31')),] 
+
+cnmo20 <- cnordMO8$`20`[5:244]
+cnmo20 <- cnmo20[-c(89,97)]
+
+mean(yy - cnmo20)
+sd(yy - cnmo20)
+median(yy - cnmo20)
+
+
+plot(cnmo20, type = 'l', lwd = 2, col = 'black')
+lines(yy, type = 'l', lwd = 2, col = 'red')
 
