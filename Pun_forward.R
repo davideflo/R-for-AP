@@ -9,6 +9,8 @@ library(mgcv)
 library(feather)
 library(lubridate)
 library(data.table)
+library(fda)
+library(forecast)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -29,5 +31,71 @@ hol <- maply(1:nrow(data), function(n) add_holidays_Date(as.Date(as.POSIXct(unli
 
 ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
 
-fitp <-  gamm(data$pun ~ 0 + s(hs, bs = "cc", k = 24) + s(wds, bs = "cc", k = 7) + s(wdys, bs = "cc", k = 365) + 
+fitp <-  gamm(data$pun ~ s(hs, bs = "cc", k = 24) + s(wds, bs = "cc", k = 7) + s(wdys, bs = "cc", k = 365) + ### needs intercept but the result is TOO smooth
                 s(wks, bs = "cc") + hol, data = data, correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
+
+plot(fitp$gam)
+
+plot(data$pun, type = 'l', lwd = 2)
+lines(fitp$gam$fitted.values, type = 'l', lwd = 2, col = "skyblue")
+
+####################################################################
+###### fit the hourly process with a spline ########
+HourlyProcess <- function(df, finaldate) ### finaldate = today + 2 days ahead if the pun file is updated
+{
+  d_f <- data_frame()  
+
+  seqdates <- seq.Date(as.Date('2014-01-01'), as.Date(finaldate), by = 'day')
+  
+  for( i in 2:(length(seqdates)-1))
+  {
+    loc <- rep(0, 25)
+    dft1 <- df[which(as.Date(df$date) == seqdates[i-1]),]
+    dft2 <- df[which(as.Date(df$date) == seqdates[i]),]
+    obday <- mode(lubridate::day(dft2$date))
+    dft <- bind_rows(dft1[which(lubridate::day(dft1$date) == obday),], dft2[which(lubridate::day(dft2$date) == obday),])
+    
+    for(j in 1:nrow(dft))    
+    {
+      h <- lubridate::hour(dft$date[j])
+      if(exists('h'))
+      {
+        loc[h+1] <- loc[h+1] + dft$pun[j]
+        rm(h)
+      }
+    }
+    df2 <- data.frame(seqdates[i], t(loc))
+    d_f <- bind_rows(d_f, df2)
+    
+    
+  }
+  colnames(d_f) <- c('date', as.character(1:25))
+  return(d_f)
+}
+es <- HourlyProcess(data, '2016-12-24')
+colSums(es[,2:26])
+
+matplot(t(es[,2:25]), type = 'l')
+
+cov(es[,2:25])
+cor(es[,2:25])
+
+fitarima <- arima(data$pun, order = c(24,1,24), include.mean = TRUE)
+summary(fitarima)
+
+qqnorm(residuals(fitarima)) ; qqline(residuals(fitarima))
+hist(residuals(fitarima))
+
+fitarima$arma
+fitarima$series
+fitarima$model
+
+
+#### functional regression experiment
+yy <- data$pun
+
+freg <- fRegress(yy ~ hs + wds + wdys + wks, hol)
+
+
+data.frame(data[which(as.Date(data$date) == as.Date('2016-10-29')),])
+gg <- data.frame(data[which(as.Date(data$date) == as.Date('2016-10-30')),])
