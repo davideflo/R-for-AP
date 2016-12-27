@@ -839,3 +839,47 @@ median(yy - cnmo20)
 plot(cnmo20, type = 'l', lwd = 2, col = 'black')
 lines(yy, type = 'l', lwd = 2, col = 'red')
 
+############################################################################################################
+##### CSUD linear model
+
+datas <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_csud"))
+#colnames(datacn)[2] <- 'date'
+
+df <- AggregateMLR(datas)
+
+meteocnord <- read.csv2("C:/Users/utente/Documents/PUN/storico_roma.txt", header=TRUE, sep="\t",colClasses = "character", stringsAsFactors = FALSE)
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Roma 2016.xlsx", sheet= 1, colNames=TRUE)
+fi6 <- get_meteo(fi6)
+
+meteocnord[,2:ncol(meteocnord)] <- data.matrix(meteocnord[,2:ncol(meteocnord)])
+
+meteocnord$Data <- seq.Date(as.Date('2010-01-01'), as.Date('2015-12-31'), by = 'day')
+fi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+#meteoU <- rbind(meteocnord, ro6)
+
+fits <- GetLinModel(df, fi6, 20, '2016-01-01')
+
+hist(fits$residuals, probability = TRUE, breaks = 10)
+shapiro.test(fits$residuals)
+
+###############################################################################################################
+####### SUD linear model
+
+datas <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sud"))
+#colnames(datacn)[2] <- 'date'
+
+df <- AggregateMLR(datas)
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Reggio Calabria 2016.xlsx", sheet= 1, colNames=TRUE)
+fi6 <- get_meteo(fi6)
+
+fi6$Data <- seq.Date(as.Date('2016-01-01'), as.Date('2016-08-31'), by = 'day')
+
+
+fits <- GetLinModel(df, fi6, 20, '2016-01-01')
+fits <- GetModel(df, fi6, 20, '2016-01-01')
+
+hist(fits$residuals, probability = TRUE, breaks = 10)
+shapiro.test(fits$residuals)
+

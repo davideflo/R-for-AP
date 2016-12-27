@@ -223,7 +223,7 @@ MakeDatasetMLR <- function(df, meteo, H)
              unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-2)), as.character(1:H)]))
     }
     df2 <- data.frame(t(x), target_day, target_week, target_T, y)
-    colnames(df2) <- c(paste0('H-',24:1), 'target_day', 'target_week', 'target_T', 'y')
+    colnames(df2) <- c(paste0('H.',24:1), 'target_day', 'target_week', 'target_T', 'y')
     d_f <- bind_rows(d_f, df2)
   }
   return(d_f)
@@ -306,7 +306,7 @@ MakeDatasetMLR_2 <- function(df, meteo, H, initial_date)
              unlist(df[which(as.Date(unlist(df[Giorno])) == (as.Date(dts[i])-2)), as.character(1:H)]))
     }
     df2 <- data.frame(t(x), target_day, target_week, target_T, cd, holidays, y)
-    colnames(df2) <- c(paste0('H-',24:1), 'target_day', 'target_week', 'target_T', 'change_date', 'holiday', 'y')
+    colnames(df2) <- c(paste0('H.',24:1), 'target_day', 'target_week', 'target_T', 'change_date', 'holiday', 'y')
     d_f <- bind_rows(d_f, df2)
   }
   return(d_f)
@@ -333,15 +333,21 @@ GetModel <- function(df, meteo, H, data_inizio)
   df8 <- df[which(unlist(df$date) <= as.Date("2016-08-31")),]
   df8 <- cbind(df8, CD = rep(0,nrow(df8)))
   
-  DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio)
+  DT <- MakeDatasetMLR_2(df8, meteo, H, data_inizio)
+  print(data.table(DT))
   ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
   
-  m3 <- gamm(DTN$y ~ 0 + DTN$`H-24` + DTN$`H-23` + DTN$`H-22` + DTN$`H-21` + DTN$`H-20` +
-               DTN$`H-19` + DTN$`H-18` + DTN$`H-17` + DTN$`H-16` + DTN$`H-15` +
-               DTN$`H-14` + DTN$`H-13` + DTN$`H-12` + DTN$`H-11` + DTN$`H-10` +
-               DTN$`H-9` + DTN$`H-8` + DTN$`H-7` + DTN$`H-6` + DTN$`H-5` +
-               DTN$`H-4` + DTN$`H-3` + DTN$`H-2` + DTN$`H-1` +
-               s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DTN,
+  ### gives error as in these webpages:
+  ## http://stackoverflow.com/questions/30391347/object-created-inside-function-not-found-by-ggplot 
+  ## http://stackoverflow.com/questions/17992424/i-do-not-understand-error-object-not-found-inside-the-function
+  ## http://stackoverflow.com/questions/22617354/object-not-found-error-within-a-user-defined-function-eval-function
+  
+  m3 <- gamm(DT$y ~ DT$`H.24` + DT$`H.23` + DT$`H.22` + DT$`H.21` + DT$`H.20` +
+               DT$`H.19` + DT$`H.18` + DT$`H.17` + DT$`H.16` + DT$`H.15` +
+               DT$`H.14` + DT$`H.13` + DT$`H.12` + DT$`H.11` + DT$`H.10` +
+               DT$`H.9` + DT$`H.8` + DT$`H.7` + DT$`H.6` + DT$`H.5` +
+               DT$`H.4` + DT$`H.3` + DT$`H.2` + DT$`H.1` +
+               s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DT,
              correlation = corARMA(form = ~ 1|target_week, p = 2),control = ctrl)
   
   print(summary(m3$gam))
@@ -361,8 +367,8 @@ GetModel <- function(df, meteo, H, data_inizio)
     geom_hline(yintercept = 0, color = "red", size = 0.8) +
     labs(title = "Fitted vs Residuals")
   
-  yy <- DTN$y[-c(89,97)]
-  #yy <- DTN$y
+  #yy <- DT$y[-c(89,97)]
+  yy <- DT$y
   
   print(mape(yy, m3$gam$fitted.values))
   print(vectorMape(yy, m3$gam$fitted.values))
@@ -380,5 +386,47 @@ vectorMape <- function(real, pred)
 {
   return(100 * abs((real - pred)/real))
 }
+#########################################################################################
+GetLinModel <- function(df, meteo, H, data_inizio)
+{
+  df8 <- df[which(unlist(df$date) <= as.Date("2016-08-31")),]
+  df8 <- cbind(df8, CD = rep(0,nrow(df8)))
   
+  DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio)
+  
+  m3 <- lm(DTN$y ~ DTN$`H-24` + DTN$`H-23` + DTN$`H-22` + DTN$`H-21` + DTN$`H-20` +
+               DTN$`H-19` + DTN$`H-18` + DTN$`H-17` + DTN$`H-16` + DTN$`H-15` +
+               DTN$`H-14` + DTN$`H-13` + DTN$`H-12` + DTN$`H-11` + DTN$`H-10` +
+               DTN$`H-9` + DTN$`H-8` + DTN$`H-7` + DTN$`H-6` + DTN$`H-5` +
+               DTN$`H-4` + DTN$`H-3` + DTN$`H-2` + DTN$`H-1` + target_day:target_week + target_day:holiday + I(target_T^2)
+               + target_day:target_T + target_week:target_T+ target_day + target_week + target_T + holiday, data = DTN)
+  
+  print(summary(m3))
+  plot(m3)
+  
+  plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+  lines(m3$fitted.values, type = "l", lwd = 2, col = 'red')
+  
+  print(paste("length fitted values:",length(m3$fitted.values)))
+  print(paste("length real values:",length(DTN$y)))
+  print(m3$fitted.values)
+  
+  ggplot(data = data.table(Fitted_values = m3$fitted.values, Residuals = m3$residuals),
+         aes(Fitted_values, Residuals)) +
+    geom_point(size = 1.5) +
+    geom_smooth() +
+    geom_hline(yintercept = 0, color = "red", size = 0.8) +
+    labs(title = "Fitted vs Residuals")
+  
+  yy <- DTN$y
+  #yy <- DTN$y[-c(89,97)]
+  
+  print(mape(yy, m3$fitted.values))
+  print(vectorMape(yy, m3$fitted.values))
+  print(max(vectorMape(yy, m3$fitted.values)))
+  
+  return(m3)
+  
+}
+####################################################################################
   
