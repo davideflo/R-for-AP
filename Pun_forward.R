@@ -22,7 +22,6 @@ colnames(data) <- c('date', 'pun')
 data$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2016-12-23'), by = 'hour')[1:nrow(data)]
 
 
-
 hs <- maply(1:nrow(data), function(n) lubridate::hour(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
 wds <- maply(1:nrow(data), function(n) lubridate::wday(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
 wdys <- maply(1:nrow(data), function(n) lubridate::yday(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
@@ -38,6 +37,25 @@ plot(fitp$gam)
 
 plot(data$pun, type = 'l', lwd = 2)
 lines(fitp$gam$fitted.values, type = 'l', lwd = 2, col = "skyblue")
+
+###################################################################################
+library(h2o)
+
+h2o.init(nthreads = -1, max_mem_size = '20g')
+df <- data.frame(y = data$pun, hs = hs, wds = wds, wdys = wdys, wks = wks, hol = hol)
+
+dl <- h2o.deeplearning(x = c("hs", "wds", "wdys", "wks", "hol"), y = "y", training_frame = as.h2o(df), standardize = TRUE, activation = "Rectifier", 
+                       hidden = c(1000, 365, 52, 12, 7, 24), epochs = 100)
+
+plot(dl)
+summary(dl)
+h2o.r2(dl)
+yhat <- h2o.predict(dl, newdata = as.h2o(df[,2:6]))
+yhat <- as.matrix(as.numeric(yhat$predict))
+yhat <- unlist(yhat)
+
+plot(df$y, type = "l")
+lines(yhat, type = "l", col = "red")
 
 ####################################################################
 ###### fit the hourly process with a spline ########
