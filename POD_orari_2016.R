@@ -813,9 +813,9 @@ df8 <- cbind(df8, CD = rep(0,nrow(df8)))
 DTN <- MakeDatasetMLR_2(df8, meteo, H, data_inizio) 
 ######################################################################
 
-predict.gam(fits$gam, DTN[,-c(28,30)])
+predict.gam(fits$gam, df[,-c(28,30)])
 
-yy <- DTN$y[-c(89,97)]
+yy <- df$y[-c(89,97)]
 
 plot(yy, type = 'l', lwd = 2, col = 'blue')
 lines(fits$gam$fitted.values, type = 'l', lwd = 2, col = 'red')
@@ -831,14 +831,33 @@ cnordMO8 <- cnordMO[which(cnordMO$date >= as.Date('2016-01-01') & cnordMO$date <
 cnmo20 <- cnordMO8$`20`[5:244]
 cnmo20 <- cnmo20[-c(89,97)]
 
-mean(yy - cnmo20)
-sd(yy - cnmo20)
-median(yy - cnmo20)
+##################################################################################
+##### check on why model$gam$fitted.values misses some values -----> there are NAs in the temperature -------
+df8 <- df[which(unlist(df$date) <= as.Date("2016-08-31")),]
+df8 <- cbind(df8, CD = rep(0,nrow(df8)))
+
+data.frame(DT[c(89,97),])
+
+DT <- MakeDatasetMLR_2(df8, fi6, 20, '2016-01-01')
+
+dtp <- predict.gam(fits$gam, DT[,1:29])
+dtp[is.na(dtp)] <- 0
+
+plot(DT$y, type = 'l', lwd = 2, col = 'black')
+lines(dtp, type = 'l', lwd = 2, col = 'red')
+#################################################################################
 
 
 plot(cnmo20, type = 'l', lwd = 2, col = 'black')
-lines(yy, type = 'l', lwd = 2, col = 'red')
+lines(DT$y, type = 'l', lwd = 2, col = 'red')
 
+### differenze con i dati a consuntivo di Terna
+
+mean(DT$y - cnmo20)
+sd(DT$y - cnmo20)
+median(DT$y - cnmo20)
+
+abs(mean(DT$y - cnmo20))/(mean(DT$y - cnmo20))
 ############################################################################################################
 ##### CSUD linear model
 

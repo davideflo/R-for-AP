@@ -342,22 +342,30 @@ GetModel <- function(df, meteo, H, data_inizio)
   ## http://stackoverflow.com/questions/17992424/i-do-not-understand-error-object-not-found-inside-the-function
   ## http://stackoverflow.com/questions/22617354/object-not-found-error-within-a-user-defined-function-eval-function
   
-  m3 <- gamm(DT$y ~ DT$`H.24` + DT$`H.23` + DT$`H.22` + DT$`H.21` + DT$`H.20` +
-               DT$`H.19` + DT$`H.18` + DT$`H.17` + DT$`H.16` + DT$`H.15` +
-               DT$`H.14` + DT$`H.13` + DT$`H.12` + DT$`H.11` + DT$`H.10` +
-               DT$`H.9` + DT$`H.8` + DT$`H.7` + DT$`H.6` + DT$`H.5` +
-               DT$`H.4` + DT$`H.3` + DT$`H.2` + DT$`H.1` +
-               s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DT,
-             correlation = corARMA(form = ~ 1|target_week, p = 2),control = ctrl)
+  # m3 <- eval(substitute(gamm(DT$y ~ DT$`H.24` + DT$`H.23` + DT$`H.22` + DT$`H.21` + DT$`H.20` +
+  #              DT$`H.19` + DT$`H.18` + DT$`H.17` + DT$`H.16` + DT$`H.15` +
+  #              DT$`H.14` + DT$`H.13` + DT$`H.12` + DT$`H.11` + DT$`H.10` +
+  #              DT$`H.9` + DT$`H.8` + DT$`H.7` + DT$`H.6` + DT$`H.5` +
+  #              DT$`H.4` + DT$`H.3` + DT$`H.2` + DT$`H.1` +
+  #              s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DT,
+  #            correlation = corARMA(form = ~ 1|target_week, p = 2),control = ctrl)), DT)
+  # 
+  m3 <- eval(substitute(gamm(y ~ H.24 + H.23 + H.22 + H.21 + H.20 +
+                               H.19 + H.18 + H.17 + H.16 + H.15 +
+                               H.14 + H.13 + H.12 + H.11 + H.10 +
+                               H.9 + H.8 + H.7 + H.6 + H.5 +
+                               H.4 + H.3 + H.2 + H.1 +
+                               s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + holiday, data = DT,
+                             correlation = corARMA(form = ~ 1|target_week, p = 2),control = ctrl)), DT)
   
   print(summary(m3$gam))
   plot(m3$gam, scale = 0)
   
-  plot(DTN$y, type = "l", lwd = 2, col = 'blue3')
+  plot(DT$y, type = "l", lwd = 2, col = 'blue3')
   lines(m3$gam$fitted.values, type = "l", lwd = 2, col = 'red')
   
   print(paste("length fitted values:",length(m3$gam$fitted.values)))
-  print(paste("length real values:",length(DTN$y)))
+  print(paste("length real values:",length(DT$y)))
   print(m3$gam$fitted.values)
     
   ggplot(data = data.table(Fitted_values = m3$gam$fitted.values, Residuals = m3$gam$residuals),
@@ -370,10 +378,10 @@ GetModel <- function(df, meteo, H, data_inizio)
   #yy <- DT$y[-c(89,97)]
   yy <- DT$y
   
-  print(mape(yy, m3$gam$fitted.values))
-  print(vectorMape(yy, m3$gam$fitted.values))
-  print(max(vectorMape(yy, m3$gam$fitted.values)))
-  
+  # print(mape(yy, m3$gam$fitted.values))
+  # print(vectorMape(yy, m3$gam$fitted.values))
+  # print(max(vectorMape(yy, m3$gam$fitted.values)))
+  # 
   return(m3)
   
 }
