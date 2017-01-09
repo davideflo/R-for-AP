@@ -11,6 +11,7 @@ library(lubridate)
 library(data.table)
 library(fda)
 library(forecast)
+library(Interpol.T)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -19,8 +20,7 @@ source("C://Users//utente//Documents//glm_dataset.R")
 
 data <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2016.xlsx")
 colnames(data) <- c('date', 'pun')
-data$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2016-12-23'), by = 'hour')[1:nrow(data)]
-
+data$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-01-02'), by = 'hour')[1:nrow(data)]
 
 hs <- maply(1:nrow(data), function(n) lubridate::hour(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
 wds <- maply(1:nrow(data), function(n) lubridate::wday(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
@@ -28,9 +28,38 @@ wdys <- maply(1:nrow(data), function(n) lubridate::yday(as.POSIXct(unlist(data[n
 wks <- maply(1:nrow(data), function(n) lubridate::week(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
 hol <- maply(1:nrow(data), function(n) add_holidays_Date(as.Date(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01'))))
 
+#########################################################################################################################
+#### meteo 
+mi6 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1)
+ro6 <- read_excel("C:/Users/utente/Documents/PUN/Roma 2016.xlsx", sheet= 1)
+fi6 <- read_excel("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1)
+pa6 <- read_excel("C:/Users/utente/Documents/PUN/Palermo 2016.xlsx", sheet= 1)
+ca6 <- read_excel("C:/Users/utente/Documents/PUN/Cagliari 2016.xlsx", sheet= 1)
+ba6 <- read_excel("C:/Users/utente/Documents/PUN/Bari 2016.xlsx", sheet= 1)
+
+mi6 <- get_meteo2(mi6, "2016-12-31")
+ro6 <- get_meteo2(ro6, "2016-12-31")
+fi6 <- get_meteo2(fi6, "2016-12-31")
+pa6 <- get_meteo2(pa6, "2016-12-31")
+ca6 <- get_meteo2(ca6, "2016-12-31")
+ba6 <- get_meteo2(ba6, "2016-12-31")
+
+meteoav16 <- mediate_meteos2(mi6, ro6, fi6, pa6, ca6, ba6)
+meteoav16[is.na(meteoav16)] <- 0
+
+pairs(meteoav16)
+
+Tmi <- TminTable(meteoav16)
+Tma <- TmaxTable(meteoav16)
+Tmh <- Th_interp(Tmi, Tma, day = 1:366, tab_calibr = )
+
+data(Trentino_hourly_T)
+load("Trentino_hourly_T.rda")
+###########################################################################################################################
+
 ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
 
-fitp <-  gamm(data$pun ~ s(hs, bs = "cc", k = 24) + s(wds, bs = "cc", k = 7) + s(wdys, bs = "cc", k = 365) + ### needs intercept but the result is TOO smooth
+fitp <-  gamm(data$pun ~ meteoav16$Tmedia + s(hs, bs = "cc", k = 24) + s(wds, bs = "cc", k = 7) + s(wdys, bs = "cc", k = 365) + ### needs intercept but the result is TOO smooth
                 s(wks, bs = "cc") + hol, data = data, correlation = corARMA(form = ~ 1|wks, p = 2),control = ctrl)
 
 plot(fitp$gam)

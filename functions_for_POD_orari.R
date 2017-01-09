@@ -437,4 +437,33 @@ GetLinModel <- function(df, meteo, H, data_inizio)
   
 }
 ####################################################################################
-  
+TminTable <- function(met)
+{
+  d_f <- data_frame()
+  for(i in 1:nrow(met))
+  {
+    year <- 2016
+    day <- lubridate::day(as.Date(met$Data[i]))
+    month <- lubridate::month(as.Date(met$Data[i]))
+    df <- data.frame(year, month, day, met$Tmin[i])
+    d_f <- bind_rows(d_f, df)
+  }
+  colnames(d_f) <- c("year", "month", "day", "Tmin")
+  return(d_f)
+}
+####################################################################################
+TmaxTable <- function(met)
+{
+  d_f <- data_frame()
+  for(i in 1:nrow(met))
+  {
+    year <- 2016
+    day <- lubridate::day(as.Date(met$Data[i]))
+    month <- lubridate::month(as.Date(met$Data[i]))
+    df <- data.frame(year, month, day, met$Tmax[i])
+    d_f <- bind_rows(d_f, df)
+  }
+  colnames(d_f) <- c("year", "month", "day", "Tmax")
+  return(d_f)
+}
+

@@ -821,7 +821,7 @@ mediate_meteos <- function(mi,ro,fi,pa,ca,rc,flag_2016)
   if(flag_2016) vars[5] <- "ventomedia"
   for(i in 1:nrow(fi))
   {
-    dt <- fi[i,which(tolower(colnames(fi)) == "data")]
+    dt <- unlist(fi[i,which(tolower(colnames(fi)) == "data")])
     imi <- which(mi[,which(tolower(colnames(mi)) == "data")] == dt)
     iro <- which(ro[,which(tolower(colnames(ro)) == "data")] == dt)
     ipa <- which(pa[,which(tolower(colnames(pa)) == "data")] == dt)
@@ -841,6 +841,38 @@ mediate_meteos <- function(mi,ro,fi,pa,ca,rc,flag_2016)
                         rc[irc, which(tolower(colnames(rc)) == v)]),na.rm=TRUE)
     }
     df <- bind_rows(df, data.frame(as.character(dt),t(cv)))
+  }
+  colnames(df) <- c("Data", "Tmin", "Tmax", "Tmedia", "Pioggia", "Vento_media")
+  return(df)
+}
+#################################################################
+mediate_meteos2 <- function(mi,ro,fi,pa,ca,rc)
+{
+  df <- data_frame()
+  vars <- c("tmin", "tmax", "tmedia", "pioggia", "ventomedia")
+
+  for(i in 1:nrow(fi))
+  {
+    dt <- unlist(fi[i,which(tolower(colnames(fi)) == "data")])
+    imi <- which(mi[,which(tolower(colnames(mi)) == "data")] == dt)
+    iro <- which(ro[,which(tolower(colnames(ro)) == "data")] == dt)
+    ipa <- which(pa[,which(tolower(colnames(pa)) == "data")] == dt)
+    ica <- which(ca[,which(tolower(colnames(ca)) == "data")] == dt)
+    irc <- which(rc[,which(tolower(colnames(rc)) == "data")] == dt)
+    
+    cv <- rep(0, length(vars))
+    
+    for(v in vars)
+    {
+      j <- which(vars == v)
+      cv[j] <- mean(c(unlist(mi[imi, which(tolower(colnames(mi)) == v)]),
+                      unlist(fi[i, which(tolower(colnames(fi)) == v)]),
+                      unlist(ro[iro, which(tolower(colnames(ro)) == v)]),
+                      unlist(pa[ipa, which(tolower(colnames(pa)) == v)]),
+                      unlist(ca[ica, which(tolower(colnames(ca)) == v)]),
+                      unlist(rc[irc, which(tolower(colnames(rc)) == v)])),na.rm=TRUE)
+    }
+    df <- bind_rows(df, data.frame(as.Date(dt),t(cv)))
   }
   colnames(df) <- c("Data", "Tmin", "Tmax", "Tmedia", "Pioggia", "Vento_media")
   return(df)
