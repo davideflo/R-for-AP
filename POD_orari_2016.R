@@ -3,6 +3,7 @@ library(plyr)
 library(dplyr)
 library(readxl)
 library(ggplot2)
+library(gplots)
 library(zoo)
 library(gamair)
 library(mgcv)
@@ -902,3 +903,62 @@ fits <- GetModel(df, fi6, 20, '2016-01-01')
 hist(fits$residuals, probability = TRUE, breaks = 10)
 shapiro.test(fits$residuals)
 
+#################################################################################################################
+##################################################################################################################
+#### experiments with similar days
+
+daya <- get_Table_similar_days(datasa)
+
+daya1 <- daya[which(daya$weekday == 1),]
+
+matplot(t(daya1[,7:30]), type = 'l', lwd = 2, col = daya1$num_week)
+pairs(daya1[,c(2,3,26)])
+
+ggplot(data = data.table(week_number = daya1$num_week, H20 = daya1$`20`),
+       aes(week_number, H20)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "week number vs H20")
+
+fit3 <- lm(daya1$`20` ~ I(daya1$num_week) + I(daya1$num_week^2) + I(daya1$num_week^3))
+summary(fit3)
+plot(fit3)
+
+mean(fit3$residuals)
+sd(fit3$residuals)
+var(fit3$residuals)
+median(fit3$residuals)
+max(abs(fit3$residuals))
+
+heatmap.2(cor(daya1[,7:30]), Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
+
+#### TERNA's data
+
+terna <- read_excel("C:\\Users\\utente\\Documents\\misure\\aggregato_sbilanciamento.xlsx")
+
+agg <- get_Table_similar_days2(terna, "CNOR", "FABBISOGNO REALE")
+
+agg2 <- agg[which(agg$weekday == 2),]
+
+matplot(t(agg2[,7:30]), type = 'l', lwd = 2, col = agg2$num_week)
+pairs(agg1[,c(2,3,26)])
+
+ggplot(data = data.table(week_number = agg2$num_week, H20 = agg2$`20`),
+       aes(week_number, H20)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "week number vs H20")
+
+fit3_terna <- lm(agg2$`20` ~ I(agg2$num_week) + I(agg2$num_week^2) + I(agg2$num_week^3) + holiday, data = agg2)
+summary(fit3_terna)
+plot(fit3_terna)
+
+
+resG1 <- fit3_terna$residuals[which(fit3_terna$fitted.values >= 8.5)]
+fitG1 <- fit3_terna$fitted.values[which(fit3_terna$fitted.values >= 8.5)]
+
+ggplot(data = data.table(fittedG1 = fitG1, residualsG1 = resG1),
+       aes(fittedG1, residualsG1)) +
+  geom_point(size = 1.5) +
+  geom_hline(yintercept = 0, color = "red", size = 0.8) +
+  geom_smooth() 

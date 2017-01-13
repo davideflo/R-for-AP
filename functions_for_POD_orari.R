@@ -4,7 +4,34 @@
 source("C://Users//utente//Documents//R_code//SparseFunctClust.R")
 source("R_code/functions_for_PUN_server.R")
 
-
+##################################################################################
+### @PARAM: data from hourly measurement
+Aggregator <- function(df)
+{
+  d_f <- data_frame()
+  df$Giorno <- as.Date(df$Giorno)
+  days <- unique(df$Giorno)
+  for(d in days)
+  {
+    atd <- df[which(df$Giorno == d),3:26]
+    df2 <- data.frame(as.Date(d), t((1/1000)*colSums(atd, na.rm = TRUE)))
+    d_f <- bind_rows(d_f, df2)
+  }
+  colnames(d_f) <- c("date", as.character(1:24))
+  return(d_f)
+}
+##################################################################################
+daylight_saving <- function(vd)
+{
+  change <- 0
+  daylight_start <- c(as.Date("2016-10-30"))
+  daylight_end <- c(as.Date("2016-03-27"))
+  if(vd %in% daylight_start) change <- 2
+  else if (vd %in% daylight_end) change <- 1
+  
+  return(change)
+}
+##################################################################################
 ConvertDate <- function(df)
 {
   df <- as.data.frame(df)
@@ -466,4 +493,4 @@ TmaxTable <- function(met)
   colnames(d_f) <- c("year", "month", "day", "Tmax")
   return(d_f)
 }
-
+###################################################################################
