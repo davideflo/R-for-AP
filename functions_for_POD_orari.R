@@ -278,8 +278,8 @@ add_holidays_Date <- function(vd)
   ## Ferragosto = 8, 1 Novembre = 9
   ## 8 Dicembre = 10, Natale = 11, S.Stefano = 12, S.Silvestro = 13
   holidays <- 0
-  pasqua <- as.Date(c("2010-04-04", "2011-04-24", "2012-04-08", "2013-03-31", "2014-04-20", "2015-04-05", "2016-03-27"))
-  pasquetta <- as.Date(c("2010-04-05", "2011-04-25", "2012-04-09", "2013-04-01", "2014-04-21", "2015-04-06", "2016-03-28"))
+  pasqua <- as.Date(c("2010-04-04", "2011-04-24", "2012-04-08", "2013-03-31", "2014-04-20", "2015-04-05", "2016-03-27","2017-04-16"))
+  pasquetta <- as.Date(c("2010-04-05", "2011-04-25", "2012-04-09", "2013-04-01", "2014-04-21", "2015-04-06", "2016-03-28","2017-04-17"))
   
   if(lubridate::month(vd) == 1 & lubridate::day(vd) == 1) holidays <- 1
   if(lubridate::month(vd)  == 1 & lubridate::day(vd) == 6) holidays <- 1

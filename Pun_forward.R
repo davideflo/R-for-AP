@@ -28,6 +28,23 @@ wdys <- maply(1:nrow(data), function(n) lubridate::yday(as.POSIXct(unlist(data[n
 wks <- maply(1:nrow(data), function(n) lubridate::week(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01')))
 hol <- maply(1:nrow(data), function(n) add_holidays_Date(as.Date(as.POSIXct(unlist(data[n,'date']), origin = '1970-01-01'))))
 
+### 2016 is a leap year ---> remove February 29
+feb29 <- which(as.Date(data$date) == as.Date("2016-02-29")) 
+Data <- data[-feb29,]
+
+### divide in different years:
+pun14 <- Data$pun[which(lubridate::year(Data$date) == 2014)]
+pun15 <- Data$pun[which(lubridate::year(Data$date) == 2015)]
+pun16 <- Data$pun[which(lubridate::year(Data$date) == 2016)]
+
+### get "general behaviour" of pun
+pun_general <- (1/3)*(pun14 + pun15 + pun16)
+
+plot(pun14, type = 'l', col = "blue")
+lines(pun15, type = 'l', col = "orange")
+lines(pun16, type = 'l', col = "red")
+lines(pun_general, type = 'l', col = "black", lwd = 2)
+
 #########################################################################################################################
 #### meteo 
 mi6 <- read_excel("C:/Users/utente/Documents/PUN/Milano 2016.xlsx", sheet= 1)
@@ -86,6 +103,208 @@ yhat <- unlist(yhat)
 plot(df$y, type = "l")
 lines(yhat, type = "l", col = "red")
 
+#### simple DL model done in the following way: 
+#### year ~ (year - 1) + hour + day + week + holiday + ...
+make_DLdataset_pun_forward <- function(data)
+{
+  d_f <- data_frame()
+  
+  feb29 <- which(as.Date(data$date) == as.Date("2016-02-29")) 
+  Data <- data[-feb29,]
+  pun14 <- Data[which(lubridate::year(Data$date) == 2014),]
+  pun15 <- Data[which(lubridate::year(Data$date) == 2015),]
+  pun16 <- Data[which(lubridate::year(Data$date) == 2016),]
+  
+  for(i in 1:nrow(pun14))
+  {
+    hs <-  lubridate::hour(as.POSIXct(unlist(pun14[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(pun14[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(pun14[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(pun14[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun14[i,'date']), origin = '1970-01-01')))
+    
+    ths <-  lubridate::hour(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    twds <- lubridate::wday(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    twdys <- lubridate::yday(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    twks <-  lubridate::week(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    thol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01')))
+    
+    df2 <- data.frame(pun14$pun[i], hs, wds, wdys, wks, hol, pun15$pun[i], ths, twds, twdys, twks, thol)
+    colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+    d_f <- bind_rows(d_f, df2)
+  }
+  
+  for(i in 1:nrow(pun15))
+  {
+    hs <-  lubridate::hour(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun15[i,'date']), origin = '1970-01-01')))
+    
+    ths <-  lubridate::hour(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    twds <- lubridate::wday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    twdys <- lubridate::yday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    twks <-  lubridate::week(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    thol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01')))
+    
+    df2 <- data.frame(pun15$pun[i], hs, wds, wdys, wks, hol, pun16$pun[i], ths, twds, twdys, twks, thol)
+    colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+    d_f <- bind_rows(d_f, df2)
+  }
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+  return(d_f)
+}
+##############################################################################################################################################
+make_DLdataset_pun_forward2 <- function(data)
+{
+  ### @BRIEF: better function: should work automatically, without expliciting the dates
+  d_f <- data_frame()
+  
+  # feb29 <- which(as.Date(data$date) == as.Date("2016-02-29")) 
+  # Data <- data[-feb29,]
+  # pun14 <- Data[which(lubridate::year(Data$date) == 2014),]
+  # pun15 <- Data[which(lubridate::year(Data$date) == 2015),]
+  # pun16 <- Data[which(lubridate::year(Data$date) == 2016),]
+  
+  for(i in 1:nrow(data))
+  {
+    print(i)
+    y <- 0
+    hs <-  lubridate::hour(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(unlist(data[i,'date'])))
+    
+    new_date <- lubridate::ymd(as.Date(data$date[i])) + lubridate::years(1)
+    new_date2 <- lubridate::ymd(as.Date(data$date[i]) + 1) + lubridate::years(1)
+    
+    if(!is.na(new_date))
+    {
+      ypun <- data[which(as.Date(data$date) == new_date),]
+      #& lubridate::hour(as.POSIXct(unlist(data$date), origin = '1970-01-01')) == hs),]
+      
+      ypun <- ypun[which(lubridate::hour(as.POSIXct(ypun$date, origin = '1970-01-01')) == hs),]
+      
+      nr <- nrow(ypun)
+      
+      if(nr == 0)
+      {
+        y <- 0
+      }
+      else if(nr == 2)
+      {
+        y <- sum(ypun$pun, na.rm = FALSE)
+      }
+      else
+      {
+        y <- ypun$pun
+      }
+      
+      twds <- lubridate::wday(new_date)
+      twdys <- lubridate::yday(new_date)
+      twks <-  lubridate::week(new_date)
+      thol <-  add_holidays_Date(new_date)
+      
+      df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol, y, hs, twds, twdys, twks, thol)
+      #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+      #d_f <- bind_rows(d_f, df2)
+      l <- list(data.frame(d_f), df2)
+      d_f <- rbindlist(l)
+    }
+    
+    else if(is.na(new_date) & new_date2 %in% data$date)
+    {
+      next
+    }
+    
+    else
+    {
+      break
+    }
+
+  }
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+  return(d_f)
+}
+####################################################################################################################################
+prediction_pun_forward <- function(df, start_date)
+{
+  d_f <- data_frame()
+  
+  feb29 <- which(as.Date(data$date) == as.Date("2016-02-29")) 
+  Data <- data[-feb29,]
+  pun14 <- Data[which(lubridate::year(Data$date) == 2014),]
+  pun15 <- Data[which(lubridate::year(Data$date) == 2015),]
+  pun16 <- Data[which(lubridate::year(Data$date) == 2016),]
+  
+  seq17 <- seq.POSIXt(as.POSIXct(start_date), as.POSIXct('2018-01-02'), by = 'hour')[1:8760]
+  
+  for(i in 1:nrow(pun16))
+  {
+    
+    hs <-  lubridate::hour(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01')))
+    
+    ths <-  lubridate::hour(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
+    twds <- lubridate::wday(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
+    twdys <- lubridate::yday(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
+    twks <-  lubridate::week(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
+    thol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01')))
+    
+    df2 <- data.frame(pun16$pun[i], hs, wds, wdys, wks, hol, ths, twds, twdys, twks, thol)
+    colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","thour","tweekday","tday","tweek","tholiday")
+    d_f <- bind_rows(d_f, df2)
+  }
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","thour","tweekday","tday","tweek","tholiday")
+  return(d_f)
+  
+}
+#############################################################################################################
+DLD <- make_DLdataset_pun_forward(data)
+
+response <- "ypun"
+regressors <- setdiff(colnames(DLD),response)
+
+modeldl <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD), standardize = TRUE, activation = "Rectifier", 
+                       hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
+
+plot(modeldl)
+summary(modeldl)
+h2o.r2(modeldl)
+
+newd <- prediction_pun_forward(data, "2017-01-01")
+
+yhat <- h2o.predict(modeldl, newdata = as.h2o(newd))
+yhat <- as.matrix(as.numeric(yhat$predict))
+yhat <- unlist(yhat)
+
+plot(yhat, type = "l")
+lines(yhat, type = "l", col = "red")
+
+######## automatic dataset
+data2 <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2017.xlsx")
+colnames(data2) <- c('date', 'pun')
+data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-01-18'), by = 'hour')[1:nrow(data2)]
+
+DLD2 <- make_DLdataset_pun_forward2(data2)
+
+DLD2 <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\dati_punForward"))
+
+response <- "ypun"
+regressors <- setdiff(colnames(DLD2),response)
+
+modeldl2 <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2),
+                            standardize = TRUE, activation = "Rectifier", 
+                            hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
+
+plot(modeldl2)
+summary(modeldl2)
+h2o.r2(modeldl2)
 ####################################################################
 ###### fit the hourly process with a spline ########
 HourlyProcess <- function(df, finaldate) ### finaldate = today + 2 days ahead if the pun file is updated
