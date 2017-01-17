@@ -248,7 +248,7 @@ prediction_pun_forward <- function(df, start_date)
     wds <- lubridate::wday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
     wdys <- lubridate::yday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
     wks <-  lubridate::week(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
-    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01')))
+    hol <-  add_holidays_Date(as.Date(unlist(pun16[i,'date'])))
     
     ths <-  lubridate::hour(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
     twds <- lubridate::wday(as.POSIXct(unlist(seq17[i]), origin = '1970-01-01'))
@@ -263,6 +263,52 @@ prediction_pun_forward <- function(df, start_date)
   colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","thour","tweekday","tday","tweek","tholiday")
   return(d_f)
   
+}
+#############################################################################################################
+prediction_pun_forward2 <- function(df, start_date)
+{
+  d_f <- data_frame()
+  
+  days_left <- 365 - (as.Date(start_date) - as.Date("2017-01-01"))
+  seq17 <- seq.POSIXt(as.POSIXct(start_date), as.POSIXct('2018-01-02'), by = 'hour')[1:((days_left*24)-1)]
+  
+  pun16 <- df[which(lubridate::year(df$date) == 2016),]
+  
+  for(i in 1:nrow(pun16))
+  {
+    #print(i)
+    hs <-  lubridate::hour(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01')))
+    
+    new_date <- lubridate::ymd(as.Date(pun16$date[i])) + lubridate::years(1)
+    new_date2 <- lubridate::ymd(as.Date(pun16$date[i]) + 1) + lubridate::years(1)
+    
+    if(!is.na(new_date))
+    {
+      
+      twds <- lubridate::wday(new_date)
+      twdys <- lubridate::yday(new_date)
+      twks <-  lubridate::week(new_date)
+      thol <-  add_holidays_Date(new_date)
+      
+      df2 <- data.frame(pun16$pun[i], hs, wds, wdys, wks, hol, hs, twds, twdys, twks, thol)
+      #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+      #d_f <- bind_rows(d_f, df2)
+      l <- list(data.frame(d_f), df2)
+      d_f <- rbindlist(l)
+    }
+    
+    else
+    {
+      next
+    }
+    
+  }
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","thour","tweekday","tday","tweek","tholiday")
+  return(d_f)
 }
 #############################################################################################################
 DLD <- make_DLdataset_pun_forward(data)
@@ -305,6 +351,17 @@ modeldl2 <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h
 plot(modeldl2)
 summary(modeldl2)
 h2o.r2(modeldl2)
+
+pred17 <- prediction_pun_forward2(data2, "2017-01-16")
+
+yhat17 <- h2o.predict(modeldl2, newdata = as.h2o(pred17))
+yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
+
+plot(yhat17, type = 'l', col = 'orange')
+
+### paste existing 2017 pun
+library(xlsx)
+write.xlsx(yhat17, "longterm_pun.xlsx")
 ####################################################################
 ###### fit the hourly process with a spline ########
 HourlyProcess <- function(df, finaldate) ### finaldate = today + 2 days ahead if the pun file is updated
