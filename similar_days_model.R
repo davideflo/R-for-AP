@@ -64,9 +64,55 @@ get_Table_similar_days2 <- function(df, zona, variable)
 }
 ###########################################################################################
 ### @PARAM: data from hourly measurement
-make_dataset_similar_day <- function(df, meteo, weekday)
+make_dataset_similar_day <- function(df, meteo, final_date, weekday)
 {
   d_f <- data_frame()
+  aggdf <- get_Table_similar_days(df)
+  meteo2 <- get_meteo2(meteo, final_date)
+  
+  onlydf <- aggdf[which(aggdf$weekday == weekday),]
+  
+  for(i in 1:nrow(onlydf))
+  {
+    d <- as.Date(onlydf$date[i])
+    numd <- lubridate::day(d)
+    numw <- lubridate::week(d)
+    wd <- lubridate::wday(d)
+    hol <- add_holidays_Date(d)
+    cd <- daylight_saving(d)
+    tmedia <- associate_meteo_data(d, meteo2, "Tmedia")
+    vento <- associate_meteo_data(d, meteo2, "VENTOMEDIA")
+    #rain <- get_rain(meteo, d)
+    rain <- get_rain_num(meteo, d)
+    regr <- unlist(onlydf[i,7:30])
+    
+    next_week <- d + 7
+    if(next_week %in% onlydf$date)
+    {
+      tnumd <- lubridate::day(next_week)
+      tnumw <- lubridate::week(next_week)
+      twd <- lubridate::wday(next_week)
+      thol <- add_holidays_Date(next_week)
+      tcd <- daylight_saving(next_week)
+      ttmedia <- associate_meteo_data(next_week, meteo2, "Tmedia")
+      #train <- get_rain(meteo, d)
+      train <- get_rain_num(meteo, next_week)
+      tvento <- associate_meteo_data(next_week, meteo2, "VENTOMEDIA")
+      y <- unlist(onlydf[i,7:30])
+      df2 <- data.frame(numd, numw, wd, hol, cd, tmedia, vento, rain, t(regr),
+                        tnumd, tnumw, twd, thol, tcd, ttmedia, tvento, train, t(y))
+      colnames(df2) <- c("num_day", "num_week", "weekday", "holiday", "change_date", "Tmedia", "vento", "pioggia", paste0("regr",as.character(1:24)),
+                         "tnum_day", "tnum_week", "tweekday", "tholiday", "tchange_date", "tTmedia", "tvento", "tpioggia", paste0("y",as.character(1:24)))
+      l <- list(d_f, df2)
+      d_f <- rbindlist(l)
+    }
+    
+    else{
+      break
+    }
+    
+  }
+  return(d_f)
   
 }
 #########################################################################################

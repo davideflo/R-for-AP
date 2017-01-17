@@ -962,3 +962,15 @@ ggplot(data = data.table(fittedG1 = fitG1, residualsG1 = resG1),
   geom_point(size = 1.5) +
   geom_hline(yintercept = 0, color = "red", size = 0.8) +
   geom_smooth() 
+
+##############################################################################################################
+#### functional model for similar days
+
+source("R_code/similar_days_model.R")
+
+datacn <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+
+dfr <- make_dataset_similar_day(datacn, fi6, "2016-12-31", 2)
+sum(dfr$pioggia)

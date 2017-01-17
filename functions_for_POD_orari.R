@@ -31,6 +31,24 @@ daylight_saving <- function(vd)
   
   return(change)
 }
+#################################################################################
+get_rain <- function(meteo, data)
+{
+  x <- meteo[which(meteo$DATA == as.Date(data)),"FENOMENI"]
+  if("pioggia" %in% x)
+    return(1)
+  else
+    return(0)
+}
+#################################################################################
+get_rain_num <- function(meteo, data)
+{
+  x <- unlist(meteo[which(as.Date(meteo$DATA, origin = "1899-12-31") == as.Date(data)),"PIOGGIA"])
+  if(x == 1)
+    return(1)
+  else
+    return(0)
+}
 ##################################################################################
 ConvertDate <- function(df)
 {
@@ -212,7 +230,7 @@ AggregateMLR <- function(df)
 #############################################################################################
 associate_meteo_data <- function(data, meteo, meteovar)
 {
-  ir <- which(unlist(meteo["Data"]) == data)
+  ir <- which(unlist(meteo["DATA"]) == data)
   vm <- as.numeric(meteo[ir,meteovar])
   return(vm)
 }
