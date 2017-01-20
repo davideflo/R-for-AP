@@ -9,8 +9,9 @@ library(gamair)
 library(mgcv)
 library(feather)
 library(lubridate)
-library(fdakma)
+library(fda)
 library(data.table)
+library(fda.usc)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -937,8 +938,30 @@ heatmap.2(cor(daya1[,7:30]), Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
 terna <- read_excel("C:\\Users\\utente\\Documents\\misure\\aggregato_sbilanciamento.xlsx")
 
 agg <- get_Table_similar_days2(terna, "CNOR", "FABBISOGNO REALE")
+mo <- get_Table_similar_days2(terna, "CNOR", "MO [MWh]")
+mno <- data.frame(agg[,1:6], agg[,7:30] + mo[,7:30])
 
-agg2 <- agg[which(agg$weekday == 2),]
+color = ifelse(lubridate::year(agg$date) == 2015, "blue", "red")
+matplot(t(agg[,7:30]), type = "l", col = color, main = 'fabbisogno totale')
+matplot(t(mno[,7:30]), type = "l", col = color, main = 'consumo non orari')
+matplot(t(-mo[,7:30]), type = "l", col = color, main = 'consumo orari')
+
+
+agg2 <- agg[which(agg$weekday == 4),]
+
+color = ifelse(lubridate::year(agg2$date) == 2015, "green", "purple")
+matplot(t(agg2[,7:30]), type = "l", col = color)
+
+mno5 <- mno[which(lubridate::year(mno$date) == 2015),]
+mo5 <- mo[which(lubridate::year(mo$date) == 2015),]
+
+color2 <- ifelse(mno5$weekday %in% c(1,7), "gold", "grey")
+plot(mno5$num_day,mno5$X19, col = color2, pch = 16)
+plot(mno5$num_week,mno5$X19, col = color2, pch = 16)
+color3 <- ifelse(mo5$holiday > 0, "green", "black")
+plot(mo5$num_day,-mo5$`19`, col = color3, pch = 16)
+plot(mo5$num_week,-mo5$`19`, col = color3, pch = 16)
+
 
 matplot(t(agg2[,7:30]), type = 'l', lwd = 2, col = agg2$num_week)
 pairs(agg1[,c(2,3,26)])
@@ -974,3 +997,126 @@ fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sh
 
 dfr <- make_dataset_similar_day(datacn, fi6, "2016-12-31", 2)
 sum(dfr$pioggia)
+
+write.xlsx(dfr, "dfr.xlsx")
+########### simple regression #############
+
+fit1 <- lm(dfr$y7 ~ dfr$regr7 + dfr$num_day + dfr$num_week + dfr$holiday + I(dfr$Tmedia) + I(dfr$Tmedia^2) + I(dfr$Tmedia^3) + 
+             dfr$vento + dfr$pioggia + dfr$tnum_day + dfr$tholiday + dfr$tTmedia + 
+             dfr$tvento + dfr$tpioggia)
+summary(fit1)
+layout(1)
+plot(fit1)
+
+ctrl <- list(niterEM = 10, msVerbose = TRUE, optimMethod="L-BFGS-B")
+fit2 <- gamm(dfr$y7 ~ dfr$regr7 + s(dfr$num_day, bs = "cc") + s(dfr$num_week, bs = "cc") + dfr$holiday + s(dfr$Tmedia, bs = "cc") +# I(dfr$Tmedia^2) + I(dfr$Tmedia^3) + 
+             dfr$vento + dfr$pioggia + dfr$tnum_day + dfr$tholiday + dfr$tTmedia + 
+             dfr$tvento + dfr$tpioggia, control = ctrl)
+
+plot(fit2$gam, scale = 0)
+
+R2gamm <- 1 - (sum(fit2$gam$residuals^2))/(sum((fit2$gam$fitted.values - mean(dfr$y7))^2))
+
+
+ggplot(data = data.table(y7 = dfr$y7, fitted = fit2$gam$fitted.values),
+       aes(y7, fitted)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "y7 vs Tmedia")
+
+ggplot(data = data.table(fitted = fit2$gam$fitted.values, residuals = fit2$gam$residuals),
+       aes(fitted, residuals)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "fitted vs residuals")
+
+mean(fit2$gam$residuals)
+median(fit2$gam$residuals)
+hist(mean(fit2$gam$residuals))
+
+plot(dfr$Tmedia, dfr$y7)
+cor(dfr$tTmedia, dfr$y7)
+
+ggplot(data = data.table(Tmedia = dfr$tTmedia, y7 = dfr$y7),
+       aes(Tmedia, y7)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "y7 vs Tmedia")
+
+
+pairs(data.frame(dfr$y7,dfr$regr7,dfr$num_day,dfr$num_week,dfr$holiday,dfr$Tmedia, dfr$vento,dfr$pioggia,dfr$tnum_day,dfr$tholiday,dfr$tTmedia, dfr$tvento,dfr$tpioggia))
+
+Xreg <- dfr[,9:32]
+Y <- dfr[,41:64]
+disc <- setdiff(colnames(dfr), colnames(dfr)[c(9:32, 41:64)])
+discv <- which(colnames(dfr) %in% disc)
+
+Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
+Sbasis <-  create.bspline.basis(c(1,24), nbasis=23, norder = 5)
+
+FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
+YF <- smooth.basis(1:24, t(Y), Fbasis)$fd
+
+fitF <- fRegress(YF ~ FXreg)#dfr[,discv])
+summary(fitF)
+
+yf <- fdata(YF)
+xf <- fdata(FXreg)
+
+plot(yf)
+plot(xf)
+
+f = yf ~ dfr[,discv] + xf
+basis.x1 = list(xf = create.fdata.basis(xf, l = c(1, 24), type.basis = "fourier"))
+fregre.lm(f, dfr, basis.x = basis.x1)
+
+
+rtt<-c(1, 24)
+basis.alpha <- create.constant.basis(rtt)
+basisx <- create.bspline.basis(rtt,21)
+basisy <- create.bspline.basis(rtt,21)
+basiss <- create.bspline.basis(rtt,21)
+basist <- create.bspline.basis(rtt,21)
+summary(fit1 <-fregre.basis.fr(xf,yf,basis.s=basiss,basis.t=basist))
+
+matplot(t(fit1$residuals$data), type = 'l')
+
+par(mfrow=c(2,1))
+matplot(t(fit1$fitted.values$data), type = 'l', col = 'blue')
+matplot(t(Y), type = 'l', col = 'red')
+
+
+Yhat <- predict(fitF)$y
+matplot(Yhat, type = 'l')
+
+matplot(Yhat$y, type = 'l')
+matplot(t(Y), type = 'l')
+
+
+
+
+
+
+
+mean(with(fitF, (yhatfdobj-yfdPar)^2))
+fitF$yhatfdobj - fitF$yfdPar
+
+SXreg <- smooth.basis(1:24, t(Xreg), Sbasis)$fd
+YS <- smooth.basis(1:24, t(Y), Sbasis)$fd
+
+fitS <- fRegress(YS ~ SXreg)#dfr[,discv])
+summary(fitF)
+
+argvals = seq(0,24,len = ncol(Y))
+nbasis = 23
+basisobj = create.bspline.basis(c(0,24),nbasis)
+Ys = smooth.basis(argvals=argvals, y=t(Y), fdParobj=basisobj,returnMatrix=TRUE)$fd
+Xs = smooth.basis(argvals=argvals, y=t(Xreg), fdParobj=basisobj,returnMatrix=TRUE)$fd
+
+plot(Ys)
+plot(Xs)
+
+fitS <- fRegress(YS ~ Xs)#dfr[,discv])
+summary(fitS)
+
+
