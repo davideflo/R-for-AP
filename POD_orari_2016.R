@@ -1048,7 +1048,7 @@ pairs(data.frame(dfr$y7,dfr$regr7,dfr$num_day,dfr$num_week,dfr$holiday,dfr$Tmedi
 
 Xreg <- dfr[,9:32]
 Y <- dfr[,41:64]
-disc <- setdiff(colnames(dfr), colnames(dfr)[c(9:32, 41:64)])
+disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
 discv <- which(colnames(dfr) %in% disc)
 
 Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
@@ -1057,8 +1057,58 @@ Sbasis <-  create.bspline.basis(c(1,24), nbasis=23, norder = 5)
 FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
 YF <- smooth.basis(1:24, t(Y), Fbasis)$fd
 
-fitF <- fRegress(YF ~ FXreg)#dfr[,discv])
+h <- 23 ##### 23 is correct!!!!
+BASIS <- matrix(0, nrow = 23, ncol = 24)
+BASIS[1,] <- (1/sqrt(23))*rep(1, 24)
+BASIS[2,] <- (1/sqrt(23/2))*sin((2*pi/h)*1:24)
+BASIS[3,] <- (1/sqrt(23/2))*cos((2*pi/h)*1:24)
+BASIS[4,] <- (1/sqrt(23/2))*sin((2*pi/h)*2*(1:24))
+BASIS[5,] <- (1/sqrt(23/2))*cos((2*pi/h)*2*(1:24))
+BASIS[6,] <- (1/sqrt(23/2))*sin((2*pi/h)*3*(1:24))
+BASIS[7,] <- (1/sqrt(23/2))*cos((2*pi/h)*3*(1:24))
+BASIS[8,] <- (1/sqrt(23/2))*sin((2*pi/h)*4*(1:24))
+BASIS[9,] <- (1/sqrt(23/2))*cos((2*pi/h)*4*(1:24))
+BASIS[10,] <- (1/sqrt(23/2))*sin((2*pi/h)*5*(1:24))
+BASIS[11,] <- (1/sqrt(23/2))*cos((2*pi/h)*5*(1:24))
+BASIS[12,] <- (1/sqrt(23/2))*sin((2*pi/h)*6*(1:24))
+BASIS[13,] <- (1/sqrt(23/2))*cos((2*pi/h)*6*(1:24))
+BASIS[14,] <- (1/sqrt(23/2))*sin((2*pi/h)*7*(1:24))
+BASIS[15,] <- (1/sqrt(23/2))*cos((2*pi/h)*7*(1:24))
+BASIS[16,] <- (1/sqrt(23/2))*sin((2*pi/h)*8*(1:24))
+BASIS[17,] <- (1/sqrt(23/2))*cos((2*pi/h)*8*(1:24))
+BASIS[18,] <- (1/sqrt(23/2))*sin((2*pi/h)*9*(1:24))
+BASIS[19,] <- (1/sqrt(23/2))*cos((2*pi/h)*9*(1:24))
+BASIS[20,] <- (1/sqrt(23/2))*sin((2*pi/h)*10*(1:24))
+BASIS[21,] <- (1/sqrt(23/2))*cos((2*pi/h)*10*(1:24))
+BASIS[22,] <- (1/sqrt(23/2))*sin((2*pi/h)*11*(1:24))
+BASIS[23,] <- (1/sqrt(23/2))*cos((2*pi/h)*11*(1:24))
+
+par(mfrow= c(2,1))
+matplot(t(t(FXreg$coefs)%*%BASIS), type = 'l')
+matplot(t(Xreg), type = 'l')
+
+
+te <- t(FXreg$coefs)%*%BASIS
+head(te)
+head(Xreg)
+
+layout(1)
+matplot(t(te-Xreg), type = 'l')
+
+res <- LeastSquareOptimizer(dfr)
+Bs <- vect_to_mat(result$par)
+heatmap.2(Bs, Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
+library(plot3D)
+layout(1)
+M <- mesh(seq(1, 23, length.out = 23),seq(1, 23, length.out = 23))
+surf3D(M$x, M$y, Bs)#, colvar = Bs, colkey = FALSE, facets = FALSE)
+
+
+
+fitF <- fRegress(YF ~ FXreg, returnMatrix = TRUE)#dfr[,discv])
 summary(fitF)
+fitF$betaestlist
+fitF$betalist
 
 yf <- fdata(YF)
 xf <- fdata(FXreg)
