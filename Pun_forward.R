@@ -17,6 +17,7 @@ source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
 source("C://Users//utente//Documents//glm_dataset.R")
 
+### add_holidays_Date is in functions_for_POD_orari
 
 data <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2016.xlsx")
 colnames(data) <- c('date', 'pun')
@@ -159,6 +160,7 @@ make_DLdataset_pun_forward <- function(data)
 make_DLdataset_pun_forward2 <- function(data)
 {
   ### @BRIEF: better function: should work automatically, without expliciting the dates
+  ### http://www.noamross.net/blog/2013/4/25/faster-talk.html
   d_f <- data_frame()
   
   # feb29 <- which(as.Date(data$date) == as.Date("2016-02-29")) 
@@ -170,7 +172,7 @@ make_DLdataset_pun_forward2 <- function(data)
   for(i in 1:nrow(data))
   {
     print(i)
-    y <- 0
+    
     hs <-  lubridate::hour(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     wds <- lubridate::wday(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     wdys <- lubridate::yday(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
