@@ -138,7 +138,7 @@ get_Table_similar_days2 <- function(df, zona, variable)
 ###########################################################################################
 ### @PARAM: dfr is the final dataset from similar day model
 ###         optim gets two vectors and the first one if transformed into a matrix
-LeastSquareOptimizer <- function(dfr)
+LeastSquareOptimizer <- function(dfr, penalization, lambda = 1, mu = 1, tol = 1e-6)
 {
   Xreg <- dfr[,9:32]
   Y <- dfr[,41:64]
@@ -158,16 +158,19 @@ LeastSquareOptimizer <- function(dfr)
   Base <- get_Basis()
   J <- diag(1, nrow(Y)) ### \in R^{43*43}
   
-  vect_to_mat <- function(vec)
+  Discrete_Laplacian <- function(A)
   {
-    mat <- matrix(0, 23, 23)
-    s <- seq(1, 23^2, 23)
-    for(i in 1:length(s))
+    dl <- 0
+    nr <- nrow(A)
+    nc <- ncol(A)
+    for(i in 2:(nr-1))
     {
-      if(s[i] < 507) {mat[,i] <- vec[s[i]:(s[i+1]-1)]}
-      else {mat[,i] <- vec[s[i]:529]}
+      for(j in 2:(nc-1))
+      {
+        dl <- dl + A[i-1,j] + A[i+1,j] + A[i,j-1] + A[i,j+1] - 4*A[i,j]
+      }
     }
-    return(mat)
+    return(dl)
   }
   
   product_MatrixVector <- function(Z, b)
@@ -180,16 +183,77 @@ LeastSquareOptimizer <- function(dfr)
     return(prod)
   }
   
-  LMISE <- function(B2, beta)
+  if(penalization == "none")
   {
-    B <- vect_to_mat(B2)
-    ### B \in R^{23*23} ### the matrix of the "base changing"
-    LS <- tr( t(C%*%B-D)%*%J%*%(C%*%B-D)) - sum(t(product_MatrixVector(Z,beta))*(product_MatrixVector(Z,beta)))
-    return(LS)
+    LMISE <- function(B2, beta, lambda, mu)
+    {
+      B <- vect_to_mat(B2)
+      ### B \in R^{23*23} ### the matrix of the "base changing"
+      LS <- tr( t(C%*%B-D)%*%J%*%(C%*%B-D)) + sum(t(product_MatrixVector(Z,beta))*(product_MatrixVector(Z,beta)))
+      return(LS)
+    }
+  }
+  else if(penalization == "beta")
+  {
+    LMISE <- function(B2, beta, lambda, mu)
+    {
+      B <- vect_to_mat(B2)
+      ### B \in R^{23*23} ### the matrix of the "base changing"
+      LS <- tr( t(C%*%B-D)%*%J%*%(C%*%B-D)) + sum(t(product_MatrixVector(Z,beta))*(product_MatrixVector(Z,beta))) + lambda * sum(beta^2)
+      return(LS)
+    }
+  }
+  else if(penalization == "B")
+  {
+    LMISE <- function(B2, beta, lambda, mu)
+    {
+      B <- vect_to_mat(B2)
+      ### B \in R^{23*23} ### the matrix of the "base changing"
+      LS <- tr( t(C%*%B-D)%*%J%*%(C%*%B-D)) + sum(t(product_MatrixVector(Z,beta))*(product_MatrixVector(Z,beta))) + mu * Discrete_Laplacian(B)
+      return(LS)
+    }
+  }
+  else if(penalization == "full")
+  {
+    LMISE <- function(B2, beta, lambda, mu)
+    {
+      B <- vect_to_mat(B2)
+      ### B \in R^{23*23} ### the matrix of the "base changing"
+      LS <- tr( t(C%*%B-D)%*%J%*%(C%*%B-D)) + sum(t(product_MatrixVector(Z,beta))*(product_MatrixVector(Z,beta))) + lambda * sum(beta^2) + mu * Discrete_Laplacian(B)
+      return(LS)
+    }
+  }
+  else
+  {
+    stop("penalization method not implemented")
   }
   
-  result <- optim(par = c(B2 = c(rnorm(n = 23^2))), beta = rep(0, 12), LMISE)
-  return(result)
+  
+  
+  
+  ### @ method: iteratively minimizing LMISE:
+  ###           first minimize in B, then in beta and go on until a stopping criterion is met
+  l0 = 0
+  B0 = rnorm(n = 23^2)
+  #beta0 <- rnorm(n = 12)
+  beta0 <- rep(0, 12)
+  
+  B0star <- optim(par = B0, beta = beta0, lambda = lambda, mu = mu, LMISE)$par
+  beta0star <- optim(par = beta0, B2 = B0star, lambda = lambda, mu = mu, LMISE)$par
+  
+  lstar = LMISE(B0star, beta0star, lambda, mu)
+                    
+  while(abs(l0 - lstar) >= tol)
+  {
+    l0 = lstar
+    B0star <- optim(par = B0, beta = beta0star, lambda = lambda, mu = mu, LMISE)$par
+    beta0star <- optim(par = beta0, B2 = B0star, lambda = lambda, mu = mu, LMISE)$par
+    
+    lstar = LMISE(B0star, beta0star, lambda, mu)
+  }
+  
+  #result <- optim(par = c(B2 = c(rnorm(n = 23^2))), beta = rnorm(n = 12), LMISE)
+  return( out <- list(Bstar = B0star, betastar = beta0star))
   
   
 }
@@ -250,4 +314,42 @@ make_dataset_similar_day <- function(df, meteo, final_date, weekday)
   
 }
 #########################################################################################
+### @ param: dfr1 is the matrix of the functional regressors, dfr2 is the matrix of the discrete regressors
+###          B is the \hat{B}^star coming from the optimization, as well as beta
+###          This function computes the predicted consumption curves
+predict_SimilarDays <- function(dfr1, dfr2, B, beta)
+{
+  Xreg <- dfr1
+  
+  # disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
+  # discv <- which(colnames(dfr) %in% disc)
+  # Z <- as.data.frame(dfr)[,discv]
+ 
+  Z <- dfr2
+  
+  Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
+  FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
 
+  C <- t(FXreg$coefs)
+  #J <- diag(1, nrow(Y)) ### \in R^{43*43}
+  Base <- get_Basis()
+  
+  #yhat <- matrix(0, nrow = nrow(Xreg), ncol = 24)
+  
+  Dhat <- C%*%B%*%Base
+  
+  return(Dhat)
+  
+}
+##############################################################################################
+vect_to_mat <- function(vec)
+{
+  mat <- matrix(0, 23, 23)
+  s <- seq(1, 23^2, 23)
+  for(i in 1:length(s))
+  {
+    if(s[i] < 507) {mat[,i] <- vec[s[i]:(s[i+1]-1)]}
+    else {mat[,i] <- vec[s[i]:529]}
+  }
+  return(mat)
+}

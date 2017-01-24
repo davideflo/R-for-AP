@@ -12,6 +12,8 @@ library(lubridate)
 library(fda)
 library(data.table)
 library(fda.usc)
+library(dlm)
+library(KFAS)
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
 source("C://Users//utente//Documents//R_code//functions_for_POD_orari.R")
@@ -995,6 +997,25 @@ datacn <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misu
 
 fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
 
+# source("R_code/structSSM.R")
+# 
+# kalmanFilter = function( x )
+# {
+#   t = x
+#   if (class(t) != "ts") {
+#     t = ts(t)
+#   }
+#   ssModel = structSSM( y = t, distribution="Gaussian", transform = "none")
+#   ssFit = fitSSM(inits=c(0.5*log(var(t)), 0.5*log(var(t))), model = ssModel )
+#   kfs = KFS( ssFit$model, smoothing="state", nsim=length(t))
+#   vals = kfs$a
+#   lastVal = vals[ length(vals)]
+#   return(lastVal)
+# }
+# 
+# kalmanFilter(fi6$Tmedia)
+
+
 dfr <- make_dataset_similar_day(datacn, fi6, "2016-12-31", 2)
 sum(dfr$pioggia)
 
@@ -1095,14 +1116,71 @@ head(Xreg)
 layout(1)
 matplot(t(te-Xreg), type = 'l')
 
-res <- LeastSquareOptimizer(dfr)
-Bs <- vect_to_mat(result$par)
+res <- LeastSquareOptimizer(dfr, penalization = "beta", lambda = 5)
+Bs <- vect_to_mat(res$Bstar)
+betas <- res$betastar
 heatmap.2(Bs, Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
 library(plot3D)
 layout(1)
 M <- mesh(seq(1, 23, length.out = 23),seq(1, 23, length.out = 23))
 surf3D(M$x, M$y, Bs)#, colvar = Bs, colkey = FALSE, facets = FALSE)
 
+
+disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
+discv <- which(colnames(dfr) %in% disc)
+Z <- as.data.frame(dfr)[,discv]
+Yhat <- predict_SimilarDays(Xreg, Z, Bs, rep(0,12))
+
+matplot(t(Yhat%*%t(get_Basis())), type = 'l')
+
+Bh <- solve(t(C)%*%C)%*%t(C)%*%D
+
+Yhat2 <- C%*%Bh%*%get_Basis()
+matplot(t(Yhat2), type = "l")
+
+fdiff <- Y - Yhat2
+matplot(t(fdiff),type="l")
+
+library(MASS)
+#inverse_MP <- svd(t(as.matrix(Z)) %*% as.matrix(Z))$v %*% diag(svd(t(as.matrix(Z)) %*% as.matrix(Z))$d)^(-2) %*% svd(t(as.matrix(Z)) %*% as.matrix(Z))$v
+inverse_MP <- ginv(t(as.matrix(Z)) %*% as.matrix(Z))
+rhat <- inverse_MP%*%t(as.matrix(Z))%*%as.matrix(fdiff)
+RH <- as.matrix(Z)%*%rhat
+
+matplot(t(rhat), type = "l", main = "beta_hat for the discrete variables", col = 1:12)
+matplot(t(RH), type = "l")
+
+
+YYH <- Yhat2 + RH
+matplot(t(YYH), type = "l")
+
+
+Epsilon <- as.matrix(Y) - YYH 
+matplot(t(Epsilon), type = "l")
+
+par(mfrow = c(1,1))
+plot(YYH[12,], type = "l", col = "blue")
+lines(unlist(Y[12,]), type = "l", col = "red")
+
+abs(Epsilon)/as.matrix(Y)
+rowMeans(abs(Epsilon)/as.matrix(Y))
+colMeans(abs(Epsilon)/as.matrix(Y))
+max(rowMeans(abs(Epsilon)/as.matrix(Y)))
+max(colMeans(abs(Epsilon)/as.matrix(Y)))
+max(abs(Epsilon)/as.matrix(Y))
+
+# betalist <- vector("list", 2)
+# betabasis1 <- create.constant.basis(c(1, 24))
+# betafd1 <- fd(0, betabasis1)
+# betafdPar1 <- fdPar(betafd1)
+# betalist[[1]] <- betafdPar1
+# nbetabasis <- 23
+# betabasis2 <- create.fourier.basis(c(1, 24), nbetabasis)
+# betafd2 <- fd(matrix(0,nbetabasis,1), betabasis2)
+# 
+# model_lin <- linmod(FXreg, YF, betalist)
+
+###########
 
 
 fitF <- fRegress(YF ~ FXreg, returnMatrix = TRUE)#dfr[,discv])
