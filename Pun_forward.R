@@ -210,8 +210,6 @@ make_DLdataset_pun_forward2 <- function(data)
       thol <-  add_holidays_Date(new_date)
       
       df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol, y, hs, twds, twdys, twks, thol)
-      #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
-      #d_f <- bind_rows(d_f, df2)
       l <- list(data.frame(d_f), df2)
       d_f <- rbindlist(l)
     }
@@ -361,9 +359,65 @@ yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
 
 plot(yhat17, type = 'l', col = 'orange')
 
+real <- read_excel("DB_Borse_Elettriche_PER MI_17.xlsx", sheet = 2)
+
+#################################################################################
+Assembler <- function(real, ph)
+{
+  rows <- which(unlist(is.na(real[,13])))
+  assembled <- data.frame(ph$date, c(unlist(real[1:(rows[1]-1),13]), unlist(ph[rows[1]:8760,2])), c(rep(1, (8760-length(rows))),rep(0,length(rows))))
+  colnames(assembled) <- c("date", "pun", "real")
+  return(assembled)
+}
+#################################################################################
+Redimensioner <- function(ph, mh, from, to)
+{
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  period <- ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to),]
+  M <- nrow(period)
+  phb <- (1/M)*sum(period$pun[period$real == 0])
+  pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[period$real == 1]), 0)
+  pihat <- (mh - pb)/phb
+  period$pun[period$real == 0] <- pihat * period$pun[period$real == 0]
+  
+  d_f <- bind_rows(d_f, ph[which(as.Date(ph$date) < from),])
+  d_f <- bind_rows(d_f, period)
+  d_f <- bind_rows(d_f, ph[which(as.Date(ph$date) > to),])
+  
+  return(d_f)
+}
+#################################################################################
 ### paste existing 2017 pun
+sequence_dates <- seq.POSIXt(as.POSIXct('2017-01-01'), as.POSIXct('2018-01-01'), by = 'hour')
+ph <- data.frame(sequence_dates[1:8760], yhat17)
+colnames(ph) <- c("date", "pun")
+
+PH <- Assembler(real, ph)
+
+mean(PH$pun)
+RPH <- Redimensioner(PH, 70.98, "2017-01-01", "2017-01-31")
+RPH <- Redimensioner(RPH, 56.95, "2017-02-01", "2017-02-28")
+RPH <- Redimensioner(RPH, 49.75, "2017-03-01", "2017-03-31")
+RPH <- Redimensioner(RPH, 44.5, "2017-04-01", "2017-04-30")
+RPH <- Redimensioner(RPH, 41.5, "2017-05-01", "2017-05-31")
+RPH <- Redimensioner(RPH, 43.35, "2017-06-01", "2017-06-30")
+RPH <- Redimensioner(RPH, 52.7, "2017-07-01", "2017-07-31")
+RPH <- Redimensioner(RPH, 43.63, "2017-08-01", "2017-08-31")
+RPH <- Redimensioner(RPH, 45.81, "2017-09-01", "2017-09-30")
+RPH <- Redimensioner(RPH, 44.96, "2017-10-01", "2017-10-31")
+RPH <- Redimensioner(RPH, 51.6, "2017-11-01", "2017-11-30")
+RPH <- Redimensioner(RPH, 49.35, "2017-12-01", "2017-12-31")
+plot(RPH$pun, type = 'l', col = "blue3")
+
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-01-31")])
+mean(PH$pun[as.Date(PH$date) <= as.Date("2017-01-31")])
+mean(RPH$pun)
+
+
 library(xlsx)
-write.xlsx(yhat17, "longterm_pun.xlsx")
+write.xlsx(RPH, "longterm_pun.xlsx")
 ####################################################################
 ###### fit the hourly process with a spline ########
 HourlyProcess <- function(df, finaldate) ### finaldate = today + 2 days ahead if the pun file is updated
