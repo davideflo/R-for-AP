@@ -45,6 +45,13 @@ Expand_in_FBasis <- function(mat)
   return(t(FXreg$coefs)%*%BASIS)
 }
 #########################################################################################
+### @ param: f and g are the matrices of the functional data. Let's pose f := \hat{y}(x) and g:= y(x)
+func_R2 <- function(f, g)
+{
+  R2 <- 1 - mean(apply(f-g, 1, L2Norm)/apply(g - colMeans(g), 1, L2Norm))       #(L2Norm(f - g))/(g - colMeans(g))
+  return(R2)
+}
+#########################################################################################
 ### @PARAM: returns only the basis
 get_Basis <- function()
 {
@@ -134,6 +141,12 @@ get_Table_similar_days2 <- function(df, zona, variable)
   }
   colnames(d_f) <- c("date", "num_day", "num_week", "weekday", "holiday", "change_date", as.character(1:24))
   return(d_f)
+}
+###########################################################################################
+### @ param: f could be either of type g(x) - h(x) or a single function 
+L2Norm <- function(f)
+{
+  return(mean((f)^2))
 }
 ###########################################################################################
 ### @PARAM: dfr is the final dataset from similar day model

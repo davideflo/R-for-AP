@@ -1158,6 +1158,9 @@ matplot(t(YYH), type = "l")
 Epsilon <- as.matrix(Y) - YYH 
 matplot(t(Epsilon), type = "l")
 
+func_R2(YYH, as.matrix(Y))
+
+
 par(mfrow = c(1,1))
 plot(YYH[12,], type = "l", col = "blue")
 lines(unlist(Y[12,]), type = "l", col = "red")
