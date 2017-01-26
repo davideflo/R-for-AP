@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report_214_25-11-2016.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report_214_26-01-2017.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -94,7 +94,7 @@ stok_prog <- (stok_prog/(10*fattore_conversione))
 
 
 ## parte di vendita
-pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 1, colNames = TRUE)
+pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 2, colNames = TRUE)
 listing <- openxlsx::read.xlsx("listing.xlsx", sheet = 1, colNames = TRUE)
 listing <- unlist(listing[[1]])
 head(pm)
@@ -141,8 +141,9 @@ tot_enel <- TOT_m3(TPe,pm)
 #te <- cbind(unlist(TP[index,"prodotto"]),TOT_m3mat(TP[index,],pm))
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
-             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23)
+             "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
+             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel

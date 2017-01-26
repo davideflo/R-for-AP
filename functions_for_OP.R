@@ -90,7 +90,7 @@ month13_in_interval <- function(string_date)
   
   new_date <- ""
   
-  if((fm <= 12) & (fy %in% c(2016, 2017))) 
+  if((fm <= 12) & (fy %in% c(2017, 2018))) 
   {
     bool <- TRUE
     if(fm < 10) new_month <- paste0("0", fm)
@@ -227,7 +227,7 @@ isolate_fixes <- function(ao)
   fix <- data_frame()
   unfixlist <- c()
   # check:
-  ao <- anni_competenza(ao, "01/01/2016")
+  ao <- anni_competenza(ao, "01/01/2017")
   ao <- extract_relevant_val(ao)
   for(i in 1:nrow(ao))
   {
@@ -238,7 +238,7 @@ isolate_fixes <- function(ao)
     cfv <- change_F_to_V2(i, ao)  
     if(cfv[[1]] & let1 == "L" & let6 == "F")
     {
-      min_fin <- take_minimum_date("31/12/2017", df)
+      min_fin <- take_minimum_date("31/12/2018", df)
       new_fix <- ao[i,]
       new_fix["CODICE_PRODOTTO"] <- change_name(prod)
       new_fix["D_VALIDO_DAL_T"] <- cfv[[4]]
@@ -501,8 +501,8 @@ Change_Name <- function(prod, cfv2, cfv3, df, p, sf, sv, cfv4)
   cn <- data_frame()
   
   new_prod_name <- change_name(prod)
-  tkm <- take_maximum_date("01/01/2016",cfv2)
-  min_fin <- take_minimum_date("31/12/2017", df)
+  tkm <- take_maximum_date("01/01/2017",cfv2)
+  min_fin <- take_minimum_date("31/12/2018", df)
   if(as.numeric(split_date(min_fin))[1] == 29 & as.numeric(split_date(min_fin))[2] == 2 & as.numeric(split_date(min_fin))[3] %% 4 != 0)
   {
     min_fin <- paste0("28/02/",split_date(min_fin)[3])
@@ -731,7 +731,7 @@ compute_combinations_DEF <- function(attivi)
 compute_combinations_DEF_val <- function(attivi)
 {
   aggregati <- data_frame()
-  attivi2 <- anni_competenza(attivi, "01/01/2016")
+  attivi2 <- anni_competenza(attivi, "01/01/2017")
   prodotti <- unique(unlist(attivi["CODICE_PRODOTTO"]))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
   no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
@@ -773,8 +773,8 @@ compute_combinations_DEF_val <- function(attivi)
           sv <- sum(as.numeric(data4[rest,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE) + sum(as.numeric(data4[union(nas,zeri),"CONSUMO_CONTR_ANNUO"]), na.rm = TRUE)
           #print(paste("sf:", sf))  
           cfv <- change_F_to_V2(j, data4)
-          print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
-          if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
+          print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
+          if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
           {
             CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
             print(CN)
@@ -784,9 +784,9 @@ compute_combinations_DEF_val <- function(attivi)
           }
           else
           {
-            tkm <- take_maximum_date("01/01/2016",di)
+            tkm <- take_maximum_date("01/01/2017",di)
             ## se non tkm metti di
-            min_fin <- take_minimum_date("31/12/2017", df)
+            min_fin <- take_minimum_date("31/12/2018", df)
             fisso <- data.frame(cbind(prod, tkm, min_fin, as.character(p), as.character(as.numeric(sf))))
             
             colnames(fisso) <- c("prodotto","data inizio", "data fine", "profilo", "consumo")
@@ -1446,7 +1446,8 @@ TOT_m3mat <- function(prod, pm)
 compute_combinations_DEF_val_Agenti <- function(attivi)
 {
   aggregati <- data.frame()
-  attivi2 <- anni_competenza(attivi, "01/01/2016")
+  attivi[is.na(attivi)] <- 0
+  attivi2 <- anni_competenza(attivi, "01/01/2017")
   prodotti <- as.character(unique(unlist(attivi["CODICE_PRODOTTO"])))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
   no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
@@ -1499,8 +1500,8 @@ compute_combinations_DEF_val_Agenti <- function(attivi)
             sv <- sum(as.numeric(data4[rest,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE) + sum(as.numeric(data4[union(nas,zeri),"CONSUMO_CONTR_ANNUO"]), na.rm = TRUE)
             #print(paste("sf:", sf))  
             cfv <- change_F_to_V2(j, data4)
-            print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
-            if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2017"))
+            print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
+            if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
             {
               CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
               CN2 <- data.frame(CN, al)
@@ -1513,9 +1514,9 @@ compute_combinations_DEF_val_Agenti <- function(attivi)
             }
             else
             {
-              tkm <- take_maximum_date("01/01/2016",di)
+              tkm <- take_maximum_date("01/01/2017",di)
               ## se non tkm metti di
-              min_fin <- take_minimum_date("31/12/2017", df)
+              min_fin <- take_minimum_date("31/12/2018", df)
               fisso <- data.frame(cbind(prod, tkm, min_fin, as.character(p), as.character(as.numeric(sf)), al))
               
               colnames(fisso) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
