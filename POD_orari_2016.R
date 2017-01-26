@@ -948,6 +948,29 @@ matplot(t(agg[,7:30]), type = "l", col = color, main = 'fabbisogno totale')
 matplot(t(mno[,7:30]), type = "l", col = color, main = 'consumo non orari')
 matplot(t(-mo[,7:30]), type = "l", col = color, main = 'consumo orari')
 
+##################################################################################
+#### does the max of the curves "correlates" with time and Temerature?
+
+Mt <- apply(mno[,7:30], 1, max)
+L1t <- apply(mno[,7:30], 1, sum)
+fi6$DATA <- seq.Date(as.Date("2015-01-01"), as.Date("2016-12-31"), by = "day")
+Tmed <- fi6$Tmedia[fi6$DATA <= as.Date("2016-11-30")]
+
+POI <- ifelse(lubridate::year(agg$date) == 2015, 16, 17)
+plot(Tmed, Mt, col = color, pch = POI)
+plot(mno$num_day, Mt, col = color, pch = POI)
+
+plot(Tmed, L1t, col = color, pch = POI)
+plot(mno$num_day, L1t, col = color, pch = POI)
+
+
+fitmno <- lm(Mt ~ I(Tmed) + I(Tmed^2) + I(Tmed^3) + I(mno$num_day) + I(mno$num_day^2) + I(mno$num_day^3))
+summary(fitmno)
+plot(fitmno)
+color2 = ifelse(lubridate::year(agg$date) == 2015, "black", "green")
+plot(Mt, fitmno$fitted.values, pch = 16, col = color2)
+abline(a = 0, b = 1)
+##################################################################################
 
 agg2 <- agg[which(agg$weekday == 4),]
 
@@ -987,6 +1010,121 @@ ggplot(data = data.table(fittedG1 = fitG1, residualsG1 = resG1),
   geom_point(size = 1.5) +
   geom_hline(yintercept = 0, color = "red", size = 0.8) +
   geom_smooth() 
+
+######### functional model for similar days with TERNA's data
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2015.xlsx", sheet= 1, colNames=TRUE)
+
+dfr <- make_dataset_similar_day_TERNA(terna, fi6, "2016-11-30", 2, "CNOR", "FABBISOGNO REALE")
+dfr2 <- make_dataset_similar_day_TERNA(terna, fi6, "2016-11-30", 2, "CNOR", "MO [MWh]")
+
+mnof <- data.frame(dfr[,1:6], dfr[,9:32] + dfr2[,41:64], dfr[,33:40])
+
+Zno <- mnof[,c(1:6,31:38)]
+inverse_MP <- ginv(t(as.matrix(Zno)) %*% as.matrix(Zno))
+#inverse_MP <- solve(t(as.matrix(Zno)) %*% as.matrix(Zno))
+yhat <- inverse_MP%*%t(as.matrix(Zno))%*%as.matrix(mnof[,7:30])
+YH <- as.matrix(Zno)%*%yhat
+
+matplot(t(yhat), type = "l", main = "beta_hat(t) non orari")
+matplot(t(YH), type = "l", main = "y_hat(t) non orari")
+
+Eno <- as.matrix(mnof[,7:30]) - YH
+matplot(t(Eno), type = "l", main = "errore sui non orari")
+
+colMeans(Eno)
+rowMeans(Eno)
+
+func_R2(YH, as.matrix(mnof[,7:30]))
+
+##### cross correlation between non orari and orari
+NO <- as.matrix(mnof[,7:30])
+O <- (-1)*as.matrix(dfr2[,41:64])
+
+Fb <-  create.fourier.basis(c(1,24), nbasis=23)
+NOb <- smooth.basis(1:24, t(NO), Fbasis)$fd
+Ob <- smooth.basis(1:24, t(O), Fbasis)$fd
+
+
+ccm <- cor.fd(1:24, NOb, 1:24, Ob)
+library(plot3D)
+m3 <- mesh(seq(1, 24, length.out = 24),seq(1, 24, length.out = 24))
+surf3D(m3$x, m3$y, ccm)#, colvar = Bs, colkey = FALSE, facets = FALSE)
+
+#### non orari regressed on orari
+
+Dno <- t(NOb$coefs)
+Cno <- t(Ob$coefs)
+
+Bno <- solve(t(Cno)%*%Cno)%*%t(Cno)%*%Dno
+
+Yhatno <- Cno%*%Bno%*%get_Basis()
+matplot(t(Yhatno), type = "l", main = "non orari ~ orari")
+
+fdiff <- NO - Yhatno
+matplot(t(fdiff),type="l")
+
+library(MASS)
+inverse_MP <- ginv(t(as.matrix(Zno)) %*% as.matrix(Zno))
+rhat <- inverse_MP%*%t(as.matrix(Zno))%*%as.matrix(fdiff)
+RH <- as.matrix(Zno)%*%rhat
+
+yhn <- Yhatno + RH
+matplot(t(yhn), type = "l")
+
+
+Xreg <- dfr[,9:32]
+Y <- dfr[,41:64]
+disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
+discv <- which(colnames(dfr) %in% disc)
+Z <- as.data.frame(dfr)[,discv]
+
+matplot(t(Y), type = "l")
+
+Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
+Sbasis <-  create.bspline.basis(c(1,24), nbasis=23, norder = 5)
+
+FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
+YF <- smooth.basis(1:24, t(Y), Fbasis)$fd
+
+D <- t(YF$coefs)
+C <- t(FXreg$coefs)
+
+Bh <- solve(t(C)%*%C)%*%t(C)%*%D
+
+Yhat2 <- C%*%Bh%*%get_Basis()
+matplot(t(Yhat2), type = "l")
+
+fdiff <- Y - Yhat2
+matplot(t(fdiff),type="l")
+
+library(MASS)
+inverse_MP <- ginv(t(as.matrix(Z)) %*% as.matrix(Z))
+rhat <- inverse_MP%*%t(as.matrix(Z))%*%as.matrix(fdiff)
+RH <- as.matrix(Z)%*%rhat
+
+matplot(t(rhat), type = "l", main = "beta_hat for the discrete variables", col = 1:12)
+matplot(t(RH), type = "l")
+
+
+YYH <- Yhat2 + RH
+matplot(t(YYH), type = "l")
+
+
+Epsilon <- as.matrix(Y) - YYH 
+matplot(t(Epsilon), type = "l")
+plot(colMeans(Epsilon), type = "l", lwd = 2, ylim = c(min(Epsilon)-1, max(Epsilon)+1))
+lines(apply(Epsilon, 2, quantile, probs = 0.975), type = "l", lwd = 2, ylim = c(min(Epsilon)-1, max(Epsilon)+1), col = "red")
+lines(apply(Epsilon, 2, quantile, probs = 0.025), type = "l", lwd = 2, ylim = c(min(Epsilon)-1, max(Epsilon)+1), col = "blue")
+
+func_R2(YYH, as.matrix(Y))
+
+rowMeans(abs(Epsilon)/Y)
+colMeans(abs(Epsilon)/Y)
+apply(abs(Epsilon)/Y, 1, max)
+apply(abs(Epsilon)/Y, 2, max)
+max(apply(abs(Epsilon)/Y, 1, max))
+max(apply(abs(Epsilon)/Y, 2, max))
 
 ##############################################################################################################
 #### functional model for similar days
