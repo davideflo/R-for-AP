@@ -1388,4 +1388,106 @@ plot(Xs)
 fitS <- fRegress(YS ~ Xs)#dfr[,discv])
 summary(fitS)
 
+#####################
+#####################
+#### 
 
+source("R_code/GAMM_model.R")
+
+datacn <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+
+dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 4)
+
+gm12 <- get_GAMM_model(datacn, fi6, "2016-12-31", 4)
+
+plot(gm12$gam, scale = 0)
+summary(gm12$gam)
+
+plot(dfg$y, type = "l", lwd = 2, col = "red")
+lines(gm12$gam$fitted.values, type = "l", lwd = 2, col = "skyblue2")
+
+hist(gm12$gam$residuals, breaks = 20)
+qqnorm(gm12$gam$residuals); qqline(gm12$gam$residuals, col = 2)
+fitted_vs_residuals(gm12$gam$fitted.values, gm12$gam$residuals)
+shapiro.test(gm12$gam$residuals)
+test_distribution <- rt(n = length(gm12$gam$residuals), df = length(gm12$gam$residuals) - 1)
+hist(test_distribution, breaks = 20)
+ks.test(gm12$gam$residuals, test_distribution, alternative = "two.sided")  
+  
+
+yhm <- matrix(0, nrow = nrow(dfg), ncol = 24)
+for(H in 1:24)
+{
+  print(paste("sto facendo l'ora ", H))
+  gmh <- tryCatch(
+    {
+      get_GAMM_model(datacn, fi6, "2016-12-31", H)$gam$fitted.values
+    },
+    error = function(cond)
+    {
+      print("switch to linear model")
+      dfgloc <-  make_dataset_GAMM_model(datacn, fi6, "2016-12-31", H)
+      write.table(H, "missed_gamm.txt", append = TRUE)
+      return(lm(y ~ ., data = dfgloc)$fitted.values)
+    }
+  )
+
+  yhm[,H] <- gmh
+  
+  print(paste("ho finito l'ora", H))
+}
+
+yhm <- matrix(0, nrow = nrow(dfg), ncol = 24)
+for(H in 1:24)
+{
+  print(paste("sto facendo l'ora ", H))
+  gmh <- get_GAMM_model(datacn, fi6, "2016-12-31", H)
+  write.table(H, "summary_gamm.txt", append = TRUE)
+  #write.table(summary(gmh$gam), "summary_gamm.txt", append = TRUE)
+  yhm[,H] <- gmh$gam$fitted.values
+  
+  print(paste("ho finito l'ora", H))
+}
+
+
+matplot(t(yhm), type = "l")
+matplot(t(dfg[,9:32]), type = "l")
+  
+Errors <- dfg[2:nrow(dfg),9:32] - yhm[(1:nrow(yhm)-1),]
+matplot(t(Errors), type = "l")
+func_R2(yhm[(1:nrow(yhm)-1),], dfg[2:nrow(dfg),9:32])
+
+E <- abs(Errors)/dfg[2:nrow(dfg),9:32]
+E[86,3] <- 0
+
+colMeans(E, na.rm = TRUE)
+rowMeans(E, na.rm = TRUE)
+
+Errors$regr3
+
+
+dfg4 <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 18)
+m4 <- eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
+                             regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
+                             regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
+                             regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
+                             holiday +
+                             pioggia +
+                             vento + 
+                             s(Tmedia, bs = "cc") +
+                             tholiday +
+                             tpioggia +
+                             tvento + 
+                             s(tTmedia, bs = "cc") +
+                             s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 7) +
+                             s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 7),
+                             data = dfg4, niterPQL = 500)), dfg4)
+
+epsilon <- (dfg4$y - m4$gam$fitted.values)/dfg4$y
+plot(epsilon, type = "o")
+hist(epsilon, breaks = 20)
+mean(epsilon)
+sd(epsilon)
+shapiro.test(epsilon)

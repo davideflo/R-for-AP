@@ -43,11 +43,8 @@ get_rain <- function(meteo, data)
 #################################################################################
 get_rain_num <- function(meteo, data)
 {
-  x <- unlist(meteo[which(as.Date(meteo$DATA, origin = "1899-12-31") == as.Date(data)),"PIOGGIA"])
-  if(x == 1)
-    return(1)
-  else
-    return(0)
+  x <- unlist(meteo[which(as.Date(meteo$DATA, origin = "1899-12-30") == as.Date(data)),"PIOGGIA"])
+  return(x)
 }
 ##################################################################################
 ConvertDate <- function(df)
