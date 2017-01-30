@@ -938,6 +938,8 @@ heatmap.2(cor(daya1[,7:30]), Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
 #### TERNA's data
 
 terna <- read_excel("C:\\Users\\utente\\Documents\\misure\\aggregato_sbilanciamento.xlsx")
+#dttm <- as.POSIXct( strptime(terna$`DATA RIFERIMENTO CORRISPETTIVO`, '%d/%m/%Y %H:%M', tz = "CET"))
+#terna$`DATA RIFERIMENTO CORRISPETTIVO`  <- dttm
 
 agg <- get_Table_similar_days2(terna, "CNOR", "FABBISOGNO REALE")
 mo <- get_Table_similar_days2(terna, "CNOR", "MO [MWh]")
@@ -948,8 +950,65 @@ matplot(t(agg[,7:30]), type = "l", col = color, main = 'fabbisogno totale')
 matplot(t(mno[,7:30]), type = "l", col = color, main = 'consumo non orari')
 matplot(t(-mo[,7:30]), type = "l", col = color, main = 'consumo orari')
 
+############ need to find correlation between hourly and non-hourly measures
+for(h in 1:24)
+{
+  plot((-1)*unlist(mo[,6+h]), unlist(mno[,h +6]), pch = 16, col = h, main = paste("scatterplot hour ",h))
+}
+### 7 is Saturday and 1 is Sunday
+weekend <- which(mno$weekday %in% c(1,7))
+weekend2 <- which(mo$weekday %in% c(1,7))
+
+weekend - weekend2
+
+omno <- mno[-weekend,7:30]
+omo <- (-1)*mo[-weekend,7:30]
+omnowe <- mno[weekend,7:30]
+omowe <- (-1)*mo[weekend,7:30]
+
+
+fit <- lm(rowMeans(omno) ~ rowMeans(omo) + I(rowMeans(omo)^2))
+summary(fit)
+fitwe <- lm(rowMeans(omnowe) ~ rowMeans(omowe))
+summary(fitwe)
+
+
+plot(rowMeans(omo), rowMeans(omno), xlim=c(0,8), ylim = c(0,5), pch = 16, col = "blue")
+abline(a = fit$coefficients[1], b = fit$coefficients[2], col = "blue", lwd = 2)
+points(rowMeans(omowe), rowMeans(omnowe), pch = 16, col = "red")
+abline(a = fitwe$coefficients[1], b = fitwe$coefficients[2], col = "red", lwd = 2)
+lines(seq(0,8, length.out = 1000), fit$coefficients[1] + fit$coefficients[2]*seq(0,8, length.out = 1000) 
+      + fit$coefficients[3]*seq(0,8, length.out = 1000)^2, type = "l", col = "green",lwd = 2)
+
+mno_hat <- fit$coefficients[1] + fit$coefficients[2]*rowMeans(omo) + fit$coefficients[3]*rowMeans(omo)^2
+mnowe_hat <- fitwe$coefficients[1] + fitwe$coefficients[2]*rowMeans(omowe)
+
+epsilon_hat <- rowMeans(omno) - mno_hat
+epsilonwe_hat <- rowMeans(omnowe) - mnowe_hat
+
+### pink = 2015 -- green = 2016
+plot(mno$num_day[which(mno$weekday %in% c(2,3,4,5,6))],epsilon_hat, pch = 16,
+     col = c(rep("pink",261),rep("green",239)))
+plot(mno$num_day[which(mno$weekday %in% c(1,7))], epsilonwe_hat, pch = 16,
+     col = c(rep("pink",104),rep("green",96)))
+
+tsmno <- c()
+tsfabb <- c()
+for(i in 1:nrow(mno))
+{
+  tsmno <- c(tsmno, mean(unlist(mno[i,7:30]))) 
+}
+for(i in 1:nrow(agg))
+{
+  tsfabb <- c(tsfabb, mean(unlist(agg[i, 7:30])))
+}
+plot(tsmno[1:365], type="l", col = "red")
+lines(tsmno[366:length(tsmno)], type="l", col = "grey")
+plot(tsfabb[1:365], type="l", col = "red")
+lines(tsfabb[366:length(tsfabb)], type="l", col = "grey")
+
 ##################################################################################
-#### does the max of the curves "correlates" with time and Temerature?
+#### does the max of the curves "correlates" with time and Temperature?
 
 Mt <- apply(mno[,7:30], 1, max)
 L1t <- apply(mno[,7:30], 1, sum)
@@ -1042,8 +1101,8 @@ NO <- as.matrix(mnof[,7:30])
 O <- (-1)*as.matrix(dfr2[,41:64])
 
 Fb <-  create.fourier.basis(c(1,24), nbasis=23)
-NOb <- smooth.basis(1:24, t(NO), Fbasis)$fd
-Ob <- smooth.basis(1:24, t(O), Fbasis)$fd
+NOb <- smooth.basis(1:24, t(NO), Fb)$fd
+Ob <- smooth.basis(1:24, t(O), Fb)$fd
 
 
 ccm <- cor.fd(1:24, NOb, 1:24, Ob)
