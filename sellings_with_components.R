@@ -22,7 +22,7 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
 {
   #total <- rep(0, nrow(vendite))
   total_matrix <- matrix(0, nrow = 10, ncol = 24)
-  months <- c(paste0("01/","0",1:9,"/",2016), paste0("01/",10:12,"/",2016), paste0("01/","0",1:9,"/",2017), paste0("01/",10:12,"/",2017)) 
+  months <- c(paste0("01/","0",1:9,"/",2017), paste0("01/",10:12,"/",2017), paste0("01/","0",1:9,"/",2018), paste0("01/",10:12,"/",2018)) 
   
   for(m in months)
   {

@@ -732,17 +732,17 @@ compute_combinations_DEF_val <- function(attivi)
 {
   aggregati <- data_frame()
   attivi2 <- anni_competenza(attivi, "01/01/2017")
-  prodotti <- unique(unlist(attivi["CODICE_PRODOTTO"]))
+  prodotti <- unique(unlist(attivi2["CODICE_PRODOTTO"]))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
-  no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
-  tot_consumo <- sum(as.numeric(attivi[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
+  no_distr <- union(which(is.na(attivi2["CONSUMO_DISTRIBUTORE"])),which(attivi2["CONSUMO_DISTRIBUTORE"] == "0"))
+  tot_consumo <- sum(as.numeric(attivi2[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi2[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
   check <- 0
   for(prod in prodotti)
   {
     print(prod)
     aggregati2 <- data_frame()
-    rows <- which(attivi["CODICE_PRODOTTO"] == prod)
-    tabella2 <- attivi[rows,]
+    rows <- which(attivi2["CODICE_PRODOTTO"] == prod)
+    tabella2 <- attivi2[rows,]
     
     data_inizio <- unique(unlist(tabella2["D_VALIDO_DAL_T"]))
     for(di in data_inizio)
@@ -778,7 +778,15 @@ compute_combinations_DEF_val <- function(attivi)
           {
             CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
             print(CN)
-            aggregati2 <- bind_rows(aggregati2, CN)
+            if(compare_dates(cfv[[3]],"01/01/2017"))
+            {
+              aggregati2 <- bind_rows(aggregati2, CN)
+            }
+            else
+            {
+              aggregati2 <- bind_rows(aggregati2, CN[2,])
+            }
+#            aggregati2 <- bind_rows(aggregati2, CN)
             colnames(aggregati2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo")
             if(!is.na(sf)) {check <- check + sf}
           }
@@ -1448,17 +1456,17 @@ compute_combinations_DEF_val_Agenti <- function(attivi)
   aggregati <- data.frame()
   attivi[is.na(attivi)] <- 0
   attivi2 <- anni_competenza(attivi, "01/01/2017")
-  prodotti <- as.character(unique(unlist(attivi["CODICE_PRODOTTO"])))
+  prodotti <- as.character(unique(unlist(attivi2["CODICE_PRODOTTO"])))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
-  no_distr <- union(which(is.na(attivi["CONSUMO_DISTRIBUTORE"])),which(attivi["CONSUMO_DISTRIBUTORE"] == "0"))
-  tot_consumo <- sum(as.numeric(attivi[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
+  no_distr <- union(which(is.na(attivi2["CONSUMO_DISTRIBUTORE"])),which(attivi2["CONSUMO_DISTRIBUTORE"] == "0"))
+  tot_consumo <- sum(as.numeric(attivi2[no_distr,"CONSUMO_CONTR_ANNUO"], na.rm = TRUE)) + sum(as.numeric(attivi2[-no_distr,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE)
   check <- 0
   for(prod in prodotti)
   {
     print(prod)
     aggregati2 <- data_frame()
-    rows <- which(attivi["CODICE_PRODOTTO"] == prod)
-    Tabella2 <- attivi[rows,]
+    rows <- which(attivi2["CODICE_PRODOTTO"] == prod)
+    Tabella2 <- attivi2[rows,]
     
     agentiloc <- as.character(unique(unlist(Tabella2["AGENZIA"])))
     
@@ -1504,7 +1512,14 @@ compute_combinations_DEF_val_Agenti <- function(attivi)
             if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
             {
               CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
-              CN2 <- data.frame(CN, al)
+              if(compare_dates(cfv[[3]],"01/01/2017"))
+              {
+                CN2 <- data.frame(CN, al)
+              }
+              else
+              {
+                CN2 <- data.frame(CN[2,],al)
+              }
               colnames(CN2) <- c("prodotto","data inizio", "data fine", "profilo", "consumo", "agenzia")
               print(CN2)
               #aggregati2 <- bind_rows(aggregati2, CN2)
