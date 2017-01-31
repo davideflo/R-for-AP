@@ -16,10 +16,11 @@ fitted_vs_residuals <- function(fitted, residuals)
   labs(title = "fitted vs residuals")
 }
 #######################################################################
-###
+### @ brief: function for the week days
 get_GAMM_model <- function(df, meteo, final_date, H)
 {
   dfg <- make_dataset_GAMM_model(df, meteo, final_date, H)
+  dfg <- as.data.frame(dfg)[which(dfg$weekday %in% 2:6 & dfg$tholiday == 0),]
   
   ctrl <- list(niterEM = 100, msVerbose = TRUE, optimMethod="L-BFGS-B")
   
@@ -34,31 +35,98 @@ get_GAMM_model <- function(df, meteo, final_date, H)
                                  pioggia +
                                  vento + 
                                  s(Tmedia, bs = "cc") +
-                                 tholiday +
                                  tpioggia +
                                  tvento + 
                                  s(tTmedia, bs = "cc") +
-                                 s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 7) +
-                                 s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 7), data = dfg,
+                                 s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 5) +
+                                 s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 5), data = dfg,
                                  correlation = corARMA(form = ~ 1|num_day, p = 2), control = ctrl, niterPQL = 500)), dfg)
     }, error = function(cond)
     {
       print("switch to simpler model")
-      m4 <- eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
-                                   regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
-                                   regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
-                                   regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
-                                   holiday +
-                                   pioggia +
-                                   vento + 
-                                   s(Tmedia, bs = "cc") +
-                                   tholiday +
-                                   tpioggia +
-                                   tvento + 
-                                   s(tTmedia, bs = "cc") +
-                                   s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 7) +
-                                   s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 7),
-                                   data = dfg, niterPQL = 500)), dfg)
+      m4 <- tryCatch(
+        {
+          eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
+                                 regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
+                                 regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
+                                 regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
+                                 holiday +
+                                 pioggia +
+                                 vento + 
+                                 s(Tmedia, bs = "cc") +
+                                 tpioggia +
+                                 tvento + 
+                                 s(tTmedia, bs = "cc") +
+                                 s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 5) +
+                                 s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 5),
+                                 data = dfg, niterPQL = 500)), dfg)
+        }, error = function(cond)
+        {
+          print("2nd switch to linear model")
+          m5 <- lm(y ~ .,data = dfg)
+          return(m5)
+        }
+      )
+      return(m4)
+    }
+  )
+  
+  return(m3)
+  
+  
+}
+#######################################################################
+### @ brief: function for the weekends and holidays
+get_GAMM_model_hol <- function(df, meteo, final_date, H)
+{
+  dfg <- make_dataset_GAMM_model(df, meteo, final_date, H)
+  dfg <- as.data.frame(dfg)[which(dfg$weekday %in% c(1,7) | dfg$tholiday == 1),]
+  
+  ctrl <- list(niterEM = 100, msVerbose = TRUE, optimMethod="L-BFGS-B")
+  
+  
+  m3 <- tryCatch(
+    {
+      eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
+                             regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
+                             regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
+                             regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
+                             holiday +
+                             pioggia +
+                             vento + 
+                             s(Tmedia, bs = "cc") +
+                             tpioggia +
+                             tvento + 
+                             s(tTmedia, bs = "cc") +
+                             s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 2) +
+                             s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 2), data = dfg,
+                           correlation = corARMA(form = ~ 1|num_day, p = 2), control = ctrl, niterPQL = 500)), dfg)
+    }, error = function(cond)
+    {
+      print("switch to simpler model")
+      m4 <- tryCatch(
+        {
+          eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
+                                 regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
+                                 regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
+                                 regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
+                                 holiday +
+                                 pioggia +
+                                 vento + 
+                                 s(Tmedia, bs = "cc") +
+                                 tpioggia +
+                                 tvento + 
+                                 s(tTmedia, bs = "cc") +
+                                 s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 2) +
+                                 s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 2),
+                               data = dfg, niterPQL = 500)), dfg)
+        }, error = function(cond)
+        {
+          print("2nd switch to linear model")
+          m5 <- lm(y ~ .,data = dfg)
+          return(m5)
+        }
+      )
       return(m4)
     }
   )

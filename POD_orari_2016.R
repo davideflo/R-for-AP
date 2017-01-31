@@ -936,6 +936,7 @@ max(abs(fit3$residuals))
 heatmap.2(cor(daya1[,7:30]), Rowv = FALSE, Colv = FALSE, dendrogram = 'none')
 
 #### TERNA's data
+source("R_code/similar_days_model.R")
 
 terna <- read_excel("C:\\Users\\utente\\Documents\\misure\\aggregato_sbilanciamento.xlsx")
 #dttm <- as.POSIXct( strptime(terna$`DATA RIFERIMENTO CORRISPETTIVO`, '%d/%m/%Y %H:%M', tz = "CET"))
@@ -1006,6 +1007,98 @@ plot(tsmno[1:365], type="l", col = "red")
 lines(tsmno[366:length(tsmno)], type="l", col = "grey")
 plot(tsfabb[1:365], type="l", col = "red")
 lines(tsfabb[366:length(tsfabb)], type="l", col = "grey")
+
+### is there a possible link between the number of non-hourly pods and the mean monthly consumption (or the trend of the series)?
+count <- read_excel("count_of_pod.xlsx")
+count$date <- seq.Date(as.Date("2015-01-01"), as.Date("2017-02-01"), by = "month")
+
+plot(mno.ts <- stl(ts(tsmno, frequency = 24), s.window = "per"))
+trend <- mno.ts$time.series[,2]
+#plot(trend, type = "l")
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2015.xlsx", sheet= 1, colNames=TRUE)
+fi6$DATA <- seq.Date(as.Date("2015-01-01"), as.Date("2016-12-31"), by = "day")
+
+trend.m <- c()
+TMAX <- c()
+for(d in 1:nrow(count))
+{
+  d2 <- as.Date(unlist(count[d,1]))
+  y <- lubridate::year(d2)
+  m <- lubridate::month(d2)
+  tot_days <- lubridate::days_in_month(d2)
+  trend.m <- c(trend.m, mean(unlist(trend[1:tot_days])))
+  trend <- trend[(tot_days+1):length(trend)]
+  TMAX <- c(TMAX,mean(unlist(fi6[which(lubridate::year(fi6$DATA) == y & lubridate::month(fi6$DATA) == m),"Tmax"]))) 
+}
+trend.m <- trend.m[1:23]
+TMAX <- TMAX[1:23]
+#plot(trend.m, type="l")
+pairs(data.frame(trend.m,count$count[1:23], TMAX))
+#plot(TMAX,trend.m, pch = 16)
+#plot(cos((2*pi/12)*TMAX),trend.m, pch = 16, col = "red")
+ggplot(data = data.table(TMAX = TMAX, trend = trend.m),
+       aes(TMAX, trend)) +
+  geom_point(size = 1.5) +
+  geom_smooth() +
+  labs(title = "monthly trend vs monthly TMAX")
+
+
+fitn <- lm(trend.m ~ count$count[1:23] + I(TMAX) + I(TMAX^2) + I(TMAX^3))
+summary(fitn)
+plot(fitn)
+fitn2 <- lm(trend.m ~ count$count[1:23] + log(TMAX))
+summary(fitn2)
+plot(fitn2)
+fitn3 <- lm(trend.m ~ count$count[1:23] + I(TMAX^2))
+summary(fitn3)
+plot(fitn3)
+fitn4 <- lm(trend.m ~ count$count[1:23] + I(TMAX^3))
+summary(fitn4)
+plot(fitn4)
+fitn5 <- lm(trend.m ~ count$count[1:23] + exp(TMAX))
+summary(fitn5)
+plot(fitn5)
+fitn6 <- lm(trend.m ~ diff(count$count[1:24], lag = 1) + I(TMAX) + I(TMAX^2) + I(TMAX^3))
+summary(fitn6)
+plot(fitn6)
+
+
+anova(fitn, fitn2, fitn3, fitn4, fitn5)
+anova(fitn, fitn5)
+
+fitn$residuals
+fitn4$residuals
+fitn5$residuals
+
+library(plot3D)
+grid1 <- seq(min(count$count[1:23]), max(count$count[1:23]), length.out = 200)
+grid2 <- seq(10, 35, length.out = 200)
+m3 <- mesh(grid1,grid2)
+z <- matrix(0, 200, 200)
+z4 <- matrix(0, 200, 200)
+z5 <- matrix(0, 200, 200)
+for(i in 1:200)
+{
+  for(j in 1:200)
+  {
+    z[i,j] <- fitn$coefficients[1] +  fitn$coefficients[2]*grid1[i] + 
+      fitn$coefficients[3]*grid2[j] + fitn$coefficients[4]*grid2[j]^2 + fitn$coefficients[5]*grid2[j]^3
+    z4[i,j] <- fitn4$coefficients[1] +  fitn4$coefficients[2]*grid1[i] + fitn4$coefficients[3]*grid2[j]^3
+    z5[i,j] <- fitn5$coefficients[1] +  fitn5$coefficients[2]*grid1[i] + fitn5$coefficients[3]*exp(grid2[j])
+  }
+}
+
+surf3D(m3$x, m3$y, z)#, colvar = Bs, colkey = FALSE, facets = FALSE)
+surf3D(m3$x, m3$y, z4)#, colvar = Bs, colkey = FALSE, facets = FALSE)
+surf3D(m3$x, m3$y, z5)#, colvar = Bs, colkey = FALSE, facets = FALSE)
+points3D(count$count[1:23], exp(TMAX),trend.m, pch = 16)
+
+par(mfrow = c(3,1))
+plot(trend.m, type = "l")
+plot(TMAX, type = "l")
+plot(count$count[1:23], type = "l")
+par(mfrow = c(1,1))
 
 ##################################################################################
 #### does the max of the curves "correlates" with time and Temperature?
@@ -1475,8 +1568,6 @@ test_distribution <- rt(n = length(gm12$gam$residuals), df = length(gm12$gam$res
 hist(test_distribution, breaks = 20)
 ks.test(gm12$gam$residuals, test_distribution, alternative = "two.sided")  
   
-
-yhm <- matrix(0, nrow = nrow(dfg), ncol = 24)
 for(H in 1:24)
 {
   print(paste("sto facendo l'ora ", H))
@@ -1498,25 +1589,62 @@ for(H in 1:24)
   print(paste("ho finito l'ora", H))
 }
 
-yhm <- matrix(0, nrow = nrow(dfg), ncol = 24)
+dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 4)
+dfgN <- as.data.frame(dfg)[which(dfg$weekday %in% 2:6 & dfg$tholiday == 0),]
+dfgH <- as.data.frame(dfg)[which(dfg$weekday %in% c(1,7) | dfg$tholiday == 1),]
+
+
+yhmN <- matrix(0, nrow = nrow(dfgN), ncol = 24)
+yhmH <- matrix(0, nrow = nrow(dfgH), ncol = 24)
 for(H in 1:24)
 {
   print(paste("sto facendo l'ora ", H))
   gmh <- get_GAMM_model(datacn, fi6, "2016-12-31", H)
-  write.table(H, "summary_gamm.txt", append = TRUE)
-  #write.table(summary(gmh$gam), "summary_gamm.txt", append = TRUE)
-  yhm[,H] <- gmh$gam$fitted.values
-  
+  #write.table(H, "summary_gamm.txt", append = TRUE)
+  sink("summary_gamm.txt", append = TRUE)
+  summary(gmh$gam)
+  sink()
+  if("gam" %in% as.character(summary(gmh)))
+  {
+    yhmN[,H] <- gmh$gam$fitted.values
+  }
+  else
+  {
+    yhmN[,H] <- gmh$fitted.values
+  }
+  print(paste("ho finito l'ora", H))
+}
+for(H in 1:24)
+{
+  print(paste("sto facendo l'ora ", H))
+  gmh <- get_GAMM_model_hol(datacn, fi6, "2016-12-31", H)
+  #write.table(H, "summary_gamm.txt", append = TRUE)
+  sink("summary_gamm.txt", append = TRUE)
+  summary(gmh$gam)
+  sink()
+  if("gam" %in% as.character(summary(gmh)))
+  {
+    yhmH[,H] <- gmh$gam$fitted.values
+  }
+  else
+  {
+    yhmH[,H] <- gmh$fitted.values
+  }
   print(paste("ho finito l'ora", H))
 }
 
 
-matplot(t(yhm), type = "l")
-matplot(t(dfg[,9:32]), type = "l")
+matplot(t(yhmN), type = "l")
+matplot(t(dfgN[,9:32]), type = "l")
+matplot(t(yhmH), type = "l")
+matplot(t(dfgH[,9:32]), type = "l")
+
   
 Errors <- dfg[2:nrow(dfg),9:32] - yhm[(1:nrow(yhm)-1),]
 matplot(t(Errors), type = "l")
-func_R2(yhm[(1:nrow(yhm)-1),], dfg[2:nrow(dfg),9:32])
+func_R2(yhmN[(1:nrow(yhmN)-1),], dfgN[2:nrow(dfgN),9:32])
+func_R2(yhmH[(1:nrow(yhmH)-1),], dfgN[2:nrow(dfgH),9:32])
+
 
 E <- abs(Errors)/dfg[2:nrow(dfg),9:32]
 E[86,3] <- 0
@@ -1524,6 +1652,7 @@ E[86,3] <- 0
 colMeans(E, na.rm = TRUE)
 rowMeans(E, na.rm = TRUE)
 
+hist(rowMeans(Errors, na.rm = TRUE), breaks = 20)
 Errors$regr3
 
 
