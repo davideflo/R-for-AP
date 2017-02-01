@@ -21,6 +21,38 @@ Aggregator <- function(df)
   return(d_f)
 }
 ##################################################################################
+### @ param: data from Terna
+Aggregator_Terna <- function(df, zona, type_of_measure)
+{
+  tdf <- df[which(df$`CODICE RUC` == paste0("UC_DP1608_", zona)),]
+  tdf$`DATA RIFERIMENTO CORRISPETTIVO` <- strptime(tdf$`DATA RIFERIMENTO CORRISPETTIVO`, '%d/%m/%Y %H:%M')
+  days <- unique(as.Date(tdf$`DATA RIFERIMENTO CORRISPETTIVO`))
+  d_f <- data_frame()
+  for(d in days)
+  {
+    ad <- which(as.Date(tdf$`DATA RIFERIMENTO CORRISPETTIVO`) == d)
+    atdf <- tdf[ad, ]
+    
+    vec <- rep(0, 24)
+    
+    for(h in 0:23)
+    {
+      j <- which(lubridate::hour(atdf$`DATA RIFERIMENTO CORRISPETTIVO`) == h)
+      
+      if(length(j) == 1) vec[h+1] <- unlist(atdf[j,type_of_measure])
+      else if(length(j) > 1) vec[h+1] <- sum(unlist(atdf[j,type_of_measure]), na.rm = TRUE)
+      else next
+    }
+    df2 <- data.frame(as.Date(d), t(vec))
+    l <- list(d_f, df2)
+    
+    d_f <- rbindlist(l)
+  }
+  colnames(d_f) <- c("date", as.character(1:24))
+  
+  return(d_f)
+}
+##################################################################################
 daylight_saving <- function(vd)
 {
   change <- 0
@@ -45,6 +77,44 @@ get_rain_num <- function(meteo, data)
 {
   x <- unlist(meteo[which(as.Date(meteo$DATA, origin = "1899-12-30") == as.Date(data)),"PIOGGIA"])
   return(x)
+}
+##################################################################################
+### @param: data from the hourly measurements
+Identify_Pivots <- function(df, p)
+{
+  pods <- unique(df$Pod)
+  days <- seq.Date(as.Date("2016-01-01"), as.Date("2016-11-30"), by = "day")
+  mat <- matrix(0, nrow = length(days), ncol = length(pods))
+  
+  for(pod in pods)
+  {
+    dfp <- df[which(df$Pod == pod),]
+    j <- which(pods == pod)
+    dc <- unlist(rowSums(dfp[,3:26], na.rm = TRUE)/1000)
+    mat[1:length(dc),j] <- dc 
+  }
+  colnames(mat) <- pods 
+  tot_con <- colSums(mat)
+  ordered_tot_con <- sort(tot_con)
+  ordered_pods <- pods[order(tot_con)]
+  STC <- sum(tot_con)
+  
+  pivot <- c()
+  percentage_cumulative_cons <- 0
+  
+  for(i in 1:length(ordered_tot_con))
+  {
+    percentage_cumulative_cons <- percentage_cumulative_cons + ordered_tot_con[i]/STC
+    pivot <- c(pivot, ordered_pods[i])
+    if(percentage_cumulative_cons >= p)
+    {
+      break
+    }
+  }
+  
+  d_f <- data.frame(days, mat)
+  colnames(d_f) <- c("day", pods)
+  return(list(d.f = d_f, pivotali = pivot, perc = percentage_cumulative_cons))
 }
 ##################################################################################
 ConvertDate <- function(df)
