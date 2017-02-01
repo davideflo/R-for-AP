@@ -20,7 +20,7 @@ fitted_vs_residuals <- function(fitted, residuals)
 get_GAMM_model <- function(df, meteo, final_date, H)
 {
   dfg <- make_dataset_GAMM_model(df, meteo, final_date, H)
-  dfg <- as.data.frame(dfg)[which(dfg$weekday %in% 2:6 & dfg$tholiday == 0),]
+  dfg <- as.data.frame(dfg)[which(dfg$tweekday %in% 2:6 & dfg$tholiday == 0),]
   
   ctrl <- list(niterEM = 100, msVerbose = TRUE, optimMethod="L-BFGS-B")
   
@@ -80,7 +80,7 @@ get_GAMM_model <- function(df, meteo, final_date, H)
 get_GAMM_model_hol <- function(df, meteo, final_date, H)
 {
   dfg <- make_dataset_GAMM_model(df, meteo, final_date, H)
-  dfg <- as.data.frame(dfg)[which(dfg$weekday %in% c(1,7) | dfg$tholiday == 1),]
+  dfg <- as.data.frame(dfg)[which(dfg$tweekday %in% c(1,7) | dfg$tholiday == 1),]
   
   ctrl <- list(niterEM = 100, msVerbose = TRUE, optimMethod="L-BFGS-B")
   
@@ -147,7 +147,7 @@ make_dataset_GAMM_model <- function(df, meteo, final_date, H)
   for(i in 1:nrow(aggdf))
   {
     d <- as.Date(aggdf$date[i])
-    print(d)
+    #print(d)
     numd <- lubridate::yday(d)
     numw <- lubridate::week(d)
     wd <- lubridate::wday(d)
@@ -159,7 +159,7 @@ make_dataset_GAMM_model <- function(df, meteo, final_date, H)
     regr <- unlist(aggdf[i,2:25])
     
     next_day <- d + 2
-    print(next_day)
+    #print(next_day)
     if(next_day %in% aggdf$date)
     {
       index <- which(aggdf$date == next_day)

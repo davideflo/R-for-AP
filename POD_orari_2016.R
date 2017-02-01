@@ -1589,16 +1589,21 @@ for(H in 1:24)
   print(paste("ho finito l'ora", H))
 }
 
+
 dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 4)
-dfgN <- as.data.frame(dfg)[which(dfg$weekday %in% 2:6 & dfg$tholiday == 0),]
-dfgH <- as.data.frame(dfg)[which(dfg$weekday %in% c(1,7) | dfg$tholiday == 1),]
+dfgN <- as.data.frame(dfg)[which(dfg$tweekday %in% 2:6 & dfg$tholiday == 0),]
+dfgH <- as.data.frame(dfg)[which(dfg$tweekday %in% c(1,7) | dfg$tholiday == 1),]
 
-
+realN <- matrix(0, nrow = nrow(dfgN), ncol = 24)
+realH <- matrix(0, nrow = nrow(dfgH), ncol = 24)
 yhmN <- matrix(0, nrow = nrow(dfgN), ncol = 24)
 yhmH <- matrix(0, nrow = nrow(dfgH), ncol = 24)
 for(H in 1:24)
 {
   print(paste("sto facendo l'ora ", H))
+  dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", H)
+  dfgN <- as.data.frame(dfg)[which(dfg$tweekday %in% 2:6 & dfg$tholiday == 0),]
+  realN[,H] <- dfgN$y
   gmh <- get_GAMM_model(datacn, fi6, "2016-12-31", H)
   #write.table(H, "summary_gamm.txt", append = TRUE)
   sink("summary_gamm.txt", append = TRUE)
@@ -1617,6 +1622,9 @@ for(H in 1:24)
 for(H in 1:24)
 {
   print(paste("sto facendo l'ora ", H))
+  dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", H)
+  dfgH <- as.data.frame(dfg)[which(dfg$tweekday %in% c(1,7) | dfg$tholiday == 1),]
+  realH[,H] <- dfgH$y
   gmh <- get_GAMM_model_hol(datacn, fi6, "2016-12-31", H)
   #write.table(H, "summary_gamm.txt", append = TRUE)
   sink("summary_gamm.txt", append = TRUE)
@@ -1635,47 +1643,43 @@ for(H in 1:24)
 
 
 matplot(t(yhmN), type = "l")
-matplot(t(dfgN[,9:32]), type = "l")
+matplot(t(realN), type = "l")
 matplot(t(yhmH), type = "l")
-matplot(t(dfgH[,9:32]), type = "l")
+matplot(t(realH), type = "l")
 
   
-Errors <- dfg[2:nrow(dfg),9:32] - yhm[(1:nrow(yhm)-1),]
-matplot(t(Errors), type = "l")
-func_R2(yhmN[(1:nrow(yhmN)-1),], dfgN[2:nrow(dfgN),9:32])
-func_R2(yhmH[(1:nrow(yhmH)-1),], dfgN[2:nrow(dfgH),9:32])
+ErrorsN <- realN - yhmN
+ErrorsH <- realH - yhmH
+ErrorsH[is.infinite(ErrorsH)] <- 0
 
+matplot(t(ErrorsN), type = "l")
+matplot(t(ErrorsH), type = "l")
 
-E <- abs(Errors)/dfg[2:nrow(dfg),9:32]
-E[86,3] <- 0
+func_R2(yhmN, realN)
+func_R2(yhmH, realH)
 
-colMeans(E, na.rm = TRUE)
-rowMeans(E, na.rm = TRUE)
+colMeans(abs(ErrorsN)/realN)
+rowMeans(abs(ErrorsN)/realN)
+max(rowMeans(abs(ErrorsN)/realN))
+max(abs(ErrorsN)/realN)
+colMeans(abs(ErrorsH)/realH)
+rowMeans(abs(ErrorsH)/realH)
+max(rowMeans(abs(ErrorsH)/realH))
 
-hist(rowMeans(Errors, na.rm = TRUE), breaks = 20)
-Errors$regr3
+########
+AT <- Aggregator_Terna(terna, "CNOR", "FABBISOGNO REALE")
+matplot(t(AT[,2:25]), type ="l")
 
+ipcn <- Identify_Pivots(datacn, 0.5)
 
-dfg4 <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 18)
-m4 <- eval(substitute(gamm(y ~ regr1 + regr2 + regr3 + regr4 + regr5 + regr6 +
-                             regr7 + regr8 + regr9 + regr10 + regr11 + regr12 +
-                             regr13 + regr14 + regr15 + regr16 + regr17 + regr18 +
-                             regr19 + regr20 + regr21 + regr22 + regr23 + regr24 +
-                             holiday +
-                             pioggia +
-                             vento + 
-                             s(Tmedia, bs = "cc") +
-                             tholiday +
-                             tpioggia +
-                             tvento + 
-                             s(tTmedia, bs = "cc") +
-                             s(num_day, bs = "cc") + s(num_week, bs = "cc", k = max(num_week)) + s(weekday, bs = "cc", k = 7) +
-                             s(tnum_day, bs = "cc") + s(tnum_week, bs = "cc", k =  max(tnum_week)) + s(tweekday, bs = "cc", k = 7),
-                             data = dfg4, niterPQL = 500)), dfg4)
+length(ipcn$pivotali)/ncol(ipcn$d.f)
+matplot(t(ipcn$d.f), type = "l")
+plot(rowSums(ipcn$d.f[,2:256]), type = "l")
+ppcons <- colSums(ipcn$d.f[,2:256])
 
-epsilon <- (dfg4$y - m4$gam$fitted.values)/dfg4$y
-plot(epsilon, type = "o")
-hist(epsilon, breaks = 20)
-mean(epsilon)
-sd(epsilon)
-shapiro.test(epsilon)
+quantile(ppcons, probs = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95))
+
+hist(ppcons, breaks = 40)
+plot(ppcons,rep(0,255), pch = 16)
+abline(v = 350, col = "red")
+abline(v = 425, col = "coral")
