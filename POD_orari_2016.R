@@ -1683,3 +1683,125 @@ hist(ppcons, breaks = 40)
 plot(ppcons,rep(0,255), pch = 16)
 abline(v = 350, col = "red")
 abline(v = 425, col = "coral")
+
+
+################# DL model ##########################
+source("R_code/DLF_model.R")
+
+h2o.init(nthreads = -1, max_mem_size = '20g')
+
+datacn <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord"))
+
+fi6 <- openxlsx::read.xlsx("C:/Users/utente/Documents/PUN/Firenze 2016.xlsx", sheet= 1, colNames=TRUE)
+
+
+dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", 4)
+dfgN <- as.data.frame(dfg)[which(dfg$tweekday %in% 2:6 & dfg$tholiday == 0),]
+dfgH <- as.data.frame(dfg)[which(dfg$tweekday %in% c(1,7) | dfg$tholiday == 1),]
+
+realN <- matrix(0, nrow = nrow(dfgN), ncol = 24)
+realH <- matrix(0, nrow = nrow(dfgH), ncol = 24)
+yhmN <- matrix(0, nrow = nrow(dfgN), ncol = 24)
+yhmH <- matrix(0, nrow = nrow(dfgH), ncol = 24)
+for(H in 1:24)
+{
+  print(paste("sto facendo l'ora ", H))
+  dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", H)
+  dfgN <- as.data.frame(dfg)[which(dfg$tweekday %in% 2:6 & dfg$tholiday == 0),-c(36,37)]
+  realN[,H] <- dfgN$y
+  gmh <- Get_DLF_model(datacn, fi6, "2016-12-31", H)
+  
+  yhat <- h2o.predict(gmh, newdata = as.h2o(dfgN))
+  yhat <- as.matrix(as.numeric(yhat$predict))
+  yhat <- unlist(yhat)
+  
+  h2o.rm(gmh)
+  
+  yhmN[,H] <- yhat
+  
+  print(paste("ho finito l'ora", H))
+}
+for(H in 1:24)
+{
+  print(paste("sto facendo l'ora ", H))
+  dfg <- make_dataset_GAMM_model(datacn, fi6, "2016-12-31", H)
+  dfgH <- as.data.frame(dfg)[which(dfg$tweekday %in% c(1,7) | dfg$tholiday == 1),-36]
+  realH[,H] <- dfgH$y
+  gmh <- Get_DLF_model_hol(datacn, fi6, "2016-12-31", H)
+  
+  yhat <- h2o.predict(gmh, newdata = as.h2o(dfgH))
+  yhat <- as.matrix(as.numeric(yhat$predict))
+  yhat <- unlist(yhat)
+  
+  h2o.rm(gmh)
+  
+  yhmH[,H] <- yhat
+  
+  print(paste("ho finito l'ora", H))
+}
+
+
+matplot(t(yhmN), type = "l")
+matplot(t(realN), type = "l")
+matplot(t(yhmH), type = "l")
+matplot(t(realH), type = "l")
+
+
+ErrorsN <- realN - yhmN
+ErrorsH <- realH - yhmH
+ErrorsH[is.infinite(ErrorsH)] <- 0
+
+matplot(t(ErrorsN), type = "l")
+matplot(t(ErrorsH), type = "l")
+
+func_R2(yhmN, realN)
+func_R2(yhmH, realH)
+
+colMeans(abs(ErrorsN)/realN)
+rowMeans(abs(ErrorsN)/realN)
+max(rowMeans(abs(ErrorsN)/realN))
+max(abs(ErrorsN)/realN)
+colMeans(abs(ErrorsH)/realH)
+rowMeans(abs(ErrorsH)/realH)
+max(rowMeans(abs(ErrorsH)/realH))
+
+plot(colMeans(realH), type = "l", lwd = 2, main = "mean-function comparison")
+lines(colMeans(yhmH), type = "l", lwd = 2, col = "skyblue3")
+
+PHI <- colMeans(realH/sum(colMeans(realH)))
+phih <- Shapificator(unlist(yhmH[1,]), PHI)
+
+plot(unlist(yhmH[1,]), type = "l", lwd = 2, main = "action of shapificator")
+lines(phih[1:24]*PHI + phih[25], type = "l", lwd = 2, col = "skyblue3")
+lines(unlist(realH[1,]), type = "l", lwd = 2, col = "orange")
+
+
+
+dfts <- make_dataset_DLTS(datacn, fi6, "2016-12-31")
+dfts2 <- make_dataset_DLTS2(datacn, fi6, "2016-12-31")
+
+h2o.init(nthreads = -1, max_mem_size = '20g')
+h2o.rm(modeldlts)
+modeldlts <- Get_DLF_model_TS(dfts)
+modeldlts2 <- Get_DLF_model_TS2(dfts2)
+
+
+yhat <- h2o.predict(modeldlts, newdata = as.h2o(dfts))
+yhat <- as.matrix(as.numeric(yhat$predict))
+yhat <- unlist(yhat)
+
+plot(dfts$y, type = "l", lwd = 1.5, main = "TS- consumi orari e TS-DL")
+lines(yhat, type = "l", lwd = 1.5, col = "blue")
+
+yhat2 <- h2o.predict(modeldlts2, newdata = as.h2o(dfts2))
+yhat2 <- as.matrix(as.numeric(yhat2$predict))
+yhat2 <- unlist(yhat2)
+
+plot(dfts2$y, type = "l", lwd = 1.5, main = "TS- consumi orari e TS2-DL")
+lines(yhat2, type = "l", lwd = 1.5, col = "blue")
+
+errts2 <- dfts2$y - yhat2
+plot(errts2, type = "l")
+mean(errts2)
+plot(modeldlts2)
+h2o.mse(modeldlts2)
