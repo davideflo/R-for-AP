@@ -1684,6 +1684,53 @@ plot(ppcons,rep(0,255), pch = 16)
 abline(v = 350, col = "red")
 abline(v = 425, col = "coral")
 
+ipcn <- Identify_Pivots(datacn, 0.90)
+
+############ nuovo dataset aggiornato
+databd <- read_excel("C:/Users/utente/Documents/misure/DB_2016_conperdite_v1.xlsm", sheet = "DB_SI_perd")
+data.table(databd)
+
+datan <- databd[unlist(which(unlist(databd['Area']) ==  "NORD")),]
+write_feather(datan, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_nord")
+datacn <- databd[unlist(which(unlist(databd['Area']) ==  "CNOR")),]
+write_feather(datacn, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_cnord")
+datacs <- databd[unlist(which(unlist(databd['Area']) ==  "CSUD")),]
+write_feather(datacs, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_csud")
+datas <- databd[unlist(which(unlist(databd['Area']) ==  "SUD")),]
+write_feather(datas, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_sud")
+datasi <- databd[unlist(which(unlist(databd['Area']) ==  "SICI")),]
+write_feather(datasi, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_sici")
+datasa <- databd[unlist(which(unlist(databd['Area']) ==  "SARD")),]
+write_feather(datasa, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_sard")
+
+### 
+AggN <- HourlyAggregator2(datan)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_nord")
+AggCN <- HourlyAggregator2(datacn)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord")
+AggCS <- HourlyAggregator2(datacs)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_csud")
+AggS <- HourlyAggregator2(datas)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sud")
+AggSI <- HourlyAggregator2(datasi)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sici")
+AggSA <- HourlyAggregator2(datasa)
+write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard")
+
+
+ips <- Identify_Pivots(datas, 0.90)
+length(ips$pivotali)/ncol(ips$d.f)
+ppcons <- colSums(ips$d.f[,2:ncol(ips$d.f)])
+
+## sud:
+sort(ppcons)/sum(ppcons)
+## cnord:
+sort(ppcons)/sum(ppcons)
+### csud:
+ipcs <- Identify_Pivots(datacs, 0.90)
+ppconscs <- colSums(ipcs$d.f[,2:ncol(ipcs$d.f)])
+
+
 
 ################# DL model ##########################
 source("R_code/DLF_model.R")
@@ -1783,6 +1830,7 @@ dfts2 <- make_dataset_DLTS2(datacn, fi6, "2016-12-31")
 h2o.init(nthreads = -1, max_mem_size = '20g')
 h2o.rm(modeldlts)
 modeldlts <- Get_DLF_model_TS(dfts)
+
 modeldlts2 <- Get_DLF_model_TS2(dfts2)
 
 
@@ -1799,6 +1847,27 @@ yhat2 <- unlist(yhat2)
 
 plot(dfts2$y, type = "l", lwd = 1.5, main = "TS- consumi orari e TS2-DL")
 lines(yhat2, type = "l", lwd = 1.5, col = "blue")
+
+plot(stl(ts(dfts2$y, freq = 24), s.window = "per"))
+plot(stl(ts(unlist(c(yhat2)), freq = 24), s.window = "per"))
+plot(stl(ts(dfts2$y - unlist(c(yhat2)), freq = 24), s.window = "per"))
+
+spec.pgram(smooth(diff(dfts2$y,lag = 1)))
+per <- spec.pgram(smooth(dfts2$y))
+abline(h = quantile(Spectrum, probs = 0.9))
+NSpectrum <- per$spec
+freqs <- per$freq
+acf(Spectrum)
+
+signal <- rep(0, length(dfts2$y))
+A <- max(dfts2$y)
+mf <- freqs[which(Spectrum > 0.5771285)]
+for(i in 1:length(mf))
+{
+  signal <- signal + A*sin(2*pi*mf[i]*1:length(dfts2$y)) + A*cos(2*pi*mf[i]*1:length(dfts2$y))
+}
+plot(signal, type = "l")
+plot(Mod(fft(dfts2$y)), type = "l")
 
 errts2 <- dfts2$y - yhat2
 plot(errts2, type = "l")

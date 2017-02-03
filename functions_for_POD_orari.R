@@ -79,6 +79,33 @@ get_rain_num <- function(meteo, data)
   return(x)
 }
 ##################################################################################
+#### @brief: data from Stefano's Aggregator
+HourlyAggregator2 <- function(df)
+{
+  d_f <- data_frame()
+  pods <- unique(df$Pod)
+  days <- seq.Date(as.Date("2016-01-01"), as.Date("2016-12-31"), by = "day")
+  for(p in pods)
+  {
+    print(p)
+    dfp <- df[which(df$Pod == p),]
+    for(d in days)
+    {
+      print(as.Date(d))
+      vd <- maply(1:24, function(n) unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),10+n]))
+      if(unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) > 0)
+      {
+        vd[2] <- unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) + unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),12])
+      }
+    }
+    df2 <- data.frame(p, as.Date(d), t(vd))
+    l <- list(d_f, df2)
+    d_f <- rbindlist(l)
+  }
+  colnames(d_f) <- c("Pod", "Giorno", as.character(1:24))
+  return(d_f)
+}
+##################################################################################
 ### @param: data from the hourly measurements
 Identify_Pivots <- function(df, p)
 {
@@ -88,9 +115,17 @@ Identify_Pivots <- function(df, p)
   
   for(pod in pods)
   {
+    print(pod)
     dfp <- df[which(df$Pod == pod),]
+    for(d in days)
+    {
+      if(length(dfp$Giorno == d) > 1)
+      {
+        print(as.Date(d))
+      }
+    }
     j <- which(pods == pod)
-    dc <- unlist(rowSums(dfp[,3:26], na.rm = TRUE)/1000)
+    dc <- unlist(rowSums(dfp[,3:26], na.rm = TRUE))/1000
     mat[1:length(dc),j] <- dc 
   }
   colnames(mat) <- pods 

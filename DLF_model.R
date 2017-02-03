@@ -56,11 +56,11 @@ Get_DLF_model_TS <- function(df)
   dfg2 <- df[sample(nrow(df)),]
   
   response <- "y"
-  regressors <- setdiff(colnames(dfg2), response)
+  regressors <- setdiff(colnames(dfg2), c(response, "num_week", "tnum_week")) 
   
   dlmodel <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(dfg2),
                               standardize = TRUE, activation = "Rectifier", 
-                              hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100, max_w2 = 100, l1=1e-4, l2=1e-4, elastic_averaging = TRUE,
+                              hidden = 24*c(365, 52, 12, 7, 1), epochs = 100, max_w2 = 100, l1=1e-4, l2=1e-4, elastic_averaging = TRUE,
                               elastic_averaging_regularization = 0.01)
   print("R2:")
   print(h2o.r2(dlmodel))
