@@ -70,11 +70,15 @@ termine <- tot_termine[,3]
 termine <- data.frame(t(termine))
 
 ## stoccaggio
-stoc <- openxlsx::read.xlsx("stoccaggio.xlsx", sheet = 1, colNames = TRUE)
-gia <- openxlsx::read.xlsx("giacenza.xlsx", sheet = 1,colNames = FALSE)
+#stoc <- openxlsx::read.xlsx("stoccaggio.xlsx", sheet = 1, colNames = TRUE) 2016
+#gia <- openxlsx::read.xlsx("giacenza.xlsx", sheet = 1,colNames = FALSE) 2016
+#### 2017 - 2018 
+stoc <- rep(0, 24)
+gia <- rep(0,24)
+
 
 ## mercato a pronti
-x <- c(31,29,31,30,31,30,31,31,30,31,30,31)
+x <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 fattore_conversione <- 1.057275
 gia2 <- c(gia[1,1] - gia[32,1], gia[32,1] - gia[61,1], gia[61,1])
@@ -100,9 +104,10 @@ listing <- unlist(listing[[1]])
 head(pm)
 listing
 
-listingG <- openxlsx::read.xlsx("listing_G.xlsx", sheet = 1, colNames = TRUE)
-listingG <- unlist(listingG[[1]])
-listingG
+#listingG <- openxlsx::read.xlsx("listing_G.xlsx", sheet = 1, colNames = TRUE)
+#listingG <- unlist(listingG[[1]])
+#listingG
+listingG <- rep(0, 24)
 ###### file ripassato da Tecla con i prezzi dei vari prodotti (lascia solo la parte di vendita)
 #vendite <- openxlsx::read.xlsx("vendite_aggiornato.xlsx", sheet = 1, colNames = TRUE)
 #head(vendite)
@@ -142,8 +147,8 @@ tot_enel <- TOT_m3(TPe,pm)
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
              "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
-             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90)
+             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
@@ -173,8 +178,8 @@ tp_ap <- compute_TP(TP[which(TP["shipper"] == "AXOPOWER"),],pm) # solo AP shippe
 tot_ap <- tot - tot_enel
 
 ## aggrego e esporto in excel -- calcolo open position -- nel bilancio forecast ci va l'open position calcolata su TUTTO il fabbisogno. NON solo AP fissi.
-x16 <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
+x18 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 #pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
 
@@ -191,14 +196,14 @@ colnames(stok_prog) <- unlist(date[,2])
 
 
 #mmkt <- c(sum_in_year(mkt, "2016"), sum_in_year(mkt, "2017"))
-mstok_prog <- c(sum_in_year(stok_prog, "2016"), sum_in_year(stok_prog, "2017"))
-
+#mstok_prog <- c(sum_in_year(stok_prog, "2016"), sum_in_year(stok_prog, "2017")) 2016
+mstok_prog <- rep(0,24)
 
 #stokm <- rep(mstok_prog/c(x16,x17), c(x16,x17))
 #term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[5], 92), rep(pg[6], 90), rep(0, 275))
 #term <- tt
 
-mmkt2 <- c(as.numeric(tot_termine[,3]), 0,0,0,0,0,0,0,0,0)
+mmkt2 <- c(as.numeric(tot_termine[,3]), rep(0,21))
 #ST <- stokm + term
 #op <- tot_fap - (mstok_prog + mmkt2)
 op <- tot_ap - (mstok_prog + mmkt2)
@@ -219,7 +224,9 @@ op <- tot_ap - (mstok_prog + mmkt2)
 
 #mop <- c(sum_in_year(open_position, "2016"), sum_in_year(open_position, "2017"))
 ## per lo stoccaggio il prezzo = euro/MWh. Ecco da dove arriva la discrepanza. Bisogna o calcolare il prezzo al m3 o tenere in MWh l'unita di misura
-totale_costi <- (op * listing/100) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 
+# totale_costi <- (op * listing/100) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 2016
+totale_costi <- (op * listing/100) + terzi + c(as.numeric(tot_termine[,2]), rep(0,21)) 
+
 
 tot_costi_supero_capacita <- -1.3 * tot/100
 ### tot gas venduto = tot gas acquistato = TOT_m3
@@ -241,10 +248,24 @@ unit_approv <- (totale_costi/tot)*100
 ### margine unitario commerciale
 unit_comm <- (margine_comm/tot)*100
 
+# df <- data.frame(rbind(terzi,
+#                        c(tot_termine[,2],0,0,0,0,0,0,0,0,0),
+#                        op * listing/100,
+#                        (mstok_prog * c_stok*1.05275/100),
+#                        tot_costi_supero_capacita, 
+#                        tot_TP,
+#                        margine_ap,
+#                        margine_EM,
+#                        margine_comm,
+#                        ric_unit,
+#                        unit_approv,
+#                        unit_comm,
+#                        tot,
+#                        tot))         2016
 df <- data.frame(rbind(terzi,
-                       c(tot_termine[,2],0,0,0,0,0,0,0,0,0),
+                       c(tot_termine[,2],rep(0,21)),
                        op * listing/100,
-                       (mstok_prog * c_stok*1.05275/100),
+                       mstok_prog,
                        tot_costi_supero_capacita, 
                        tot_TP,
                        margine_ap,
@@ -256,13 +277,14 @@ df <- data.frame(rbind(terzi,
                        tot,
                        tot))
 
+
 TM2 <- rbind(TM, df)
 
 
-colnames(TM2) <- c("gennaio-2016", "febbraio-2016","marzo-2016","aprile-2016","maggio-2016","giugno-2016",
-                  "luglio-2016", "agosto-2016","settembre-2016","ottobre-2016","novembre-2016","dicembre-2016",
-                  "gennaio-2017", "febbraio-2017","marzo-2017","aprile-2017","maggio-2017","giugno-2017",
-                  "luglio-2017", "agosto-2017","settembre-2017","ottobre-2017","novembre-2017","dicembre-2017")
+colnames(TM2) <- c("gennaio-2017", "febbraio-2017","marzo-2017","aprile-2017","maggio-2017","giugno-2017",
+                  "luglio-2017", "agosto-2017","settembre-2017","ottobre-2017","novembre-2017","dicembre-2017",
+                  "gennaio-2018", "febbraio-2018","marzo-2018","aprile-2018","maggio-2018","giugno-2018",
+                  "luglio-2018", "agosto-2018","settembre-2018","ottobre-2018","novembre-2018","dicembre-2018")
 
 rownames(TM2) <- c("PGas", "qtmvc", "cpr", "grad", "ccr", "qtint", "qtpsv", "qvdvar", "ccvdvar", "total","acquisti da terzi", "mercato a termine", "mercato a pronti", "stoccaggio",
                   "costi supero","tot costi TP","margine Axopower","margine EM","margine comm","prezzo di vendita unitario sui ricavi",
