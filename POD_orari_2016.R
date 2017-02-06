@@ -1,4 +1,3 @@
-library(XML)
 library(plyr)
 library(dplyr)
 library(readxl)
@@ -1826,6 +1825,11 @@ lines(unlist(realH[1,]), type = "l", lwd = 2, col = "orange")
 
 dfts <- make_dataset_DLTS(datacn, fi6, "2016-12-31")
 dfts2 <- make_dataset_DLTS2(datacn, fi6, "2016-12-31")
+
+pairs(dfts2[,9:18])
+hist(dfts2$regr, breaks = 20)
+hist(dfts2$y, breaks = 20)
+
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
 h2o.rm(modeldlts)
