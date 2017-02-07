@@ -30,24 +30,26 @@ Aggregator_Terna <- function(df, zona, type_of_measure)
   d_f <- data_frame()
   for(d in days)
   {
-    ad <- which(as.Date(tdf$`DATA RIFERIMENTO CORRISPETTIVO`) == d)
-    atdf <- tdf[ad, ]
-    
-    vec <- rep(0, 24)
-    
-    for(h in 0:23)
-    {
-      j <- which(lubridate::hour(atdf$`DATA RIFERIMENTO CORRISPETTIVO`) == h)
       
-      if(length(j) == 1) vec[h+1] <- unlist(atdf[j,type_of_measure])
-      else if(length(j) > 1) vec[h+1] <- sum(unlist(atdf[j,type_of_measure]), na.rm = TRUE)
-      else next
+      ad <- which(as.Date(tdf$`DATA RIFERIMENTO CORRISPETTIVO`) == d)
+      atdf <- tdf[ad, ]
+      
+      vec <- rep(0, 24)
+      
+      for(h in 0:23)
+      {
+        j <- which(lubridate::hour(atdf$`DATA RIFERIMENTO CORRISPETTIVO`) == h)
+        
+        if(length(j) == 1) vec[h+1] <- unlist(atdf[j,type_of_measure])
+        else if(length(j) > 1) vec[h+1] <- sum(unlist(atdf[j,type_of_measure]), na.rm = TRUE)
+        else next
+      }
+      df2 <- data.frame(as.Date(d), t(vec))
+      l <- list(d_f, df2)
+      
+      d_f <- rbindlist(l)
     }
-    df2 <- data.frame(as.Date(d), t(vec))
-    l <- list(d_f, df2)
-    
-    d_f <- rbindlist(l)
-  }
+  
   colnames(d_f) <- c("date", as.character(1:24))
   
   return(d_f)
@@ -117,21 +119,15 @@ Identify_Pivots <- function(df, p)
   {
     print(pod)
     dfp <- df[which(df$Pod == pod),]
-    for(d in days)
-    {
-      if(length(dfp$Giorno == d) > 1)
-      {
-        print(as.Date(d))
-      }
-    }
+    udfp <- df[!duplicated(df$Giorno),]
     j <- which(pods == pod)
-    dc <- unlist(rowSums(dfp[,3:26], na.rm = TRUE))/1000
+    dc <- unlist(rowSums(udfp[,3:26], na.rm = TRUE))/1000
     mat[1:length(dc),j] <- dc 
   }
   colnames(mat) <- pods 
   tot_con <- colSums(mat)
-  ordered_tot_con <- sort(tot_con)
-  ordered_pods <- pods[order(tot_con)]
+  ordered_tot_con <- sort(tot_con, decreasing = TRUE)
+  ordered_pods <- pods[order(tot_con, decreasing = TRUE)]
   STC <- sum(tot_con)
   
   pivot <- c()

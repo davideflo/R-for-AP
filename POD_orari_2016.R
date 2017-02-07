@@ -1729,9 +1729,30 @@ sort(ppcons)/sum(ppcons)
 ipcs <- Identify_Pivots(datacs, 0.90)
 ppconscs <- colSums(ipcs$d.f[,2:ncol(ipcs$d.f)])
 
+ipcn <- Identify_Pivots(datacn, 0.90)
+podcn <- colSums(ipcn$d.f[,2:ncol(ipcn$d.f)])
+
+cumsum(sort(podcn, decreasing = TRUE)/sum(podcn))
+44/length(podcn)
+
+write.csv(names(podcn)[1:44], 'pivotali_cnord.csv')
+
+datan <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_nord"))
+datacs <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_csud"))
+datasi <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sici"))
+datasa <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard"))
+
+
+Datan <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_nord"))
+ipn <- Identify_Pivots(datan, 0.90)
+podn <- colSums(ipn$d.f[,2:ncol(ipn$d.f)])
+cumsum(sort(podcn, decreasing = TRUE)/sum(podcn))
+
 
 
 ################# DL model ##########################
+source("R_code/similar_days_model.R")
+source("R_code/GAMM_model.R")
 source("R_code/DLF_model.R")
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
@@ -1829,6 +1850,29 @@ dfts2 <- make_dataset_DLTS2(datacn, fi6, "2016-12-31")
 pairs(dfts2[,9:18])
 hist(dfts2$regr, breaks = 20)
 hist(dfts2$y, breaks = 20)
+hist(dfts2$Tmedia, breaks = 20)
+
+################# trial with darch #################
+
+library(darch)
+dmodel <- darch(x = dfts2[,1:17], y = dfts2$y, layers = 24*c(365, 52, 12, 7, 1))
+
+library(deepnet)
+rbmmodel <- rbm.train(x = as.matrix(dfts2[,1:17]), hidden = 8760)
+
+nntmodel <- nn.train(x = as.matrix(dfts2[,1:17]), y = dfts2$y, hidden=24*c(365, 52, 12, 7, 1), activationfun="tanh")
+         
+
+summary(nntmodel)
+ynnt <- nn.predict(nntmodel, as.matrix(dfts2[,1:17]))
+
+plot(dfts2$y, type = "l", lwd = 2, main = "yhat with nnmodel deepnet")
+lines(ynnt, type = "l", lwd = 2, col = "red")
+
+
+
+dbnmodel <- dbn.dnn.train(x = as.matrix(dfts2[,1:17]), y = dfts2$y, hidden=24*c(365, 52, 12, 7, 1)8, activationfun="sigm", 
+              learningrate=0.8, momentum=0.5, learningrate_scale=1, output="sigm", numepochs=3, batchsize=100, hidden_dropout=0, visible_dropout=0, cd=1)
 
 
 h2o.init(nthreads = -1, max_mem_size = '20g')
