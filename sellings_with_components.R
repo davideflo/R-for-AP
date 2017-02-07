@@ -54,7 +54,7 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
       YEAR <- split_date(m)[3]
       MONTH <- as.numeric(split_date(m)[2])
       
-      if(YEAR == "2016")
+      if(YEAR == "2017")
       {
         qtmvc <- as.numeric(unlist(vendite[i, 11:22]))
         cpr <- as.numeric(unlist(vendite[i, 23:34]))
