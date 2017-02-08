@@ -93,11 +93,14 @@ HourlyAggregator2 <- function(df)
     dfp <- df[which(df$Pod == p),]
     for(d in days)
     {
-      print(as.Date(d))
-      vd <- maply(1:24, function(n) unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),10+n]))
-      if(unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) > 0)
-      {
-        vd[2] <- unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) + unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),12])
+#      print(as.Date(d))
+      if(nrow(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),]) > 0)
+      {  
+        vd <- maply(1:24, function(n) unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),10+n]))
+        if(unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) > 0)
+        {
+          vd[2] <- unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) + unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),12])
+        }
       }
     }
     df2 <- data.frame(p, as.Date(d), t(vd))

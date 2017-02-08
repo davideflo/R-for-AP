@@ -1852,6 +1852,23 @@ hist(dfts2$regr, breaks = 20)
 hist(dfts2$y, breaks = 20)
 hist(dfts2$Tmedia, breaks = 20)
 
+acf(dfts2$regr, lag = 100)
+acf(dfts2$y, lag = 100)
+pacf(dfts2$regr, lag = 100)
+pacf(dfts2$y, lag = 100)
+acf(diff(dfts2$regr, lag = 1), lag = 100)
+plot(diff(dfts2$regr, lag = 1), type = "l")
+plot(dfts2$regr, type = "l")
+
+par(mfrow = c(2,1))
+hist(diff(dfts2$regr, lag = 1), breaks = 20, col = "blue")
+hist(dfts2$regr, breaks = 20, col = "green")
+
+
+kpss.test(diff(dfts2$regr, lag = 1)) 
+PP.test(diff(dfts2$regr, lag = 1))
+adf.test(diff(dfts2$regr, lag = 1))
+Box.test(diff(dfts2$regr, lag = 1))
 ################# trial with darch #################
 
 library(darch)
@@ -1881,6 +1898,28 @@ modeldlts <- Get_DLF_model_TS(dfts)
 
 modeldlts2 <- Get_DLF_model_TS2(dfts2)
 
+library(pracma)
+approx_entropy(dfts2$y) ### --> 0.5834303
+approx_entropy(diff(dfts2$y, lag = 1)) ### --> 1.108646
+
+
+h2o.rm(smodeldl)
+smodeldl <- Get_DLF_model_STS(dfts2)
+plot(smodeldl)
+
+sc_dfts2 <- (dfts2 - colMeans(dfts2))/(apply(dfts2, 2, sd))
+yhat <- h2o.predict(smodeldl, newdata = as.h2o(sc_dfts2[, c(1,3,4,5,6,7,8,9,10,12, 13, 14,17)]))
+yhat <- as.matrix(as.numeric(yhat$predict))
+yhat <- unlist(yhat)
+
+layout(1)
+plot(sc_dfts2$y, type = "l")
+lines(yhat, type = "o", col = "red")
+
+err <- (sc_dfts2$y - yhat)
+plot(err, type = "l")
+mean(err)
+sd(err)
 
 yhat <- h2o.predict(modeldlts, newdata = as.h2o(dfts))
 yhat <- as.matrix(as.numeric(yhat$predict))
