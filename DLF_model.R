@@ -86,6 +86,33 @@ Get_DLF_model_TS2 <- function(df)
   
   return(dlmodel)
 }
+##########################################################################
+#### @brief: model to predict hourly consumption as a time series --> TS has been stationarized
+#### @param: hourly data
+Get_DLF_model_STS <- function(df, bVerbose = TRUE)
+{
+  # dregr <- diff(df$regr, lag = 1)
+  # dy <- diff(df$y, lag = 1)
+  # df <- df[2:nrow(df),]
+  # df$regr <- dregr
+  # df$y <- dy
+  
+  if(!bVerbose) df <- (df - colMeans(df))/(apply(df, 2, sd))
+  
+  dfg2 <- df[sample(nrow(df)),]
+  
+  response <- "y"
+  regressors <- setdiff(colnames(dfg2), c(response, "num_week", "tnum_week", "Tmedia")) 
+  
+  dlmodel <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(dfg2),
+                              standardize = TRUE, activation = "Tanh", #rate_decay = 0.01
+                              hidden = 24*c(365, 52, 12, 7, 1), epochs = 100, max_w2 = 100, l1=1e-5, l2=1e-5, elastic_averaging = TRUE,
+                              elastic_averaging_regularization = 0.01)
+  print("R2:")
+  print(h2o.r2(dlmodel))
+  
+  return(dlmodel)
+}
 ####################################################################################
 #### @brief: function to use DL to predict the consumption as a time series
 make_dataset_DLTS <- function(df, meteo, final_date)
