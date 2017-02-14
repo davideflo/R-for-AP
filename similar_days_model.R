@@ -5,6 +5,8 @@
 
 ###### INFO: functions in alphabetical order and only for this model
 library(psych) #### contains trace
+library(MASS) #### for the Moore-Penrose pseudo-inverse
+
 
 source("R_code/functions_for_POD_orari.R")
 
@@ -50,6 +52,46 @@ func_R2 <- function(f, g)
 {
   R2 <- 1 - mean(apply(f-g, 1, L2Norm)/apply(g - colMeans(g), 1, L2Norm))       #(L2Norm(f - g))/(g - colMeans(g))
   return(R2)
+}
+#########################################################################################
+#### @param: Xreg is the dataset with the functional data, Y is the target set of functions and Z contains the discrete regressors
+FunctionalRegression <- function(dfr, newdfr)
+{
+  Xreg <- dfr[,9:32]
+  Y <- dfr[,41:64]
+  
+  disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
+  discv <- which(colnames(dfr) %in% disc)
+  
+  Z <- as.data.frame(dfr)[,discv]
+  
+  Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
+  
+  FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
+  FY <- smooth.basis(1:24, t(Y), Fbasis)$fd
+  
+  D <- t(FY$coefs) 
+  C <- t(FXreg$coefs)
+ 
+#  J <- diag(1, nrow(Y))
+  
+  Bh <- solve(t(C)%*%C)%*%t(C)%*%D
+  
+  Yhat2 <- C%*%Bh%*%get_Basis() #### functional part
+  
+  fdiff <- Y - Yhat2
+
+  inverse_MP <- ginv(t(as.matrix(Z)) %*% as.matrix(Z))
+  rhat <- inverse_MP%*%t(as.matrix(Z))%*%as.matrix(fdiff)
+  RH <- as.matrix(Z)%*%rhat  #### discrete part
+  
+  YYH <- Yhat2 + RH #### predicted curve
+
+  
+  Epsilon <- as.matrix(Y) - YYH 
+  print(paste("R2:", func_R2(YYH, as.matrix(Y))))
+  
+  
 }
 #########################################################################################
 ### @PARAM: returns only the basis

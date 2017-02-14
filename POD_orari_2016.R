@@ -1356,8 +1356,10 @@ ggplot(data = data.table(Tmedia = dfr$tTmedia, y7 = dfr$y7),
 
 pairs(data.frame(dfr$y7,dfr$regr7,dfr$num_day,dfr$num_week,dfr$holiday,dfr$Tmedia, dfr$vento,dfr$pioggia,dfr$tnum_day,dfr$tholiday,dfr$tTmedia, dfr$tvento,dfr$tpioggia))
 
-Xreg <- dfr[,9:32]
-Y <- dfr[,41:64]
+Xreg <- dfr[1:(nrow(dfr)-1),9:32]
+xnew <- dfr[nrow(dfr),9:32]
+Y <- dfr[1:(nrow(dfr)-1),41:64]
+ynew <- dfr[nrow(dfr),41:64]
 disc <- setdiff(colnames(dfr), colnames(dfr)[c(3,5,35,37, 9:32, 41:64)])
 discv <- which(colnames(dfr) %in% disc)
 
@@ -1365,7 +1367,7 @@ Fbasis <-  create.fourier.basis(c(1,24), nbasis=23)
 Sbasis <-  create.bspline.basis(c(1,24), nbasis=23, norder = 5)
 
 FXreg <- smooth.basis(1:24, t(Xreg), Fbasis)$fd
-YF <- smooth.basis(1:24, t(Y), Fbasis)$fd
+FY <- smooth.basis(1:24, t(Y), Fbasis)$fd
 
 h <- 23 ##### 23 is correct!!!!
 BASIS <- matrix(0, nrow = 23, ncol = 24)
@@ -1425,6 +1427,7 @@ matplot(t(Yhat%*%t(get_Basis())), type = 'l')
 Bh <- solve(t(C)%*%C)%*%t(C)%*%D
 
 Yhat2 <- C%*%Bh%*%get_Basis()
+ynewhat <- t(as.matrix(xnew))%*%Yhat2
 matplot(t(Yhat2), type = "l")
 
 fdiff <- Y - Yhat2
@@ -1686,7 +1689,7 @@ abline(v = 425, col = "coral")
 ipcn <- Identify_Pivots(datacn, 0.90)
 
 ############ nuovo dataset aggiornato
-databd <- read_excel("C:/Users/utente/Documents/misure/DB_2016_conperdite_v1.xlsm", sheet = "DB_SI_perd")
+databd <- read_excel("C:/Users/utente/Documents/misure/DB_2016.xlsm", sheet = "DB_SI_perd")
 data.table(databd)
 
 datan <- databd[unlist(which(unlist(databd['Area']) ==  "NORD")),]
@@ -1706,15 +1709,15 @@ write_feather(datasa, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati
 AggN <- HourlyAggregator2(datan)
 write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_nord")
 AggCN <- HourlyAggregator2(datacn)
-write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord")
+write_feather(AggCN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_cnord")
 AggCS <- HourlyAggregator2(datacs)
-write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_csud")
+write_feather(AggCS, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_csud")
 AggS <- HourlyAggregator2(datas)
-write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sud")
+write_feather(AggS, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sud")
 AggSI <- HourlyAggregator2(datasi)
-write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sici")
+write_feather(AggSI, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sici")
 AggSA <- HourlyAggregator2(datasa)
-write_feather(AggN, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard")
+write_feather(AggSA, "C:\\Users\\utente\\Documents\\misure\\misure_orarie\\dati_aggregati_sard")
 
 
 ips <- Identify_Pivots(datas, 0.90)

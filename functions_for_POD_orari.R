@@ -102,10 +102,10 @@ HourlyAggregator2 <- function(df)
           vd[2] <- unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),35]) + unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),12])
         }
       }
+      df2 <- data.frame(p, as.Date(d), t(vd))
+      l <- list(d_f, df2)
+      d_f <- rbindlist(l)
     }
-    df2 <- data.frame(p, as.Date(d), t(vd))
-    l <- list(d_f, df2)
-    d_f <- rbindlist(l)
   }
   colnames(d_f) <- c("Pod", "Giorno", as.character(1:24))
   return(d_f)
