@@ -332,7 +332,7 @@ yhat <- unlist(yhat)
 plot(yhat, type = "l")
 lines(yhat, type = "l", col = "red")
 
-######## automatic dataset
+######## automatic dataset #### USA QUESTO PER PUN FORWARD
 data2 <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2017.xlsx")
 colnames(data2) <- c('date', 'pun')
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-01-18'), by = 'hour')[1:nrow(data2)]
@@ -352,14 +352,14 @@ plot(modeldl2)
 summary(modeldl2)
 h2o.r2(modeldl2)
 
-pred17 <- prediction_pun_forward2(data2, "2017-01-16")
+pred17 <- prediction_pun_forward2(data2, "2017-02-15") ### 2 days ahead from last date of PUN
 
 yhat17 <- h2o.predict(modeldl2, newdata = as.h2o(pred17))
 yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
 
 plot(yhat17, type = 'l', col = 'orange')
 
-real <- read_excel("DB_Borse_Elettriche_PER MI_17.xlsx", sheet = 2)
+real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro.xlsm", sheet = 2)
 
 #################################################################################
 Assembler <- function(real, ph)
@@ -397,18 +397,18 @@ colnames(ph) <- c("date", "pun")
 PH <- Assembler(real, ph)
 
 mean(PH$pun)
-RPH <- Redimensioner(PH, 70.98, "2017-01-01", "2017-01-31")
-RPH <- Redimensioner(RPH, 56.95, "2017-02-01", "2017-02-28")
-RPH <- Redimensioner(RPH, 49.75, "2017-03-01", "2017-03-31")
-RPH <- Redimensioner(RPH, 44.5, "2017-04-01", "2017-04-30")
-RPH <- Redimensioner(RPH, 41.5, "2017-05-01", "2017-05-31")
-RPH <- Redimensioner(RPH, 43.35, "2017-06-01", "2017-06-30")
-RPH <- Redimensioner(RPH, 52.7, "2017-07-01", "2017-07-31")
-RPH <- Redimensioner(RPH, 43.63, "2017-08-01", "2017-08-31")
-RPH <- Redimensioner(RPH, 45.81, "2017-09-01", "2017-09-30")
-RPH <- Redimensioner(RPH, 44.96, "2017-10-01", "2017-10-31")
-RPH <- Redimensioner(RPH, 51.6, "2017-11-01", "2017-11-30")
-RPH <- Redimensioner(RPH, 49.35, "2017-12-01", "2017-12-31")
+RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
+RPH <- Redimensioner(RPH, 55.81, "2017-02-01", "2017-02-28")
+RPH <- Redimensioner(RPH, 50.1, "2017-03-01", "2017-03-31")
+RPH <- Redimensioner(RPH, 45.45, "2017-04-01", "2017-04-30")
+RPH <- Redimensioner(RPH, 42, "2017-05-01", "2017-05-31")
+RPH <- Redimensioner(RPH, 44.15, "2017-06-01", "2017-06-30")
+RPH <- Redimensioner(RPH, 53.65, "2017-07-01", "2017-07-31")
+RPH <- Redimensioner(RPH, 44.42, "2017-08-01", "2017-08-31")
+RPH <- Redimensioner(RPH, 46.63, "2017-09-01", "2017-09-30")
+RPH <- Redimensioner(RPH, 45.37, "2017-10-01", "2017-10-31")
+RPH <- Redimensioner(RPH, 52.08, "2017-11-01", "2017-11-30")
+RPH <- Redimensioner(RPH, 49.8, "2017-12-01", "2017-12-31")
 plot(RPH$pun, type = 'l', col = "blue3")
 
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-01-31")])
