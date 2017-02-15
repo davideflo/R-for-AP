@@ -1430,6 +1430,16 @@ Yhat2 <- C%*%Bh%*%get_Basis()
 ynewhat <- t(as.matrix(xnew))%*%Yhat2
 matplot(t(Yhat2), type = "l")
 
+Fxnew <- smooth.basis(1:24, t(xnew), Fbasis)$fd
+Fxnew$coefs
+
+t(Fxnew$coefs)%*%Bh%*%get_Basis()
+
+xhat <- c(unlist(t(Fxnew$coefs)%*%get_Basis()))
+plot(xhat, type = 'l')
+lines(unlist(xnew), type = 'l', col = 'blue')
+
+
 fdiff <- Y - Yhat2
 matplot(t(fdiff),type="l")
 

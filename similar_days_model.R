@@ -91,6 +91,16 @@ FunctionalRegression <- function(dfr, newdfr)
   Epsilon <- as.matrix(Y) - YYH 
   print(paste("R2:", func_R2(YYH, as.matrix(Y))))
   
+  #return(list(Bstar = Bh, Rstar = rhat))
+  xnew <- newdfr[,9:32]
+  znew <- as.data.frame(newdfr)[,discv]
+  Cnew <- smooth.basis(1:24, t(xnew), Fbasis)$fd
+  Cnew <- Cnew$coefs
+  rnew <- as.matrix(znew)%*%rhat
+  
+  ynewhat <- c(Cnew%*%Bh%*%get_Basis()) + c(rnew)
+  
+  return(ynewhat)
   
 }
 #########################################################################################
