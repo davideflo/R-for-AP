@@ -86,14 +86,14 @@ HourlyAggregator2 <- function(df)
 {
   d_f <- data_frame()
   pods <- unique(df$Pod)
-  days <- seq.Date(as.Date("2016-01-01"), as.Date("2016-12-31"), by = "day")
+  days <- as.Date(seq.Date(as.Date("2016-01-01"), as.Date("2016-12-31"), by = "day"), origin="1970-01-01")
   for(p in pods)
   {
     print(p)
     dfp <- df[which(df$Pod == p),]
     for(d in days)
     {
-#      print(as.Date(d))
+      d <- as.Date(d, origin="1970-01-01")
       if(nrow(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),]) > 0)
       {  
         vd <- maply(1:24, function(n) unlist(dfp[which(as.Date(dfp$Giorno) == as.Date(d)),10+n]))
@@ -115,14 +115,14 @@ HourlyAggregator2 <- function(df)
 Identify_Pivots <- function(df, p)
 {
   pods <- unique(df$Pod)
-  days <- seq.Date(as.Date("2016-01-01"), as.Date("2016-11-30"), by = "day")
+  days <- seq.Date(as.Date("2016-01-01"), as.Date("2016-12-31"), by = "day")
   mat <- matrix(0, nrow = length(days), ncol = length(pods))
   
   for(pod in pods)
   {
     print(pod)
     dfp <- df[which(df$Pod == pod),]
-    udfp <- df[!duplicated(df$Giorno),]
+    udfp <- dfp[!duplicated(df$Giorno),]
     j <- which(pods == pod)
     dc <- unlist(rowSums(udfp[,3:26], na.rm = TRUE))/1000
     mat[1:length(dc),j] <- dc 
