@@ -37,6 +37,12 @@ ao <- ao[rows,]                                                                 
 #########################################################################################################
 ## aggrega i prodotti
 aggregati <- compute_combinations_DEF_val(ao)
+### count PDR and IVA
+##################################################################################################################################
+aggregaticount <- compute_combinations_DEF_val_countPDR(ao)                                                                      #
+xlsx::write.xlsx(data.frame(aggregaticount), "cluster prodotti aggiornato conteggio.xlsx", row.names = FALSE, col.names = TRUE)  #
+##################################################################################################################################
+
 ##################################################################################################################################
 aggregati <- compute_combinations_DEF_val_Agenti(ao)                                                                             #
 xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato con agenzie.xlsx", row.names = FALSE, col.names = TRUE)     #
