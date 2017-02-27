@@ -108,28 +108,79 @@ make_DLdataset_pun_forward2 <- function(data)
   return(d_f)
 }
 #####################################################################
+prediction_pun_forward2 <- function(df, start_date)
+{
+  d_f <- data_frame()
+  
+  days_left <- 365 - (as.Date(start_date) - as.Date("2017-01-01"))
+  seq17 <- seq.POSIXt(as.POSIXct(start_date), as.POSIXct('2018-01-02'), by = 'hour')[1:((days_left*24)-1)]
+  
+  pun16 <- df[which(lubridate::year(df$date) == 2016),]
+  
+  for(i in 1:nrow(pun16))
+  {
+    #print(i)
+    hs <-  lubridate::hour(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wds <- lubridate::wday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wdys <- lubridate::yday(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    wks <-  lubridate::week(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01'))
+    hol <-  add_holidays_Date(as.Date(as.POSIXct(unlist(pun16[i,'date']), origin = '1970-01-01')))
+    
+    new_date <- lubridate::ymd(as.Date(pun16$date[i])) + lubridate::years(1)
+    new_date2 <- lubridate::ymd(as.Date(pun16$date[i]) + 1) + lubridate::years(1)
+    
+    if(!is.na(new_date))
+    {
+      
+      twds <- lubridate::wday(new_date)
+      twdys <- lubridate::yday(new_date)
+      twks <-  lubridate::week(new_date)
+      thol <-  add_holidays_Date(new_date)
+      
+      df2 <- data.frame(pun16$pun[i], hs, wds, wdys, wks, hol, hs, twds, twdys, twks, thol)
+      #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+      #d_f <- bind_rows(d_f, df2)
+      l <- list(data.frame(d_f), df2)
+      d_f <- rbindlist(l)
+    }
+    
+    else
+    {
+      next
+    }
+    
+  }
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","thour","tweekday","tday","tweek","tholiday")
+  return(d_f)
+}
+#############################################################################################################
+
 library(feather)
 
 data2 <- read_excel("dati_2014-2017.xlsx") #### da python
 colnames(data2) <- c('date', 'pun')
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-02-21'), by = 'hour')[1:nrow(data2)]
-(21-15)*24
+7*24
 DLD2 <- make_DLdataset_pun_forward2(data2)
 DLD2 <- DLD2[1:18745] ## last number += difference in days from last update * 24
 write_feather(DLD2, "dati_punForward")
 
-library(h2o)
-#### C:\Program Files\R\R-3.3.2\library\h2o\java
-h2o.init(nthreads = -1, max_mem_size = '20g')
-
-response <- "ypun"
-regressors <- setdiff(colnames(DLD2),response)
-
-modeldl <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2), standardize = TRUE, activation = "Rectifier", 
-                            hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
+pred17 <- prediction_pun_forward2(data2, "2017-03-01") ### 2 days ahead from last date of PUN
 
 
 
-plot(modeldl)
-summary(modeldl)
-h2o.r2(modeldl)
+# library(h2o)
+# #### C:\Program Files\R\R-3.3.2\library\h2o\java
+# h2o.init(nthreads = -1, max_mem_size = '20g')
+# 
+# response <- "ypun"
+# regressors <- setdiff(colnames(DLD2),response)
+# 
+# modeldl <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2), standardize = TRUE, activation = "Rectifier", 
+#                             hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
+# 
+# 
+# 
+# plot(modeldl)
+# summary(modeldl)
+# h2o.r2(modeldl)
