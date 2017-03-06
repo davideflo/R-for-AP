@@ -167,7 +167,7 @@ prediction_pun_forward2 <- function(df, start_date)
 Assembler <- function(real, ph)
 {
   rows <- which(unlist(is.na(real[,13])))
-  assembled <- data.frame(ph$date, c(unlist(real[1:(rows[1]-1),13]), unlist(ph[rows[1]:8760,2])), c(rep(1, (8760-length(rows))),rep(0,length(rows))))
+  assembled <- data.frame(date = ph$date, pun = c(unlist(real[1:(rows[1]-1),13]), unlist(ph[rows[1]:8760,2])), r = c(rep(1, (8760-length(rows))),rep(0,length(rows))))
   colnames(assembled) <- c("date", "pun", "real")
   return(assembled)
 }
@@ -210,14 +210,14 @@ CleanDataset <- function(dt)
 
 ######## automatic dataset #### USA QUESTO PER PUN FORWARD
 
-system('python DataAggregator.py')
+system('python C:/Users/d_floriello/Documents/R/DataAggregator.py')
 
 
 library(h2o)
 h2o.init(nthreads = -1, max_mem_size = '20g')
 
 
-data2 <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2017.xlsx")
+data2 <- read_excel("C:/Users/d_floriello/Documents/R/dati_2014-2017.xlsx")
 colnames(data2) <- c('date', 'pun')
 
 last_date <- as.Date(unlist(data2[nrow(data2),1]), origin = "1899-12-30")
@@ -247,8 +247,8 @@ yhat17 <- h2o.predict(modeldl2, newdata = as.h2o(pred17))
 yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
 
 #plot(yhat17, type = 'l', col = 'orange')
-
-real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
+yhat17 <- read_excel('C:/Users/d_floriello/Desktop/longterm_pun.xlsx')
+real <- read_excel("H:/Energy Management/04. WHOLESALE/02. REPORT PORTAFOGLIO/2017/06. MI/DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
 
 ### paste existing 2017 pun
 sequence_dates <- seq.POSIXt(as.POSIXct('2017-01-01'), as.POSIXct('2018-01-01'), by = 'hour')
@@ -258,7 +258,7 @@ colnames(ph) <- c("date", "pun")
 PH <- Assembler(real, ph)
 
 mean(PH$pun)
-PC <- read_excel('Power Curves.xlsx', skip = 3)
+PC <- read_excel('H:/Energy Management/04. WHOLESALE/21. QUOTING/Giornaliero/Prova/2017.03.06_mercato.xlsx', na = "0", skip = 6)
 
 RPH <- Redimensioner(PH, unlist(PC[2,2]), "2017-01-01", "2017-01-31")
 RPH <- Redimensioner(RPH, unlist(PC[3,2]), "2017-02-01", "2017-02-28")
