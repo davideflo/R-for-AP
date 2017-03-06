@@ -311,33 +311,36 @@ prediction_pun_forward2 <- function(df, start_date)
   return(d_f)
 }
 #############################################################################################################
-DLD <- make_DLdataset_pun_forward(data)
-
-response <- "ypun"
-regressors <- setdiff(colnames(DLD),response)
-
-modeldl <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD), standardize = TRUE, activation = "Rectifier", 
-                       hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
-
-plot(modeldl)
-summary(modeldl)
-h2o.r2(modeldl)
-
-newd <- prediction_pun_forward(data, "2017-01-01")
-
-yhat <- h2o.predict(modeldl, newdata = as.h2o(newd))
-yhat <- as.matrix(as.numeric(yhat$predict))
-yhat <- unlist(yhat)
-
-plot(yhat, type = "l")
-lines(yhat, type = "l", col = "red")
+# DLD <- make_DLdataset_pun_forward(data)
+# 
+# response <- "ypun"
+# regressors <- setdiff(colnames(DLD),response)
+# 
+# modeldl <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD), standardize = TRUE, activation = "Rectifier", 
+#                        hidden = c(8760, 365, 52, 12, 7, 24), epochs = 100)
+# 
+# plot(modeldl)
+# summary(modeldl)
+# h2o.r2(modeldl)
+# 
+# newd <- prediction_pun_forward(data, "2017-01-01")
+# 
+# yhat <- h2o.predict(modeldl, newdata = as.h2o(newd))
+# yhat <- as.matrix(as.numeric(yhat$predict))
+# yhat <- unlist(yhat)
+# 
+# plot(yhat, type = "l")
+# lines(yhat, type = "l", col = "red")
 
 ######## automatic dataset #### USA QUESTO PER PUN FORWARD
 data2 <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2017.xlsx")
 colnames(data2) <- c('date', 'pun')
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-01-18'), by = 'hour')[1:nrow(data2)]
 
-DLD2 <- make_DLdataset_pun_forward2(data2)
+library(h2o)
+h2o.init(nthreads = -1, max_mem_size = '20g')
+
+
 
 DLD2 <- as.data.frame(read_feather("C:\\Users\\utente\\Documents\\misure\\dati_punForward"))
 
@@ -352,14 +355,14 @@ plot(modeldl2)
 summary(modeldl2)
 h2o.r2(modeldl2)
 
-pred17 <- prediction_pun_forward2(data2, "2017-02-15") ### 2 days ahead from last date of PUN
+pred17 <- prediction_pun_forward2(data2, "2017-03-01") ### 2 days ahead from last date of PUN
 
 yhat17 <- h2o.predict(modeldl2, newdata = as.h2o(pred17))
 yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
 
 plot(yhat17, type = 'l', col = 'orange')
 
-real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro.xlsm", sheet = 2)
+real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
 
 #################################################################################
 Assembler <- function(real, ph)
@@ -398,18 +401,20 @@ PH <- Assembler(real, ph)
 
 mean(PH$pun)
 RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
-RPH <- Redimensioner(RPH, 55.81, "2017-02-01", "2017-02-28")
-RPH <- Redimensioner(RPH, 50.1, "2017-03-01", "2017-03-31")
-RPH <- Redimensioner(RPH, 45.45, "2017-04-01", "2017-04-30")
-RPH <- Redimensioner(RPH, 42, "2017-05-01", "2017-05-31")
-RPH <- Redimensioner(RPH, 44.15, "2017-06-01", "2017-06-30")
-RPH <- Redimensioner(RPH, 53.65, "2017-07-01", "2017-07-31")
-RPH <- Redimensioner(RPH, 44.42, "2017-08-01", "2017-08-31")
-RPH <- Redimensioner(RPH, 46.63, "2017-09-01", "2017-09-30")
-RPH <- Redimensioner(RPH, 45.37, "2017-10-01", "2017-10-31")
-RPH <- Redimensioner(RPH, 52.08, "2017-11-01", "2017-11-30")
-RPH <- Redimensioner(RPH, 49.8, "2017-12-01", "2017-12-31")
+RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
+RPH <- Redimensioner(RPH, 47.3, "2017-03-01", "2017-03-31")
+RPH <- Redimensioner(RPH, 43.00, "2017-04-01", "2017-04-30")
+RPH <- Redimensioner(RPH, 42.3, "2017-05-01", "2017-05-31")
+RPH <- Redimensioner(RPH, 44.5, "2017-06-01", "2017-06-30")
+RPH <- Redimensioner(RPH, 52.98, "2017-07-01", "2017-07-31")
+RPH <- Redimensioner(RPH, 43.86, "2017-08-01", "2017-08-31")
+RPH <- Redimensioner(RPH, 46.06, "2017-09-01", "2017-09-30")
+RPH <- Redimensioner(RPH, 45.05, "2017-10-01", "2017-10-31")
+RPH <- Redimensioner(RPH, 51.71, "2017-11-01", "2017-11-30")
+RPH <- Redimensioner(RPH, 49.44, "2017-12-01", "2017-12-31")
 plot(RPH$pun, type = 'l', col = "blue3")
+lines(RPH$pun, type = 'l', col = "blue3")
+
 
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-01-31")])
 mean(PH$pun[as.Date(PH$date) <= as.Date("2017-01-31")])
@@ -459,22 +464,32 @@ matplot(t(es[,2:25]), type = 'l')
 cov(es[,2:25])
 cor(es[,2:25])
 
-fitarima <- arima(data$pun, order = c(24,1,24), include.mean = TRUE)
-summary(fitarima)
+#####################################  try with some arima models ##################
+data2 <- read_excel("C:/Users/utente/Documents/misure/dati_2014-2017.xlsx")
+colnames(data2) <- c('date', 'pun')
+data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-01-18'), by = 'hour')[1:nrow(data2)]
 
-qqnorm(residuals(fitarima)) ; qqline(residuals(fitarima))
-hist(residuals(fitarima))
+acf(data2$pun, lag.max = 26000)
+pacf(data2$pun)
+dp <- diff(data2$pun)
+acf(dp, lag.max = 26000)
+plot(dp, type = 'l')
+plot(diff(dp), type = 'l', col = 'blue')
 
-fitarima$arma
-fitarima$series
-fitarima$model
+library(forecast)
 
+arfit <- arima(data2$pun, order = c(24,2,24))
+farfit <- forecast.Arima(arfit, h=8760)
+plot.forecast(farfit)
 
-#### functional regression experiment
-yy <- data$pun
+spec.pgram(data2$pun)
+#abline(h = )
+per <- spec.pgram(dp)
 
-freg <- fRegress(yy ~ hs + wds + wdys + wks, hol)
+spec.pgram(dp)
+abline(h = quantile(per$spec, probs = 0.90))
+highfreq <- per$freq[which(per$spec >= quantile(per$spec, probs = 0.90))]
 
-
-data.frame(data[which(as.Date(data$date) == as.Date('2016-10-29')),])
-gg <- data.frame(data[which(as.Date(data$date) == as.Date('2016-10-30')),])
+barplot(1/highfreq, highfreq, col = 'red')
+### predominant frequency is 7 days
+acf(1/highfreq, lag.max = 1407)
