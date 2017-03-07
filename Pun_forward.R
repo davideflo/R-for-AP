@@ -477,6 +477,7 @@ plot(dp, type = 'l')
 plot(diff(dp), type = 'l', col = 'blue')
 
 library(forecast)
+library(TSA)
 
 arfit <- arima(data2$pun, order = c(24,2,24))
 farfit <- forecast.Arima(arfit, h=8760)
@@ -493,3 +494,19 @@ highfreq <- per$freq[which(per$spec >= quantile(per$spec, probs = 0.90))]
 barplot(1/highfreq, highfreq, col = 'red')
 ### predominant frequency is 7 days
 acf(1/highfreq, lag.max = 1407)
+
+
+
+hs <- maply(1:nrow(data2), function(n) lubridate::hour(as.POSIXct(unlist(data2[n,'date']), origin = '1970-01-01')))
+wds <- maply(1:nrow(data2), function(n) lubridate::wday(as.POSIXct(unlist(data2[n,'date']), origin = '1970-01-01')))
+wdys <- maply(1:nrow(data2), function(n) lubridate::yday(as.POSIXct(unlist(data2[n,'date']), origin = '1970-01-01')))
+wks <- maply(1:nrow(data2), function(n) lubridate::week(as.POSIXct(unlist(data2[n,'date']), origin = '1970-01-01')))
+hol <- maply(1:nrow(data2), function(n) add_holidays_Date(as.Date(as.POSIXct(unlist(data2$date[n]), origin = '1970-01-01'))))
+
+fit <- gamm(data2$pun ~ s(DTN$`H-24`, bs = "cc") + s(DTN$`H-23`, bs = "cc") + s(DTN$`H-22`, bs = "cc") + s(DTN$`H-21`, bs = "cc") + s(DTN$`H-20`, bs = "cc") +
+          s(DTN$`H-19`, bs = "cc") +s(DTN$`H-18`, bs = "cc") +s(DTN$`H-17`, bs = "cc") +s(DTN$`H-16`, bs = "cc") +s(DTN$`H-15`, bs = "cc") +
+          s(DTN$`H-14`, bs = "cc") +s(DTN$`H-13`, bs = "cc") +s(DTN$`H-12`, bs = "cc") +s(DTN$`H-11`, bs = "cc") +s(DTN$`H-10`, bs = "cc") +
+          s(DTN$`H-9`, bs = "cc") +s(DTN$`H-8`, bs = "cc") +s(DTN$`H-7`, bs = "cc") +s(DTN$`H-6`, bs = "cc") +s(DTN$`H-5`, bs = "cc") +
+          s(DTN$`H-4`, bs = "cc") +s(DTN$`H-3`, bs = "cc") +s(DTN$`H-2`, bs = "cc") +s(DTN$`H-1`, bs = "cc") +
+          s(target_day, bs = "cc", k = 7) + s(target_week, bs = "cc", k = 35) + s(target_T, bs = "cc") + hol, data = data2)
+
