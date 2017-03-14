@@ -55,6 +55,7 @@ make_DLdataset_pun_forward2 <- function(data)
     wdys <- lubridate::yday(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     wks <-  lubridate::week(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     hol <-  add_holidays_Date(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    mon <- lubridate::month(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     
     new_date <- lubridate::ymd(as.Date(data$date[i])) + lubridate::years(1)
     new_date2 <- lubridate::ymd(as.Date(data$date[i]) + 1) + lubridate::years(1)
@@ -66,6 +67,13 @@ make_DLdataset_pun_forward2 <- function(data)
       
       ypun <- ypun[which(lubridate::hour(as.POSIXct(ypun$date, origin = '1970-01-01')) == hs),]
       
+      PK <- 0
+      OP <- 0
+      F1 <- 0
+      F2 <- 0
+      F3 <- 0
+      
+      
       nr <- nrow(ypun)
       
       if(nr == 0)
@@ -75,19 +83,44 @@ make_DLdataset_pun_forward2 <- function(data)
       else if(nr == 2)
       {
         y <- sum(ypun$pun, na.rm = FALSE)
+        
       }
       else
       {
         y <- ypun$pun
+        
+        if(unlist(ypun[,3]) == 'OP')
+        {
+          OP <- 1
+        }
+        else
+        {
+          PK <- 1
+        }  
+        
+        if(unlist(ypun[,4]) == 'F1')
+        {
+          F1 <- 1
+        }
+        else if(unlist(ypun[,4]) == 'F2')
+        {
+          F2 <- 1
+        }
+        else
+        {
+          F3 <- 1
+        }
+        
       }
       
       twds <- lubridate::wday(new_date)
       twdys <- lubridate::yday(new_date)
       twks <-  lubridate::week(new_date)
+      tmonth <- lubridate::month(new_date)
       thol <-  add_holidays_Date(new_date)
       
-      df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol, y, hs, twds, twdys, twks, thol)
-      colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+      df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol,mon, y, hs, twds, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      colnames(df2) <- c("lpun","hour","weekday","day","week","holiday", "month","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
       #d_f <- bind_rows(d_f, df2)
       l <- list(data.frame(d_f), df2)
       d_f <- rbindlist(l)
@@ -154,20 +187,41 @@ prediction_pun_forward2 <- function(df, start_date)
   return(d_f)
 }
 #############################################################################################################
+CleanDataset <- function(dt)
+{
+  il <- c()
+  for(i in seq(nrow(dt),1, length.out = nrow(dt)))
+  {
+    lil <- length(il)
+    if(dt$ypun[i] == 0) il <- c(il, i)
+    if(length(il) == lil)
+    {
+      break
+    }
+  }
+  return(dt[-il,])
+}
+#############################################################################################################
 
 library(feather)
 
 data2 <- read_excel("dati_2014-2017.xlsx") #### da python
 colnames(data2) <- c('date', 'pun')
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-02-21'), by = 'hour')[1:nrow(data2)]
-7*24
+
 DLD2 <- make_DLdataset_pun_forward2(data2)
-DLD2 <- DLD2[1:18745] ## last number += difference in days from last update * 24
+DLD2 <- CleanDataset(DLD2) ## last number += difference in days from last update * 24)
 write_feather(DLD2, "dati_punForward")
 
-pred17 <- prediction_pun_forward2(data2, "2017-03-01") ### 2 days ahead from last date of PUN
+pred17 <- prediction_pun_forward2(data2, "2017-03-11") ### 2 days ahead from last date of PUN
 
+CleanDataset(dt)
 
+for(m in 1:12)
+{
+  mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),]
+  print(paste("PK/OP average spread in month",m," = ", mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),"lpun"])) - mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 0),"lpun"])) ))
+}
 
 # library(h2o)
 # #### C:\Program Files\R\R-3.3.2\library\h2o\java
@@ -184,3 +238,17 @@ pred17 <- prediction_pun_forward2(data2, "2017-03-01") ### 2 days ahead from las
 # plot(modeldl)
 # summary(modeldl)
 # h2o.r2(modeldl)
+
+library(neuralnet)
+
+maxs <- apply(DLD2, 2, max) 
+mins <- apply(DLD2, 2, min)
+
+scaled <- as.data.frame(scale(DLD2, center = mins, scale = maxs - mins))
+n <- names(DLD2)
+f <- as.formula(paste("ypun ~", paste(n[!n %in% "ypun"], collapse = " + ")))
+nn <- neuralnet(f,data=scaled,hidden=c(100,100,100),linear.output=T)
+
+
+
+
