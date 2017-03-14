@@ -179,6 +179,7 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
       twks <-  lubridate::week(new_date)
       tmonth <- lubridate::month(new_date)
       thol <-  add_holidays_Date(new_date)
+      tmday <- lubridate::mday(new_date)
       
       PK <- 0
       OP <- 0
@@ -214,7 +215,7 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
         }
       }
       
-      df2 <- data.frame(pun16$pun[i], hs, hol, hs, twds, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      df2 <- data.frame(pun16$pun[i], hs, hol, hs, twds, twdys, twks, thol, tmday, OP, PK, F1, F2, F3, tmonth)
       #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
       #d_f <- bind_rows(d_f, df2)
       l <- list(data.frame(d_f), df2)
@@ -227,7 +228,7 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
     }
     
   }
-  colnames(d_f) <- c("lpun","hour","holiday","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+  colnames(d_f) <- c("lpun","hour","holiday","thour","tweekday","tday","tweek","tholiday", "day_month", "OP", "PK", "F1", "F2", "F3","tmonth")
   return(d_f)
 }
 #############################################################################################################
@@ -365,10 +366,14 @@ plot(8*ygl17/sd(ygl17), type = 'l', col = 'magenta')
 yhat17 <- read_excel('longterm_pun.xlsx')
 real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
 
+yhat17 <- yhat17[,c(1,11)]
 ### paste existing 2017 pun
 #yhat17 <- yg17
 sequence_dates <- seq.POSIXt(as.POSIXct('2017-01-01'), as.POSIXct('2018-01-01'), by = 'hour')
 ph <- data.frame(sequence_dates[1:8760], prediction) ### prediction from the bottom; otherwise yhat17
+ph <- data.frame(sequence_dates[1:8760], yhat17) ### prediction from the bottom; otherwise yhat17
+ph <- ph[,c(1,3)]
+
 colnames(ph) <- c("date", "pun")
 
 PH <- Assembler(real, ph)
@@ -401,7 +406,7 @@ RPH <- Redimensioner(RPH, unlist(PC[13,2]), "2017-12-01", "2017-12-31")
 RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
 RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
 RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
-RPH <- Redimensioner(PH, 39.9, "2017-04-01", "2017-04-30")
+RPH <- Redimensioner(PH,40.25, "2017-04-01", "2017-04-30")
 RPH <- Redimensioner(RPH, 39.8, "2017-05-01", "2017-05-31")
 RPH <- Redimensioner(RPH, 41.65, "2017-06-01", "2017-06-30")
 RPH <- Redimensioner(RPH, 48.55, "2017-07-01", "2017-07-31")
@@ -419,15 +424,15 @@ mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= a
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-05-31") & as.Date(RPH$date) >= as.Date("2017-05-01")])
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
 ### Q3
-RPH <- Redimensioner(RPH, 46.40, "2017-07-01", "2017-09-30")
+RPH <- Redimensioner(RPH, 45.80, "2017-07-01", "2017-09-30")
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-09-30") & as.Date(RPH$date) >= as.Date("2017-07-01")])
 ### Q4
-RPH <- Redimensioner(RPH, 46.35, "2017-10-01", "2017-12-31")
+RPH <- Redimensioner(RPH, 46.75, "2017-10-01", "2017-12-31")
 mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-12-31") & as.Date(RPH$date) >= as.Date("2017-10-01")])
 #############################
 #### constrained Q2
 d_f <- data_frame()
-mh <- 41.80 - 42/3
+mh <- 41.00 - 40.25/3
 from <- as.Date('2017-05-01')
 to <- as.Date('2017-06-30')
 period <- RPH[which(as.Date(RPH$date) >= from & as.Date(RPH$date) <= to),]
@@ -451,39 +456,60 @@ write.xlsx(RPH, "longterm_pun.xlsx")
 
 ######### MONTHWISE MODELS ##########
 response <- "ypun"
-regressors <- setdiff(colnames(DLD2),c(response, "tmonth"))
+regressors <- setdiff(colnames(DLD2),c(response, "tmonth", "PK", "OP"))
 
-
+list_ore <- bind_cols(list_ore, pun = data.frame(rep(0, nrow(list_ore) ))) 
 
 pred17 <- prediction_pun_forward2(data2, as.character(last_date + 2), list_ore) ### 2 days ahead from last date of PUN
 
-prediction <- c()
+PFP <- c("PK", "OP")
+
+#prediction <- c()
 for(m in 1:12)
 {
-  model_name <- paste0("gbm_",m)
-  
-  mDLD2 <- DLD2[which(DLD2$tmonth == m),]
-  mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
-  
-  mpred17 <- pred17[which(pred17$tmonth == m),]
-  
-  # modelgbm <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2),
-  #                              standardize = TRUE, activation = "Rectifier", 
-  #                              hidden = c(1000, 1000, 1000), epochs = 100, elastic_averaging = TRUE,
-  #                              elastic_averaging_regularization = 0.01)
-  # 
-  
-  modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
-                       ntrees = 5000, max_depth = 8000)
-  
-  h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
-  print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
-  
-  
-  yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17))
-  yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
-  
-  prediction <- c(prediction, yhat17)
+  for(pfp in PFP)
+  {
+      
+    
+    model_name <- paste0("gbm_",m,"_",pfp)
+    
+    if(pfp == "PK") {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$PK ==1),];
+    print(paste("PK/OP average spread in month",m," = ", mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),"lpun"])) - mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 0),"lpun"])) ))}
+    else {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$OP ==1),]}
+    
+    mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
+    
+    
+    
+    # modelgbm <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2),
+    #                              standardize = TRUE, activation = "Rectifier", 
+    #                              hidden = c(1000, 1000, 1000), epochs = 100, elastic_averaging = TRUE,
+    #                              elastic_averaging_regularization = 0.01)
+    # 
+    
+    modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
+                         ntrees = 5000, max_depth = 24)
+    
+    h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
+    print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
+    
+    
+    yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17))
+    yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
+    
+    for(i in 1:nrow(mpred17))
+    {
+      mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == mpred17$thour[i])
+      # mlo <- list_ore[which(list_ore$Month == m),]
+      # dmlo <- mlo[which(mlo$Day == mpred17$day_month[i]),]
+      # hdmlo <- dmlo[which(dmlo$Hour == mpred17$thour[i])]
+      list_ore[mlo,9] <- yhat17[i]
+    }
+    
+    
+    #prediction <- c(prediction, yhat17)
+  }
+  print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
 }
 
 plot(prediction, type = 'l', col = 'blue')
