@@ -137,7 +137,7 @@ make_DLdataset_pun_forward2 <- function(data)
     }
     
   }
-  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday", "month","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
   return(d_f)
 }
 #####################################################################
