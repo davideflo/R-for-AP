@@ -56,6 +56,18 @@ make_DLdataset_pun_forward2 <- function(data)
     wks <-  lubridate::week(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     hol <-  add_holidays_Date(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
     mon <- lubridate::month(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    YR <- lubridate::year(as.POSIXct(unlist(data[i,'date']), origin = '1970-01-01'))
+    op <- 0
+    pk <- 0
+    
+    if(data$`pk-op`[i] == "PK")
+    {
+      pk <- 1
+    }
+    else
+    {
+      op <- 1
+    }
     
     new_date <- lubridate::ymd(as.Date(data$date[i])) + lubridate::years(1)
     new_date2 <- lubridate::ymd(as.Date(data$date[i]) + 1) + lubridate::years(1)
@@ -119,8 +131,8 @@ make_DLdataset_pun_forward2 <- function(data)
       tmonth <- lubridate::month(new_date)
       thol <-  add_holidays_Date(new_date)
       
-      df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol,mon, y, hs, twds, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
-      colnames(df2) <- c("lpun","hour","weekday","day","week","holiday", "month","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+      df2 <- data.frame(data$pun[i], hs, wds, wdys, wks, hol, mon, YR, pk, op, y, hs, twds, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      colnames(df2) <- c("lpun","hour","weekday","day","week","holiday", "month", "year", "pky", "opy","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
       #d_f <- bind_rows(d_f, df2)
       l <- list(data.frame(d_f), df2)
       d_f <- rbindlist(l)
@@ -137,7 +149,7 @@ make_DLdataset_pun_forward2 <- function(data)
     }
     
   }
-  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday", "month","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+  colnames(d_f) <- c("lpun","hour","weekday","day","week","holiday", "month", "year", "pky", "opy","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
   return(d_f)
 }
 #####################################################################
@@ -207,6 +219,7 @@ library(feather)
 
 data2 <- read_excel("dati_2014-2017.xlsx") #### da python
 colnames(data2) <- c('date', 'pun')
+colnames(data2) <- c('date', 'pun', "pk-op", "fasce")
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct('2017-02-21'), by = 'hour')[1:nrow(data2)]
 
 DLD2 <- make_DLdataset_pun_forward2(data2)
@@ -219,10 +232,57 @@ CleanDataset(dt)
 
 for(m in 1:12)
 {
-  mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),]
-  print(paste("PK/OP average spread in month",m," = ", mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),"lpun"])) - mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 0),"lpun"])) ))
+  mm14 <- mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$year == 2014),"lpun"]))
+  pkDLD214 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 1 & DLD2$year == 2014),"lpun"]
+  opDLD214 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 0 & DLD2$year == 2014),"lpun"]
+  
+  length(unlist(pkDLD214))
+  
+  mm15 <- mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$year == 2015),"lpun"]))
+  pkDLD215 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 1 & DLD2$year == 2015),"lpun"]
+  opDLD215 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 0 & DLD2$year == 2015),"lpun"]
+  
+  mm16 <- mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$year == 2016),"lpun"]))
+  pkDLD216 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 1 & DLD2$year == 2016),"lpun"]
+  opDLD216 <- DLD2[which(DLD2$tmonth == m & DLD2$pky == 0 & DLD2$year == 2016),"lpun"]
+  
+  
+  print(paste("2014 spread PK - Baseload in month", m, "=", mean(unlist(pkDLD214) - mm14)))
+  print(paste("2014 spread Baseload - OP in month", m, "=", mean(mm14 - unlist(opDLD214))))
+  print(paste("2014 PK/OP average spread in month",m," = ", mean(unlist(pkDLD214) - mm14) - mean(mm14 - unlist(opDLD214)) ))
+  
+  print(paste("2015 spread PK - Baseload in month", m, "=", mean(unlist(pkDLD215) - mm15)))
+  print(paste("2015 spread Baseload - OP in month", m, "=", mean(mm15 - unlist(opDLD215))))
+  print(paste("2015 PK/OP average spread in month",m," = ", mean(unlist(pkDLD215) - mm15) - mean(mm15 - unlist(opDLD215)) ))
+  
+  print(paste("2016 spread PK - Baseload in month", m, "=", mean(unlist(pkDLD216) - mm16)))
+  print(paste("2016 spread Baseload - OP in month", m, "=", mean(mm16 - unlist(opDLD216))))
+  print(paste("2016 PK/OP average spread in month",m," = ", mean(unlist(pkDLD216) - mm16) - mean(mm16 - unlist(opDLD216)) ))
+  
 }
 
+a4 <- unlist(pkDLD214) - mm14
+b4 <- mm14 - unlist(opDLD214)
+a5 <- unlist(pkDLD215) - mm15
+b5 <- mm15 - unlist(opDLD215)
+a6 <- unlist(pkDLD216) - mm16
+b6 <- mm16 - unlist(opDLD216)
+
+write.xlsx(data.frame(a4), "pk-bsl4.xlsx")
+write.xlsx(data.frame(b4), "bsl-op4.xlsx")
+write.xlsx(data.frame(a5), "pk-bsl5.xlsx")
+write.xlsx(data.frame(b5), "bsl-op5.xlsx")
+write.xlsx(data.frame(a6), "pk-bsl6.xlsx")
+write.xlsx(data.frame(b6), "bsl-op6.xlsx")
+
+length(which(lubridate::year(data2$date) == 2014 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "PK"))
+length(which(lubridate::year(data2$date) == 2014 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "OP"))
+length(which(lubridate::year(data2$date) == 2015 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "PK"))
+length(which(lubridate::year(data2$date) == 2015 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "OP"))
+length(which(lubridate::year(data2$date) == 2016 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "PK"))
+length(which(lubridate::year(data2$date) == 2016 & lubridate::month(data2$date) == 1 & data2$`pk-op` == "OP"))
+
+write.xlsx(DLD2, "dataset.xlsx")
 # library(h2o)
 # #### C:\Program Files\R\R-3.3.2\library\h2o\java
 # h2o.init(nthreads = -1, max_mem_size = '20g')
