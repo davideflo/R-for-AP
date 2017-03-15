@@ -294,6 +294,9 @@ last_date <- as.Date(as.POSIXct(unlist(data2[nrow(data2),1]), origin = '1970-01-
 
 data2$date <- seq.POSIXt(as.POSIXct('2014-01-01'), as.POSIXct(as.character(last_date + 2)), by = 'hour')[1:nrow(data2)]
 
+data2 <- data2[which(lubridate::year(data2$date) >= 2015),]
+
+
 DLD2 <- make_DLdataset_pun_forward2(data2)
 DLD2 <- CleanDataset(DLD2)
 DLD2 <- as.data.frame(read_feather("C:/Users/utente/Documents/misure/dati_punForward"))
@@ -489,9 +492,11 @@ for(m in 1:12)
     
     modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
                          ntrees = 5000, max_depth = 24)
-    
+
     h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
     print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
+    
+    #modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
     
     
     yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17))
@@ -499,7 +504,7 @@ for(m in 1:12)
     
     for(i in 1:nrow(mpred17))
     {
-      mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == mpred17$thour[i])
+      mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == (mpred17$thour[i] + 1))
       # mlo <- list_ore[which(list_ore$Month == m),]
       # dmlo <- mlo[which(mlo$Day == mpred17$day_month[i]),]
       # hdmlo <- dmlo[which(dmlo$Hour == mpred17$thour[i])]
@@ -509,10 +514,191 @@ for(m in 1:12)
     
     #prediction <- c(prediction, yhat17)
   }
-  print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
+  #print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
 }
 
-plot(prediction, type = 'l', col = 'blue')
+plot(unlist(list_ore[,9]), type = 'l', col = 'blue')
 write.xlsx(prediction, "longterm_pun.xlsx")
+write.xlsx(list_ore, "listore.xlsx")
 
+min(unlist(list_ore[,9]))
+prediction <- unlist(list_ore[,9])
+length(which(prediction == 0))
+plot(prediction, type = "l")
 
+colnames(list_ore)[9] <- "pun"
+#################################################################################
+Assembler2 <- function(real, ph)
+{
+  rows <- which(unlist(!is.na(real[,13])))
+  re <- rep(0, nrow(real))
+  
+  for(i in 1:length(rows))
+  {
+    ph[i, "pun"] <- unlist(real[rows[i],13])
+    re[i] <- 1
+  }
+  ph <- data.frame(ph, real = re)
+  return(ph)
+}
+#################################################################################
+Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
+{
+  #### @BRIEF: if what == PK => mw is referring to PK
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  nOP <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP"),])
+  nPK <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "PK"),])
+  rOP <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP")
+  rPK <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "PK")
+  M <- nOP + nPK
+  
+  periodpk <- ph[rPK,]
+  periodop <- ph[rOP,]
+  
+  if(what == "PK")  
+  {
+    opm <- (1/nOP)*((mh*M) - (mw*nPK))
+    
+    pbpk <- ifelse(length(periodpk$pun[periodpk$real == 1]) > 0, (1/M)*sum(periodpk$pun[periodpk$real == 1]), 0)
+    pbop <- ifelse(length(periodop$pun[periodop$real == 1]) > 0, (1/M)*sum(periodop$pun[periodop$real == 1]), 0)
+    pihatpk <- (mw - pbpk)/mean(periodpk$pun[periodpk$real == 0])
+    pihatop <- (opm - pbop)/mean(periodop$pun[periodop$real == 0])
+    for(i in 1:length(rPK))
+    {
+      ph[rPK[i], "pun"] <- pihatpk * unlist(ph[rPK[i], "pun"])
+    }
+    for(i in 1:length(rOP))
+    {
+      ph[rOP[i], "pun"] <- pihatop * unlist(ph[rOP[i], "pun"])
+    }
+  }
+  else
+  {
+    pkm <- (1/nPK)*((mh*M) - (mw*nOP))
+    
+    pbpk <- ifelse(length(periodpk$pun[periodpk$real == 1]) > 0, (1/M)*sum(periodpk$pun[periodpk$real == 1]), 0)
+    pbop <- ifelse(length(periodop$pun[periodop$real == 1]) > 0, (1/M)*sum(periodop$pun[periodop$real == 1]), 0)
+    pihatpk <- (pkm - pbpk)/mean(periodpk$pun[periodpk$real == 0])
+    pihatop <- (mw - pbop)/mean(periodop$pun[periodop$real == 0])
+    for(i in 1:length(rPK))
+    {
+      ph[rPK[i], "pun"] <- pihatpk * unlist(ph[rPK[i], "pun"])
+    }
+    for(i in 1:length(rOP))
+    {
+      ph[rOP[i], "pun"] <- pihatop * unlist(ph[rOP[i], "pun"])
+    }
+  }
+  
+  return(ph)
+}
+#################################################################################
+
+list_ore <- list_ore[1:8760,]
+colnames(list_ore)[9] <- "pun"
+df2 <- Assembler2(real, list_ore)
+tail(df2)
+
+plot(unlist(df2[,"pun"]), type = "l", col = "red")
+
+colnames(df2)[1] <- "date" 
+
+for(m in 1:12)
+{
+  print(paste("mean in month m = ", mean(df2$pun[which(df2$Month == m)])))
+  print(paste("sd in month m = ", sd(df2$pun[which(df2$Month == m)])))
+  
+}
+mean(list_ore$pun)
+
+RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
+RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
+RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
+
+RPH <- Redimensioner(df2, 40.90, "2017-04-01", "2017-04-30")
+RPH <- Redimensioner(RPH, 40.80, "2017-05-01", "2017-05-31")
+RPH <- Redimensioner(RPH, 42.50, "2017-06-01", "2017-06-30")
+
+RPH <- Redimensioner(RPH, 48.55, "2017-07-01", "2017-07-31")
+RPH <- Redimensioner(RPH, 43.05, "2017-08-01", "2017-08-31")
+RPH <- Redimensioner(RPH, 45.2, "2017-09-01", "2017-09-30")
+
+RPH <- Redimensioner(RPH, 42.63, "2017-10-01", "2017-10-31")
+RPH <- Redimensioner(RPH, 49.01, "2017-11-01", "2017-11-30")
+RPH <- Redimensioner(RPH, 46.76, "2017-12-01", "2017-12-31")
+
+### Q2
+RPH <- Redimensioner(RPH, 41.65, "2017-04-01", "2017-06-30")
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-06-01")])
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-05-31") & as.Date(RPH$date) >= as.Date("2017-05-01")])
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
+### Q3
+RPH <- Redimensioner(RPH, 46.15, "2017-07-01", "2017-09-30")
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-09-30") & as.Date(RPH$date) >= as.Date("2017-07-01")])
+### Q4
+RPH <- Redimensioner(RPH, 46.60, "2017-10-01", "2017-12-31")
+mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-12-31") & as.Date(RPH$date) >= as.Date("2017-10-01")])
+#############################
+#### constrained Q2
+d_f <- data_frame()
+mh <- 41.00 - 40.25/3
+from <- as.Date('2017-05-01')
+to <- as.Date('2017-06-30')
+period <- RPH[which(as.Date(RPH$date) >= from & as.Date(RPH$date) <= to),]
+M <- nrow(period)
+phb <- (1/M)*sum(period$pun[period$real == 0])
+pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[period$real == 1]), 0)
+pihat <- (mh - pb)/phb
+pihat <- mh*3/(mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-05-01') & as.Date(RPH$date) <= as.Date('2017-05-31')),'pun'])) + mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-06-01') & as.Date(RPH$date) <= as.Date('2017-06-30')),'pun'])))
+period$pun <- pihat * period$pun
+
+d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) < from),])
+d_f <- bind_rows(d_f, period)
+d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) > to),])
+
+RPH <- d_f
+
+df <- Redimensioner_pkop(RPH, 42.10, "2017-04-01", "2017-04-30", "PK")
+plot(df$pun, type = "l", col = "grey")
+mean(df$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01") & RPH$PK.OP == "PK"])
+
+df2 <- Redimensioner_pkop(df2, 40.90, 42.10, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 40.80, 41.35, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 42.50, 45.50, "2017-06-01", "2017-06-30", "PK")
+
+mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
+mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
+mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01")])
+mean(df2$pun[as.Date(df2$date) <= as.Date("2017-05-31") & as.Date(df2$date) >= as.Date("2017-05-01")])
+mean(df2$pun[as.Date(df2$date) <= as.Date("2017-04-30") & as.Date(df2$date) >= as.Date("2017-04-01")])
+
+df2 <- Redimensioner_pkop(df2, 46.15, 51.00, "2017-07-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 46.60, 54.80, "2017-10-01", "2017-12-31", "PK")
+
+plot(df2$pun, type = "l", col = "cyan")
+
+### 2017/03/15
+diffk2e <- data.frame(op = c(0,0,-3.963920579,0.166723517,0.428474413,0.653116911,-7.901892083,-0.95124084,9.513836466,5.172410511,-1.846053886,-3.44081476),
+                      pk = c(0,0,-8.579686001,-0.65,-0.2,0,-17.11948935,2.729178576,13.52800805,5.937756087,-10.52805048,3.727927462))
+
+for(m in 3:12)
+{
+  rop <- which(df2$Month == m & df2$PK.OP == "OP") 
+  rpk <- which(df2$Month == m & df2$PK.OP == "PK")
+  for(i in 1:length(rop))
+  {
+    df2[rop[i], "pun"] <- df2[rop[i], "pun"] - rnorm(n = 1, mean = diffk2e[m,"op"], sd = 0.2) 
+  }
+  for(i in 1:length(rpk))
+  {
+    df2[rpk[i], "pun"] <- df2[rpk[i], "pun"] - rnorm(n = 1, mean = diffk2e[m,"pk"], sd = 0.2) 
+  }
+}
+
+plot(df2$pun, type = "l", col = 'blue')
+
+write.xlsx(df2, "longterm_pun.xlsx")
