@@ -595,11 +595,41 @@ Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
   return(ph)
 }
 #################################################################################
+WeekRedimensioner <- function(ph, mh, from, to)
+{
+  #### @BRIEF: if what == PK => mw is referring to PK
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  M <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to),])
+  rows <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to)
+  
+  
+  period <- ph[rows,]
+    
+  pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[periodpk$real == 1]), 0)
+  
+  pihat <- (mh - pb)/mean(period$pun[period$real == 0])
+  
+  for(i in 1:length(rows))
+  {
+    ph[rows[i], "pun"] <- pihat * unlist(ph[rows[i], "pun"])
+  }
+  
+  
+  return(ph)
+}
+###################################################################
+list_ore <- read_excel('longterm_pun.xlsx')
+real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
+
 
 list_ore <- list_ore[1:8760,]
 colnames(list_ore)[9] <- "pun"
 df2 <- Assembler2(real, list_ore)
+df2 <- df2[,c(1:9, 11)]
 tail(df2)
+colnames(df2)[10] <- "real"
 
 plot(unlist(df2[,"pun"]), type = "l", col = "red")
 
@@ -666,9 +696,9 @@ df <- Redimensioner_pkop(RPH, 42.10, "2017-04-01", "2017-04-30", "PK")
 plot(df$pun, type = "l", col = "grey")
 mean(df$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01") & RPH$PK.OP == "PK"])
 
-df2 <- Redimensioner_pkop(df2, 40.90, 42.10, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 40.80, 41.35, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 42.50, 45.50, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 41.05, 43.00, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 41, 41.75, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 42.01, 44.90, "2017-06-01", "2017-06-30", "PK")
 
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
@@ -676,10 +706,10 @@ mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= a
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-05-31") & as.Date(df2$date) >= as.Date("2017-05-01")])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-04-30") & as.Date(df2$date) >= as.Date("2017-04-01")])
 
-df2 <- Redimensioner_pkop(df2, 46.15, 51.00, "2017-07-01", "2017-09-30", "PK")
-df2 <- Redimensioner_pkop(df2, 46.60, 54.80, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 46.30, 51.50, "2017-07-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 47.00, 55.50, "2017-10-01", "2017-12-31", "PK")
 
-plot(df2$pun, type = "l", col = "cyan")
+plot(df2$pun, type = "l", col = "magenta")
 
 ### 2017/03/15
 diffk2e <- data.frame(op = c(0,0,-3.963920579,0.166723517,0.428474413,0.653116911,-7.901892083,-0.95124084,9.513836466,5.172410511,-1.846053886,-3.44081476),
@@ -702,3 +732,32 @@ for(m in 3:12)
 plot(df2$pun, type = "l", col = 'blue')
 
 write.xlsx(df2, "longterm_pun.xlsx")
+
+spread <- read_excel("historical_spreads.xlsx")
+
+df3 <- df2
+
+
+for(m in 1:12)
+{
+  mpk <- which(df2$Month == m & df2$PK.OP == "PK")
+  mop <- which(df2$Month == m & df2$PK.OP == "OP")
+  mm <- mean(df2$pun[which(df2$Month == m)])
+  Mpk <- mean(unlist(df2[mpk,'pun']))
+  Mop <- mean(unlist(df2[mop,'pun']))
+                          
+  for(i in mpk)
+  {
+    df2[i,'pun'] <- unlist(df2[i,'pun']) + unlist(spread[m,'spread_pk']) + mm - Mpk
+  }
+  for(i in mop)
+  {
+    df2[i,'pun'] <- unlist(df2[i,'pun']) - unlist(spread[m,'spread_op']) + mm - Mop
+  }
+  
+}
+
+df2 <- WeekRedimensioner(df2, 43.25, '2017-03-20', '2017-03-26')
+df2 <- WeekRedimensioner(df2, 43, '2017-03-27', '2017-04-02')
+
+write.xlsx(Assembler2(real,df2), "longterm_pun.xlsx")
