@@ -25,8 +25,8 @@ add_holidays_Date <- function(vd)
   ## Ferragosto = 8, 1 Novembre = 9
   ## 8 Dicembre = 10, Natale = 11, S.Stefano = 12, S.Silvestro = 13
   holidays <- 0
-  pasqua <- as.Date(c("2010-04-04", "2011-04-24", "2012-04-08", "2013-03-31", "2014-04-20", "2015-04-05", "2016-03-27","2017-04-16"))
-  pasquetta <- as.Date(c("2010-04-05", "2011-04-25", "2012-04-09", "2013-04-01", "2014-04-21", "2015-04-06", "2016-03-28","2017-04-17"))
+  pasqua <- as.Date(c("2010-04-04", "2011-04-24", "2012-04-08", "2013-03-31", "2014-04-20", "2015-04-05", "2016-03-27","2017-04-16", "2018-04-01"))
+  pasquetta <- as.Date(c("2010-04-05", "2011-04-25", "2012-04-09", "2013-04-01", "2014-04-21", "2015-04-06", "2016-03-28","2017-04-17", "2018-04-02"))
   
   if(lubridate::month(vd) == 1 & lubridate::day(vd) == 1) holidays <- 1
   if(lubridate::month(vd)  == 1 & lubridate::day(vd) == 6) holidays <- 1
@@ -279,7 +279,7 @@ CleanDataset <- function(dt)
 
 ######## automatic dataset #### USA QUESTO PER PUN FORWARD
 
-system('python DataAggregator.py')
+#system('python DataAggregator.py')
 
 
 library(h2o)
@@ -620,20 +620,21 @@ WeekRedimensioner <- function(ph, mh, from, to)
   return(ph)
 }
 ###################################################################
-list_ore <- read_excel('longterm_pun.xlsx')
+list_orep <- data.table(read_excel('longterm_pun.xlsx'))
 real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
 
 
-list_ore <- list_ore[1:8760,]
-colnames(list_ore)[9] <- "pun"
-df2 <- Assembler2(real, list_ore)
-df2 <- df2[,c(1:9, 11)]
+list_orep <- list_ore[1:8760,]
+colnames(list_orep)[9] <- "pun"
+
+
+df2 <- Assembler2(real, list_orep)
+df2 <- df2[,c(2:10, 12)]
 tail(df2)
 colnames(df2)[10] <- "real"
 
 plot(unlist(df2[,"pun"]), type = "l", col = "red")
 
-colnames(df2)[1] <- "date" 
 
 for(m in 1:12)
 {
@@ -643,9 +644,9 @@ for(m in 1:12)
 }
 mean(list_ore$pun)
 
-RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
-RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
-RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
+#RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
+#RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
+#RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
 
 RPH <- Redimensioner(df2, 40.90, "2017-04-01", "2017-04-30")
 RPH <- Redimensioner(RPH, 40.80, "2017-05-01", "2017-05-31")
@@ -696,9 +697,9 @@ df <- Redimensioner_pkop(RPH, 42.10, "2017-04-01", "2017-04-30", "PK")
 plot(df$pun, type = "l", col = "grey")
 mean(df$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01") & RPH$PK.OP == "PK"])
 
-df2 <- Redimensioner_pkop(df2, 41.05, 43.00, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 41, 41.75, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 42.01, 44.90, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 41.00, 42.95, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 40.96, 41.01, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 42.25, 46.45, "2017-06-01", "2017-06-30", "PK")
 
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
@@ -706,8 +707,8 @@ mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= a
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-05-31") & as.Date(df2$date) >= as.Date("2017-05-01")])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-04-30") & as.Date(df2$date) >= as.Date("2017-04-01")])
 
-df2 <- Redimensioner_pkop(df2, 46.30, 51.50, "2017-07-01", "2017-09-30", "PK")
-df2 <- Redimensioner_pkop(df2, 47.00, 55.50, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 46.25, 51.45, "2017-07-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 46.45, 54.90, "2017-10-01", "2017-12-31", "PK")
 
 plot(df2$pun, type = "l", col = "magenta")
 
@@ -757,7 +758,7 @@ for(m in 1:12)
   
 }
 
-df2 <- WeekRedimensioner(df2, 43.25, '2017-03-20', '2017-03-26')
-df2 <- WeekRedimensioner(df2, 43, '2017-03-27', '2017-04-02')
+df2 <- WeekRedimensioner(df2, 45.05, '2017-03-20', '2017-03-26')
+df2 <- WeekRedimensioner(df2, 44.55, '2017-03-27', '2017-04-02')
 
 write.xlsx(Assembler2(real,df2), "longterm_pun.xlsx")
