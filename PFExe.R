@@ -622,23 +622,54 @@ WeekRedimensioner <- function(ph, mh, from, to)
 ###################################################################
 list_orep <- data.table(read_excel('longterm_pun.xlsx'))
 real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
+list_orep <- list_orep[,c(2:10, 12)]
 
-
-list_orep <- list_ore[1:8760,]
-colnames(list_orep)[9] <- "pun"
+#list_orep <- list_ore[1:8760,]
+#colnames(list_orep)[9] <- "pun"
+df2 <- list_orep
+colnames(df2)[10] <- "real"
 
 
 df2 <- Assembler2(real, list_orep)
-df2 <- df2[,c(2:10, 12)]
-tail(df2)
-colnames(df2)[10] <- "real"
+df2 <- df2[,-10]
 
 plot(unlist(df2[,"pun"]), type = "l", col = "red")
+
+##### correction factor xi_t #####
+df4 <- df2
+hspk <- read_excel("historical_std.xlsx")
+for(m in 3:12)
+{
+  var_m <- var(df2$pun[which(df2$Month == m)])
+  rop <- which(df2$PK.OP == "OP")
+  rpk <- which(df2$PK.OP == "PK")
+  rm <- which(df2$Month == m)
+  xi <- sqrt((unlist(hspk[m,"std"])^2 + 2)/(var_m))
+  print(paste("xi in", m, "=", xi))
+  
+  for(r in rm)
+  {
+    if(unlist(df2[r,"Week.Day"]) < 6)
+    {
+      if(unlist(df2[r,"PK.OP"]) == "OP")
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) - xi
+      }
+      else
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) + xi
+      }
+    }
+  }
+}
+
+plot(df2$pun, type = "l", col = "grey")
+write.xlsx(df2, "longterm_pun.xlsx")
 
 
 for(m in 1:12)
 {
-  print(paste("mean in month m = ", mean(df2$pun[which(df2$Month == m)])))
+  print(paste("mean in month", m," = ", mean(df2$pun[which(df2$Month == m)])))
   print(paste("sd in month m = ", sd(df2$pun[which(df2$Month == m)])))
   
 }
