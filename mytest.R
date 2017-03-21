@@ -1,8 +1,5 @@
 ###### test scheduler #######
 
-
+system("python NewMeteoExecuter.py")
 
 print("it's working")
-ok <- 1:10
-
-write.csv(data.frame(ok), "ok.txt")
