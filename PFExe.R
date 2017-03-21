@@ -8,6 +8,7 @@ library(feather)
 library(lubridate)
 library(data.table)
 library(h2o)
+library(xlsx)
 
 
 source("C://Users//utente//Documents//R_code//functions_for_corr_meteo_pun.R")
@@ -631,7 +632,8 @@ colnames(df2)[10] <- "real"
 
 
 df2 <- Assembler2(real, list_orep)
-df2 <- df2[,-10]
+df2 <- df2[,-11]
+colnames(df2)[11] <- "real"
 
 plot(unlist(df2[,"pun"]), type = "l", col = "red")
 
@@ -728,9 +730,9 @@ df <- Redimensioner_pkop(RPH, 42.10, "2017-04-01", "2017-04-30", "PK")
 plot(df$pun, type = "l", col = "grey")
 mean(df$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01") & RPH$PK.OP == "PK"])
 
-df2 <- Redimensioner_pkop(df2, 41.00, 42.95, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 40.96, 41.01, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 42.25, 46.45, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 42.00, 42.58, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 40.75, 41.85, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 42.50, 46.95, "2017-06-01", "2017-06-30", "PK")
 
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
@@ -738,7 +740,7 @@ mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= a
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-05-31") & as.Date(df2$date) >= as.Date("2017-05-01")])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-04-30") & as.Date(df2$date) >= as.Date("2017-04-01")])
 
-df2 <- Redimensioner_pkop(df2, 46.25, 51.45, "2017-07-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 45.70, 51.00, "2017-07-01", "2017-09-30", "PK")
 df2 <- Redimensioner_pkop(df2, 46.45, 54.90, "2017-10-01", "2017-12-31", "PK")
 
 plot(df2$pun, type = "l", col = "magenta")

@@ -318,7 +318,7 @@ for(m in 1:12)
   }
 }
 
-plot(list_ore18$pun, type = "l", col = "magenta")
+plot(list_ore18$pun, type = "l", col = "YELLOW")
 mean(list_ore18$pun)
 
 spread <- read_excel("historical_spreads.xlsx")
@@ -346,20 +346,65 @@ for(m in 1:12)
 plot(df2$pun, type = "l", col = "brown")
 
 df2$pun[which(df2$pun <= 10)] <- 10
+# # # # #  # # # # # # # # # # # # # # # # # # 
+hspk <- read_excel("historical_std.xlsx")
+for(m in 1:12)
+{
+  var_m <- var(df2$pun[which(df2$Month == m)])
+  rop <- which(df2$PK.OP == "OP")
+  rpk <- which(df2$PK.OP == "PK")
+  rm <- which(df2$Month == m)
+  xi <- sqrt((unlist(hspk[m,"std"])^2 + 2)/(var_m))
+  print(paste("xi in", m, "=", xi))
+  
+  for(r in rm)
+  {
+    if(unlist(df2[r,"Week.Day"]) < 6)
+    {
+      if(unlist(df2[r,"PK.OP"]) == "OP")
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) - xi
+      }
+      else
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) + xi
+      }
+    }
+  }
+}
+df2 <- data.table(df2)
 
 colnames(df2)[1] <- 'date'
 df2 <- df2[,1:(ncol(df2)-1)]
 df2 <- data.frame(df2, real = rep(0,8760))
 df3 <- df2
 
-df2$pun[which(df2$Month == 1)] <- 96/165.9395 * df2$pun[which(df2$Month == 1)]
+plot(df2$pun, type = "l", col = "blue")
 
-df2 <- Redimensioner_pkop(df2, 52.21, 62.73, '2018-01-01', '2018-01-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 42.90, 48.60, '2018-01-01', '2018-12-31', 'PK')
+
+
+df2 <- Redimensioner_pkop(df2, 51.34, 61.83, '2018-01-01', '2018-01-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 45.42, 52.92, '2018-02-01', '2018-02-28', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.50, 49.31, '2018-03-01', '2018-03-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 36.90, 36, '2018-04-01', '2018-04-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 39.17, 40.01, '2018-05-01', '2018-05-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 40.93, 42.44, '2018-06-01', '2018-06-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.92, 49.38, '2018-07-01', '2018-07-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 36.67, 37.54, '2018-08-01', '2018-08-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 37.85, 42.26, '2018-09-01', '2018-09-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 40.31, 49.64, '2018-10-01', '2018-10-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 46.28, 60.58, '2018-11-01', '2018-11-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.12, 52.98, '2018-12-01', '2018-12-31', 'PK')
+
+df2 <- Redimensioner_pkop(df2, 42.15, 48.00, '2018-01-01', '2018-12-31', 'PK')
 
 plot(df2$pun, type = "l", col = "navy")
 mean(df2$pun)
-mean(df2$pun[df2$Month == 1])
+
+for(m in 1:12)
+{
+  print(paste("mean month", m, "=",mean(df2$pun[df2$Month == m])))
+}
 
 sop <- data.table(read_excel("spread18gen.xlsx", sheet = "spreadop"))
 spk <- data.table(read_excel("spread18gen.xlsx", sheet = "spreadpk"))
@@ -397,4 +442,4 @@ for(m in 1:12)
   
 }
 
-
+write.xlsx(df2, "pun_forward_2018.xlsx")
