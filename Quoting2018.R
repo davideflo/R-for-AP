@@ -396,7 +396,18 @@ df2 <- Redimensioner_pkop(df2, 40.31, 49.64, '2018-10-01', '2018-10-31', 'PK')
 df2 <- Redimensioner_pkop(df2, 46.28, 60.58, '2018-11-01', '2018-11-30', 'PK')
 df2 <- Redimensioner_pkop(df2, 43.12, 52.98, '2018-12-01', '2018-12-31', 'PK')
 
-df2 <- Redimensioner_pkop(df2, 42.15, 48.00, '2018-01-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 42.00, 47.70, '2018-01-01', '2018-12-31', 'PK')
+
+###Q1:
+df2 <- Redimensioner_pkop(df2, 46.20, 54.95, '2018-01-01', '2018-03-31', 'PK')
+###Q2:
+df2 <- Redimensioner_pkop(df2, 37.55, 37.90, '2018-04-01', '2018-06-30', 'PK')
+###Q3:
+df2 <- Redimensioner_pkop(df2, 38.40, 42.25, '2018-07-01', '2018-09-30', 'PK')
+###Q4:
+df2 <- Redimensioner_pkop(df2, 45.70, 56.15, '2018-10-01', '2018-12-31', 'PK')
+
+
 
 plot(df2$pun, type = "l", col = "navy")
 mean(df2$pun)
@@ -443,3 +454,33 @@ for(m in 1:12)
 }
 
 write.xlsx(df2, "pun_forward_2018.xlsx")
+df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
+
+
+# ### extra variance linked to the unknowness of the future...
+for(m in 1:12)
+{
+  rop <- which(df2$PK.OP == "OP")
+  rpk <- which(df2$PK.OP == "PK")
+  rm <- which(df2$Month == m)
+
+  for(r in rm)
+  {
+    if(unlist(df2[r,"Week.Day"]) < 6)
+    {
+      if(unlist(df2[r,"PK.OP"]) == "OP")
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) - 0.5
+      }
+      else
+      {
+        df2[r,"pun"] <- unlist(df2[r,"pun"]) + 0.5
+      }
+    }
+  }
+}
+
+# plot(df2$pun, type = "l", col = "purple")
+# df2 <- df2[,1:9]
+# df2 <- Assembler2(real, df2)
+
