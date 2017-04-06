@@ -109,7 +109,7 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
        Sqvdvar <- Sqvdvar + profm[MONTH] * qvdvar[MONTH]/100 
        Sccvdvar <- Sccvdvar + profm[MONTH] * ccvdvar[MONTH]/100
       
-       if(tipo == "FIX")
+       if(toupper(tipo) == "FIX")
        {
          SPGas <- SPGas + (P0 * profm[MONTH])/100 
        }
