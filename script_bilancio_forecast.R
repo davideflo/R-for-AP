@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report_214_26-01-2017.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report_214_05-04-2017.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -79,25 +79,25 @@ termine <- data.frame(t(termine))
 #stoc <- openxlsx::read.xlsx("stoccaggio.xlsx", sheet = 1, colNames = TRUE) 2016
 #gia <- openxlsx::read.xlsx("giacenza.xlsx", sheet = 1,colNames = FALSE) 2016
 #### 2017 - 2018 
-stoc <- rep(0, 24)
-gia <- rep(0,24)
-
-
-## mercato a pronti
-x <- c(31,28,31,30,31,30,31,31,30,31,30,31)
-
-fattore_conversione <- 1.057275
-gia2 <- c(gia[1,1] - gia[32,1], gia[32,1] - gia[61,1], gia[61,1])
-gia2 <- (gia2/1000)*(100/fattore_conversione)
-gia2 <- c(gia2[1]/31, gia2[2]/29, gia2[3]/31)
-tt <- as.numeric(termine)
-## usare da riga 78 a riga 83. 
-mkt <- c(rep(tt[1]/31,31), rep(tt[2]/29, 29), rep(tt[3]/31,31),rep(sum(tt[4:9])/183, 183), rep(sum(tt[10:12])/92, 92),rep(340157.48/90, 90),rep(0, 365-90) )
-stok <- c(as.numeric(stoc[95:185,11]), rep(0,366-91), rep(0,365))
-stok_prog <- rep(0, 731)
-for(i in 1:730) stok_prog[i] <- stok[i] - stok[i+1] 
-
-stok_prog <- (stok_prog/(10*fattore_conversione))
+# stoc <- rep(0, 24)
+# gia <- rep(0,24)
+# 
+# 
+# ## mercato a pronti
+# x <- c(31,28,31,30,31,30,31,31,30,31,30,31)
+# 
+# fattore_conversione <- 1.057275
+# gia2 <- c(gia[1,1] - gia[32,1], gia[32,1] - gia[61,1], gia[61,1])
+# gia2 <- (gia2/1000)*(100/fattore_conversione)
+# gia2 <- c(gia2[1]/31, gia2[2]/29, gia2[3]/31)
+# tt <- as.numeric(termine)
+# ## usare da riga 78 a riga 83. 
+# mkt <- c(rep(tt[1]/31,31), rep(tt[2]/29, 29), rep(tt[3]/31,31),rep(sum(tt[4:9])/183, 183), rep(sum(tt[10:12])/92, 92),rep(340157.48/90, 90),rep(0, 365-90) )
+# stok <- c(as.numeric(stoc[95:185,11]), rep(0,366-91), rep(0,365))
+# stok_prog <- rep(0, 731)
+# for(i in 1:730) stok_prog[i] <- stok[i] - stok[i+1] 
+# 
+# stok_prog <- (stok_prog/(10*fattore_conversione))
 
 ## modifica e usa il risultato di TOT_m3!!!
 ###open_position <- colSums(curve_profili_fissi) - (mkt + stok_prog)
@@ -153,8 +153,8 @@ tot_enel <- TOT_m3(TPe,pm)
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
              "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
-             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00)
+             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601", "LGC_MF_1610","RGC_MF_1610")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00,16.00,16.00)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
@@ -184,21 +184,21 @@ tp_ap <- compute_TP(TP[which(TP["shipper"] == "AXOPOWER"),],pm) # solo AP shippe
 tot_ap <- tot - tot_enel
 
 ## aggrego e esporto in excel -- calcolo open position -- nel bilancio forecast ci va l'open position calcolata su TUTTO il fabbisogno. NON solo AP fissi.
-x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
-x18 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
+# x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
+# x18 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 #pg <- c(661508.7/31, 631508.7/29,571508.7/31,(138330.7)*6/183,(695433.1*3)/92,(340157.5)*3/90 )
 
-date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = FALSE)
+#date <- openxlsx::read.xlsx("date.xlsx", sheet = 1, colNames = FALSE)
 #date <- as.Date(date[2,],origin = "1899-12-30")
 
-c_stok <- c(21.875, 21.875, 21.875)
+#c_stok <- c(21.875, 21.875, 21.875)
 
 
 #mkt <- data.frame(t(mkt))
-stok_prog <- data.frame(t(stok_prog))
+#stok_prog <- data.frame(t(stok_prog))
 #colnames(mkt) <- colnames(date[1,])
-colnames(stok_prog) <- unlist(date[,2])
+#colnames(stok_prog) <- unlist(date[,2])
 
 
 #mmkt <- c(sum_in_year(mkt, "2016"), sum_in_year(mkt, "2017"))
@@ -300,5 +300,13 @@ rownames(TM2) <- c("PGas", "qtmvc", "cpr", "grad", "ccr", "qtint", "qtpsv", "qvd
 xlsx::write.xlsx(TM2,"estrazione_bilancio_forecast.xlsx", row.names = TRUE, col.names = TRUE)
 
 
+df <- data_frame()
+for( i in 1:nrow(aggregati))
+{
+  vc <- total_sellings_per_components(vendite[i,], pm, listing, listingG)
+  df2 = data.frame(t(unlist(aggregati[i,])), t(vc))
+  df <- bind_rows(df, df2)
+}
 
-
+xlsx::write.xlsx(df,"estrazione_vendite.xlsx", row.names = TRUE, col.names = TRUE)
+\

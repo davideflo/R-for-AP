@@ -35,7 +35,7 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
       P0 <- as.numeric(vendite[i,9])
       Prif <- 0 
       tipo <- vendite[i,"TIPO"]   
-      if (tipo == "VAR") {Prif <- as.numeric(vendite[i,10])}
+      if (toupper(tipo) == "VAR") {Prif <- as.numeric(vendite[i,10])}
       
       pc <- which(colnames(pm) == vendite[i,4])
       profm <- (as.numeric(vendite[i,5]) * pm[,pc])
