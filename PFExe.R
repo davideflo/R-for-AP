@@ -538,13 +538,35 @@ Assembler2 <- function(real, ph)
   mld <- max(which(ph$real == 1))
   errors <- unlist(real[(mld+1):nrow(real),13]) - ph$pun[(mld+1):nrow(real)]
   r <- (mld+1):nrow(real)
-  write.xlsx(data.frame(ph[r,1:(ncol(ph)-2)],Errors = errors), "C:/Users/utente/Documents/forward_pun_model_error/errors.xlsx", row.names = FALSE, append = TRUE)
+  #write.xlsx(data.frame(ph[r,1:(ncol(ph)-2)],Errors = errors), "C:/Users/utente/Documents/forward_pun_model_error/errors.xlsx", row.names = FALSE, append = TRUE)
   ### assembling step
   re <- rep(0, nrow(ph))
   
   for(i in 1:length(rows))
   {
     ph[i, "pun"] <- unlist(real[rows[i],13])
+    re[i] <- 1
+  }
+  ph <- data.frame(ph, real = re)
+  return(ph)
+}
+#################################################################################
+Assemblerk2e <- function(real, ph)
+{
+  rows <- which(unlist(!is.na(real[,13])))
+  real <- real[rows,]
+  ### comparison step
+  last_date <- as.Date(ph$date[max(which(ph$real == 1))])
+  mld <- max(which(ph$real == 1))
+  errors <- unlist(real[(mld+1):nrow(real),13]) - ph$ITALIA[(mld+1):nrow(real)]
+  r <- (mld+1):nrow(real)
+  write.xlsx(data.frame(ph[r,1:(ncol(ph)-2)],Errors = errors), "C:/Users/utente/Documents/forward_pun_model_error/k2e_errors.xlsx", row.names = FALSE, append = TRUE)
+  ### assembling step
+  re <- rep(0, nrow(ph))
+  
+  for(i in 1:length(rows))
+  {
+    ph[i, "ITALIA"] <- unlist(real[rows[i],13])
     re[i] <- 1
   }
   ph <- data.frame(ph, real = re)
@@ -608,6 +630,64 @@ Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
   return(ph)
 }
 #################################################################################
+Redimensioner_K2E <- function(ph, mh, mw, from, to, what)
+{
+  #### @BRIEF: function to agjust K2E's forecast
+  #### @BRIEF: if what == PK => mw is referring to PK
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  nOP <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK/OP` == "OP"),])
+  nPK <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK/OP` == "PK"),])
+  rOP <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK/OP` == "OP")
+  rPK <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK/OP` == "PK")
+  M <- nOP + nPK
+  
+  periodpk <- ph[rPK,]
+  periodop <- ph[rOP,]
+  
+  nPKr <- length(which(periodpk$real == 1))
+  nOPr <- length(which(periodop$real == 1))
+  
+  if(what == "PK")  
+  {
+    opm <- (1/nOP)*((mh*M) - (mw*nPK))
+    
+    
+    pbpk <- ifelse(length(periodpk$ITALIA[periodpk$real == 1]) > 0, (1/nPK)*sum(periodpk$ITALIA[periodpk$real == 1]), 0)
+    pbop <- ifelse(length(periodop$ITALIA[periodop$real == 1]) > 0, (1/nOP)*sum(periodop$ITALIA[periodop$real == 1]), 0)
+    pihatpk <- (mw - pbpk)/((1/nPK)*sum(periodpk$ITALIA[periodpk$real == 0]))
+    pihatop <- (opm - pbop)/((1/nOP)*sum(periodop$ITALIA[periodop$real == 0]))
+    for(i in 1:length(rPK))
+    {
+      if(ph[rPK[i], "real"] == 0) ph[rPK[i], "ITALIA"] <- pihatpk * unlist(ph[rPK[i], "ITALIA"])
+    }
+    for(i in 1:length(rOP))
+    {
+      if(ph[rOP[i], "real"] == 0) ph[rOP[i], "ITALIA"] <- pihatop * unlist(ph[rOP[i], "ITALIA"])
+    }
+  }
+  else
+  {
+    pkm <- (1/nPK)*((mh*M) - (mw*nOP))
+    
+    pbpk <- ifelse(length(periodpk$ITALIA[periodpk$real == 1]) > 0, (1/nPK)*sum(periodpk$ITALIA[periodpk$real == 1]), 0)
+    pbop <- ifelse(length(periodop$ITALIA[periodop$real == 1]) > 0, (1/nOP)*sum(periodop$ITALIA[periodop$real == 1]), 0)
+    pihatpk <- (pkm - pbpk)/((1/nPK)*sum(periodpk$ITALIA[periodpk$real == 0]))
+    pihatop <- (mw - pbop)/((1/nOP)*sum(periodop$ITALIA[periodop$real == 0]))
+    for(i in 1:length(rPK))
+    {
+      ph[rPK[i], "ITALIA"] <- pihatpk * unlist(ph[rPK[i], "ITALIA"])
+    }
+    for(i in 1:length(rOP))
+    {
+      ph[rOP[i], "ITALIA"] <- pihatop * unlist(ph[rOP[i], "ITALIA"])
+    }
+  }
+  
+  return(ph)
+}
+#################################################################################
 WeekRedimensioner <- function(ph, mh, from, to)
 {
   #### @BRIEF: if what == PK => mw is referring to PK
@@ -646,8 +726,15 @@ df2 <- Assembler2(real, list_orep)
 df2 <- df2[,-10]
 colnames(df2)[10] <- "real"
 
-plot(unlist(df2[,"pun"]), type = "l", col = "red")
+k2e <- data.table(read_excel("pun_K2E.xlsx"))
+colnames(k2e)[1] <- "date"
 
+k2e2 <- Assemblerk2e(real, k2e)
+k2e2 <- k2e2[,-12]
+colnames(k2e2)[12] <- "real"
+
+
+#plot(unlist(df2[,"pun"]), type = "l", col = "red")
 ##### correction factor xi_t #####
 df4 <- df2
 hspk <- read_excel("historical_std.xlsx")
@@ -771,21 +858,21 @@ mean(df$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as
 df2 <- list_orep
 
 df2 <- Redimensioner_pkop(df2, 44.40, 47.60, "2017-03-24", "2017-03-26", "PK")
-df2 <- Redimensioner_pkop(df2, 42, 43.52, "2017-04-03", "2017-04-09", "PK")
+df2 <- Redimensioner_pkop(df2, 42.80, 42.93, "2017-04-24", "2017-04-30", "PK")
 
 df2 <- Redimensioner_pkop(df2, 44.46, 47.6, "2017-03-01", "2017-03-31", "PK")
 
-df2 <- Redimensioner_pkop(df2, 42.43, 43.92, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 42.25, 43, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 44.25, 48, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 42.74, 44.28, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 42.70, 43.50, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 45.50, 49.05, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 49.5, 55.25, "2017-07-01", "2017-07-31", "PK")
-df2 <- Redimensioner_pkop(df2, 45.6, 48, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 48, 54.05, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 50.40, 56.2, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop(df2, 45.90, 48.10, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 48.25, 54.10, "2017-09-01", "2017-09-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 44.59, 50.9, "2017-10-01", "2017-10-31", "PK")
-df2 <- Redimensioner_pkop(df2, 51.18, 61.91, "2017-11-01", "2017-11-30", "PK")
-df2 <- Redimensioner_pkop(df2, 48.94, 55.16, "2017-12-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 44.52, 51.06, "2017-10-01", "2017-10-31", "PK")
+df2 <- Redimensioner_pkop(df2, 51.07, 62.04, "2017-11-01", "2017-11-30", "PK")
+df2 <- Redimensioner_pkop(df2, 48.82, 55.31, "2017-12-01", "2017-12-31", "PK")
 
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
@@ -806,9 +893,9 @@ for(m in 1:12)
   print(mm)
 }
 #Q3
-df2 <- Redimensioner_pkop(df2, 44.50, 49.80, "2017-07-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 48.50, 53.65, "2017-07-01", "2017-09-30", "PK")
 #Q4
-df2 <- Redimensioner_pkop(df2, 45.45, 54.10, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 48.90, 57.10, "2017-10-01", "2017-12-31", "PK")
 
 plot(df2$pun, type = "l", col = "magenta")
 
