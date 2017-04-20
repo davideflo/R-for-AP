@@ -582,7 +582,7 @@ Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
   nOP <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP"),])
   nPK <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "PK"),])
   rOP <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP")
-  rPK <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "PK")
+  rPK <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & (ph$`PK.OP` == "PK" | ph$`PK.OP` == "P"))
   M <- nOP + nPK
   
   periodpk <- ph[rPK,]
@@ -627,6 +627,59 @@ Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
     }
   }
   
+  return(ph)
+}
+#################################################################################
+Redimensioner_pkop_Fs <- function(ph, mh, mw, from, to, what)
+{
+  #### @BRIEF: if what == PK => mw is referring to PK
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  nOP <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP"),])
+  nPK <- nrow(ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "PK"),])
+  rOP <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & ph$`PK.OP` == "OP")
+  rPK <- which(as.Date(ph$date) >= from & as.Date(ph$date) <= to & (ph$`PK.OP` == "PK" | ph$`PK.OP` == "P"))
+  M <- nOP + nPK
+  
+  periodpk <- ph[rPK,]
+  periodop <- ph[rOP,]
+  
+  nPKr <- length(which(periodpk$real == 1))
+  nOPr <- length(which(periodop$real == 1))
+  
+  if(what == "PK")  
+  {
+    opm <- (1/nOP)*((mh*M) - (mw*nPK))
+    
+    
+    pbpk <- ifelse(length(periodpk$pun[periodpk$real == 1]) > 0, (1/nPK)*sum(periodpk$pun[periodpk$real == 1]), 0)
+    pbop <- ifelse(length(periodop$pun[periodop$real == 1]) > 0, (1/nOP)*sum(periodop$pun[periodop$real == 1]), 0)
+    pihatpk <- (mw - pbpk)/((1/nPK)*sum(periodpk$pun[periodpk$real == 0]))
+    pihatop <- (opm - pbop)/((1/nOP)*sum(periodop$pun[periodop$real == 0]))
+    
+    rpkf1 <- which(periodpk$AEEG.181.06 == "F1")
+    rpkf2 <- which(periodpk$AEEG.181.06 == "F2")
+    rpkf3 <- which(periodpk$AEEG.181.06 == "F3")
+    ropf2 <- which(periodop$AEEG.181.06 == "F2")
+    ropf3 <- which(periodop$AEEG.181.06 == "F3")
+        
+    for(i in 1:length(rPK))
+    {
+      #print(i)
+      if(ph[rPK[i], "real"] == 0 & ph[rPK[i], "AEEG.181.06"] == "F1") ph[rPK[i], "pun"] <- (length(rpkf1)/(length(rpkf1) + length(rpkf2) + length(rpkf3))) * pihatpk * unlist(ph[rPK[i], "pun"])
+      else if(ph[rPK[i], "real"] == 0 & ph[rPK[i], "AEEG.181.06"] == "F2") ph[rPK[i], "pun"] <- (length(rpkf2)/(length(rpkf1) + length(rpkf2) + length(rpkf3))) * pihatpk * unlist(ph[rPK[i], "pun"])
+      else if(ph[rPK[i], "real"] == 0 & ph[rPK[i], "AEEG.181.06"] == "F3") ph[rPK[i], "pun"] <- (length(rpkf3)/(length(rpkf1) + length(rpkf2) + length(rpkf3))) * pihatpk * unlist(ph[rPK[i], "pun"])
+      else next
+    }
+    for(i in 1:length(rOP))
+    {
+      #print(i)
+      if(ph[rOP[i], "real"] == 0 & ph[rOP[i], "AEEG.181.06"] == "F3") ph[rOP[i], "pun"] <- (length(ropf3)/(length(ropf3) + length(ropf2))) * pihatop * unlist(ph[rOP[i], "pun"])
+      else if(ph[rOP[i], "real"] == 0 & ph[rOP[i], "AEEG.181.06"] == "F2") ph[rOP[i], "pun"] <- (length(ropf2)/(length(ropf3) + length(ropf2))) * pihatop * unlist(ph[rOP[i], "pun"])
+      else next
+    }
+  }
   return(ph)
 }
 #################################################################################
@@ -723,6 +776,8 @@ df2 <- list_orep
 
 
 df2 <- Assembler2(real, list_orep)
+#df2 <- Assembler2(real, df2)
+
 df2 <- df2[,-10]
 colnames(df2)[10] <- "real"
 
@@ -733,7 +788,7 @@ k2e2 <- Assemblerk2e(real, k2e)
 k2e2 <- k2e2[,-12]
 colnames(k2e2)[12] <- "real"
 
-
+#plot(k2e$ITALIA, type = "l", col = "purple")
 #plot(unlist(df2[,"pun"]), type = "l", col = "red")
 ##### correction factor xi_t #####
 df4 <- df2
@@ -793,6 +848,32 @@ plot(df2$pun, type = "l", col = "grey")
 # df2 <- df2[,1:9]
 # df2 <- Assembler2(real, df2)
 
+####ovraprezzo F2 redistribuito su F1 e F3:
+diffF2 <- data.table(read_excel("diffF2.xlsx"))
+df3 <- df2
+for(m in 4:12)
+{
+  dfm <- df2[which(df2$Month == m),]
+  nr <- which(df2$Month == m)
+  D2 <- mean(df2$pun[which(df2$AEEG.181.06 == "F2")]) - diffF2$F2[m-3]
+  
+  nF1 <- nrow(dfm[which(dfm$AEEG.181.06 == "F1"),])
+  nF3 <- nrow(dfm[which(dfm$AEEG.181.06 == "F3"),])
+  
+  for(i in nr)
+  {
+    if(df2$AEEG.181.06[i] == "F1") df2$pun[i] <- df2$pun[i] + D2*(nF1/(nF1 + nF3))
+    else if(df2$AEEG.181.06[i] == "F3") df2$pun[i] <- df2$pun[i] + D2*(nF3/(nF1 + nF3))
+    else  df2$pun[i] <- df2$pun[i] - D2
+  }
+  
+}
+mean(df3$pun)
+mean(df2$pun)
+
+plot(df2$pun, type = "l", col = "orange")
+
+write.xlsx(df2, "longterm_pun2.xlsx", row.names = FALSE)
 
 for(m in 1:12)
 {
@@ -801,55 +882,7 @@ for(m in 1:12)
   
 }
 mean(list_ore$pun)
-
-#RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
-#RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
-#RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
-
-RPH <- Redimensioner(df2, 40.90, "2017-04-01", "2017-04-30")
-RPH <- Redimensioner(RPH, 40.80, "2017-05-01", "2017-05-31")
-RPH <- Redimensioner(RPH, 42.50, "2017-06-01", "2017-06-30")
-
-RPH <- Redimensioner(RPH, 48.55, "2017-07-01", "2017-07-31")
-RPH <- Redimensioner(RPH, 43.05, "2017-08-01", "2017-08-31")
-RPH <- Redimensioner(RPH, 45.2, "2017-09-01", "2017-09-30")
-
-RPH <- Redimensioner(RPH, 42.63, "2017-10-01", "2017-10-31")
-RPH <- Redimensioner(RPH, 49.01, "2017-11-01", "2017-11-30")
-RPH <- Redimensioner(RPH, 46.76, "2017-12-01", "2017-12-31")
-
-### Q2
-RPH <- Redimensioner(RPH, 41.65, "2017-04-01", "2017-06-30")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-06-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-05-31") & as.Date(RPH$date) >= as.Date("2017-05-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-### Q3
-RPH <- Redimensioner(RPH, 46.15, "2017-07-01", "2017-09-30")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-09-30") & as.Date(RPH$date) >= as.Date("2017-07-01")])
-### Q4
-RPH <- Redimensioner(RPH, 46.60, "2017-10-01", "2017-12-31")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-12-31") & as.Date(RPH$date) >= as.Date("2017-10-01")])
 #############################
-#### constrained Q2
-d_f <- data_frame()
-mh <- 41.00 - 40.25/3
-from <- as.Date('2017-05-01')
-to <- as.Date('2017-06-30')
-period <- RPH[which(as.Date(RPH$date) >= from & as.Date(RPH$date) <= to),]
-M <- nrow(period)
-phb <- (1/M)*sum(period$pun[period$real == 0])
-pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[period$real == 1]), 0)
-pihat <- (mh - pb)/phb
-pihat <- mh*3/(mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-05-01') & as.Date(RPH$date) <= as.Date('2017-05-31')),'pun'])) + mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-06-01') & as.Date(RPH$date) <= as.Date('2017-06-30')),'pun'])))
-period$pun <- pihat * period$pun
-
-d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) < from),])
-d_f <- bind_rows(d_f, period)
-d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) > to),])
-
-RPH <- d_f
 
 df <- Redimensioner_pkop(RPH, 42.10, "2017-04-01", "2017-04-30", "PK")
 plot(df$pun, type = "l", col = "grey")
@@ -862,17 +895,17 @@ df2 <- Redimensioner_pkop(df2, 42.80, 42.93, "2017-04-24", "2017-04-30", "PK")
 
 df2 <- Redimensioner_pkop(df2, 44.46, 47.6, "2017-03-01", "2017-03-31", "PK")
 
-df2 <- Redimensioner_pkop(df2, 42.74, 44.28, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 42.70, 43.50, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 45.50, 49.05, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop(df2, 42.90, 43.60, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 45.85, 49.50, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 50.40, 56.2, "2017-07-01", "2017-07-31", "PK")
-df2 <- Redimensioner_pkop(df2, 45.90, 48.10, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 48.25, 54.10, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 50.55, 56.70, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop(df2, 46.20, 49.00, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 48.90, 55.35, "2017-09-01", "2017-09-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 44.52, 51.06, "2017-10-01", "2017-10-31", "PK")
-df2 <- Redimensioner_pkop(df2, 51.07, 62.04, "2017-11-01", "2017-11-30", "PK")
-df2 <- Redimensioner_pkop(df2, 48.82, 55.31, "2017-12-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK")
+df2 <- Redimensioner_pkop(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
+df2 <- Redimensioner_pkop(df2, 49.33, 56.09, "2017-12-01", "2017-12-31", "PK")
 
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-04-01") & df2$PK.OP == "PK"])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-06-30") & as.Date(df2$date) >= as.Date("2017-06-01")])
@@ -885,7 +918,20 @@ mean(df2$pun[as.Date(df2$date) <= as.Date("2017-12-31") & as.Date(df2$date) >= a
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-09-30") & as.Date(df2$date) >= as.Date("2017-07-01")])
 mean(df2$pun[as.Date(df2$date) <= as.Date("2017-12-31") & as.Date(df2$date) >= as.Date("2017-10-01")])
 
+df2 <- Redimensioner_pkop_Fs(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 42.90, 43.60, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 45.85, 49.50, "2017-06-01", "2017-06-30", "PK")
 
+df2 <- Redimensioner_pkop_Fs(df2, 50.55, 56.70, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 46.20, 49.00, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 48.90, 55.35, "2017-09-01", "2017-09-30", "PK")
+
+df2 <- Redimensioner_pkop_Fs(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
+df2 <- Redimensioner_pkop_Fs(df2, 49.33, 56.09, "2017-12-01", "2017-12-31", "PK")
+
+plot(df2$pun, type = "l", col = "salmon")
+plot(ph$pun, type = "l", col = "gray")
 
 for(m in 1:12)
 {
