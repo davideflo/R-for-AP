@@ -234,33 +234,6 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
 }
 #############################################################################################################
 #################################################################################
-Assembler <- function(real, ph)
-{
-  rows <- which(unlist(is.na(real[,13])))
-  assembled <- data.frame(ph$date, as.numeric(as.character(c(unlist(real[1:(rows[1]-1),13]), unlist(ph[rows[1]:8760,2])))), c(rep(1, (8760-length(rows))),rep(0,length(rows))))
-  colnames(assembled) <- c("date", "pun", "real")
-  return(assembled)
-}
-#################################################################################
-Redimensioner <- function(ph, mh, from, to)
-{
-  d_f <- data_frame()
-  from <- as.Date(from)
-  to <- as.Date(to)
-  period <- ph[which(as.Date(ph$date) >= from & as.Date(ph$date) <= to),]
-  M <- nrow(period)
-  phb <- (1/M)*sum(period$pun[period$real == 0])
-  pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[period$real == 1]), 0)
-  pihat <- (mh - pb)/phb
-  period$pun[period$real == 0] <- pihat * period$pun[period$real == 0]
-  
-  d_f <- bind_rows(d_f, ph[which(as.Date(ph$date) < from),])
-  d_f <- bind_rows(d_f, period)
-  d_f <- bind_rows(d_f, ph[which(as.Date(ph$date) > to),])
-  
-  return(d_f)
-}
-#################################################################################
 CleanDataset <- function(dt)
 {
   il <- c()
@@ -367,91 +340,7 @@ sd(ygl17)
 plot(8*ygl17/sd(ygl17), type = 'l', col = 'magenta')
 
 
-yhat17 <- read_excel('longterm_pun.xlsx')
-real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet = 2)
 
-yhat17 <- yhat17[,c(1,11)]
-### paste existing 2017 pun
-#yhat17 <- yg17
-sequence_dates <- seq.POSIXt(as.POSIXct('2017-01-01'), as.POSIXct('2018-01-01'), by = 'hour')
-ph <- data.frame(sequence_dates[1:8760], prediction) ### prediction from the bottom; otherwise yhat17
-ph <- data.frame(sequence_dates[1:8760], yhat17) ### prediction from the bottom; otherwise yhat17
-ph <- ph[,c(1,3)]
-
-colnames(ph) <- c("date", "pun")
-
-PH <- Assembler(real, ph)
-
-mean(PH$pun)
-PC <- read_excel('Power Curves.xlsx', skip = 3)
-
-RPH <- Redimensioner(PH, unlist(PC[2,2]), "2017-01-01", "2017-01-31")
-RPH <- Redimensioner(RPH, unlist(PC[3,2]), "2017-02-01", "2017-02-28")
-RPH <- Redimensioner(RPH, unlist(PC[4,2]), "2017-03-01", "2017-03-31")
-RPH <- Redimensioner(RPH, unlist(PC[5,2]), "2017-04-01", "2017-04-30")
-RPH <- Redimensioner(RPH, unlist(PC[6,2]), "2017-05-01", "2017-05-31")
-RPH <- Redimensioner(RPH, unlist(PC[7,2]), "2017-06-01", "2017-06-30")
-RPH <- Redimensioner(RPH, unlist(PC[8,2]), "2017-07-01", "2017-07-31")
-RPH <- Redimensioner(RPH, unlist(PC[9,2]), "2017-08-01", "2017-08-31")
-RPH <- Redimensioner(RPH, unlist(PC[10,2]), "2017-09-01", "2017-09-30")
-RPH <- Redimensioner(RPH, unlist(PC[11,2]), "2017-10-01", "2017-10-31")
-RPH <- Redimensioner(RPH, unlist(PC[12,2]), "2017-11-01", "2017-11-30")
-RPH <- Redimensioner(RPH, unlist(PC[13,2]), "2017-12-01", "2017-12-31")
-
-# plot(RPH$pun, type = 'l', col = "blue3")
-# lines(RPH$pun, type = 'l', col = "blue3")
-# 
-# 
-# mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-01-31")])
-# mean(PH$pun[as.Date(PH$date) <= as.Date("2017-01-31")])
-# mean(RPH$pun)
-
-######## MANUALE ###########
-RPH <- Redimensioner(PH, 72.24, "2017-01-01", "2017-01-31")
-RPH <- Redimensioner(RPH, 55.54, "2017-02-01", "2017-02-28")
-RPH <- Redimensioner(RPH, 43.62, "2017-03-01", "2017-03-31")
-RPH <- Redimensioner(PH,40.25, "2017-04-01", "2017-04-30")
-RPH <- Redimensioner(RPH, 39.8, "2017-05-01", "2017-05-31")
-RPH <- Redimensioner(RPH, 41.65, "2017-06-01", "2017-06-30")
-RPH <- Redimensioner(RPH, 48.55, "2017-07-01", "2017-07-31")
-RPH <- Redimensioner(RPH, 43.05, "2017-08-01", "2017-08-31")
-RPH <- Redimensioner(RPH, 45.2, "2017-09-01", "2017-09-30")
-RPH <- Redimensioner(RPH, 42.63, "2017-10-01", "2017-10-31")
-RPH <- Redimensioner(RPH, 49.01, "2017-11-01", "2017-11-30")
-RPH <- Redimensioner(RPH, 46.76, "2017-12-01", "2017-12-31")
-
-### Q2
-RPH <- Redimensioner(RPH, 41.65, "2017-04-01", "2017-06-30")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-06-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-06-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-05-31") & as.Date(RPH$date) >= as.Date("2017-05-01")])
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-04-30") & as.Date(RPH$date) >= as.Date("2017-04-01")])
-### Q3
-RPH <- Redimensioner(RPH, 45.80, "2017-07-01", "2017-09-30")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-09-30") & as.Date(RPH$date) >= as.Date("2017-07-01")])
-### Q4
-RPH <- Redimensioner(RPH, 46.75, "2017-10-01", "2017-12-31")
-mean(RPH$pun[as.Date(RPH$date) <= as.Date("2017-12-31") & as.Date(RPH$date) >= as.Date("2017-10-01")])
-#############################
-#### constrained Q2
-d_f <- data_frame()
-mh <- 41.00 - 40.25/3
-from <- as.Date('2017-05-01')
-to <- as.Date('2017-06-30')
-period <- RPH[which(as.Date(RPH$date) >= from & as.Date(RPH$date) <= to),]
-M <- nrow(period)
-phb <- (1/M)*sum(period$pun[period$real == 0])
-pb <- ifelse(length(period$pun[period$real == 1]) > 0, (1/M)*sum(period$pun[period$real == 1]), 0)
-pihat <- (mh - pb)/phb
-pihat <- mh*3/(mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-05-01') & as.Date(RPH$date) <= as.Date('2017-05-31')),'pun'])) + mean(unlist(RPH[which(as.Date(RPH$date) >= as.Date('2017-06-01') & as.Date(RPH$date) <= as.Date('2017-06-30')),'pun'])))
-period$pun <- pihat * period$pun
-
-d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) < from),])
-d_f <- bind_rows(d_f, period)
-d_f <- bind_rows(d_f, RPH[which(as.Date(RPH$date) > to),])
-
-RPH <- d_f
 
 library(xlsx)
 write.xlsx(RPH, "longterm_pun.xlsx")
@@ -893,15 +782,16 @@ df2 <- list_orep
 df2 <- Redimensioner_pkop(df2, 44.40, 47.60, "2017-03-24", "2017-03-26", "PK")
 df2 <- Redimensioner_pkop(df2, 42.80, 42.93, "2017-04-24", "2017-04-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 44.46, 47.6, "2017-03-01", "2017-03-31", "PK")
+df2 <- Redimensioner_pkop(df2, 44.46, 47.60, "2017-03-01", "2017-03-31", "PK")
 
 df2 <- Redimensioner_pkop(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
-df2 <- Redimensioner_pkop(df2, 42.90, 43.60, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 45.85, 49.50, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 50.55, 56.70, "2017-07-01", "2017-07-31", "PK")
-df2 <- Redimensioner_pkop(df2, 46.20, 49.00, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 48.90, 55.35, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 43.40, 44.50, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 46.20, 50.00, "2017-06-01", "2017-06-30", "PK")
+
+df2 <- Redimensioner_pkop(df2, 51.30, 57.20, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop(df2, 44.90, 48.00, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 50.09, 56.59, "2017-09-01", "2017-09-30", "PK")
 
 df2 <- Redimensioner_pkop(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK")
 df2 <- Redimensioner_pkop(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
@@ -941,7 +831,7 @@ for(m in 1:12)
 #Q3
 df2 <- Redimensioner_pkop(df2, 48.50, 53.65, "2017-07-01", "2017-09-30", "PK")
 #Q4
-df2 <- Redimensioner_pkop(df2, 48.90, 57.10, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 48.65, 57.20, "2017-10-01", "2017-12-31", "PK")
 
 plot(df2$pun, type = "l", col = "magenta")
 
