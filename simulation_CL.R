@@ -179,6 +179,37 @@ VExpectedGain <- function(Q)
   return(vEG)
 }
 ####################################################################################
+ExpectedGain2 <- function(Q)
+{
+  QJ <- Q[1]
+  QR <- Q[2]
+  QA <- Q[3]
+  QM <- Q[4]
+  
+  vJ <- 2.70
+  vR <- 2.70
+  vA <- 5
+  vM <- 8.50
+  
+  EG <- 0
+  x <- seq(0, 1, 0.01)
+  for(p in x)
+  {
+    for(q in x)
+    {
+      for(r in x)
+      {
+        EG <- r*p*(-vJ*QJ + (QR + QA + QM))
+        EG <- EG + (1-r)*q*(-vR*QR + (QJ + QA + QM)) 
+        EG <- EG + (1-r)*(1-q)*(-vA*QA + (QJ + QR + QM)) 
+        EG <- EG + r*(1-p)*(-vM*QM + (QJ + QA + QR))
+      }
+    }
+  }
+  
+  return(EG)
+}
+####################################################################################
 
 #solnp(c(0.25,0.25,0.25,25,25,25), ExpectedPayOff, )
 ### feasible region: ui %*% theta - ci >= 0
@@ -252,3 +283,7 @@ constrOptim(c(10,10,10,10), ExpectedTreeLoss, method = "Nelder-Mead", ui = ui2, 
 
 
 veg <- VExpectedGain(c(2.845611e+01, 2.784068e-02, 7.151605e+01, 1.478676e-08))
+
+constrOptim(c(10,10,10,10), ExpectedGain2, method = "Nelder-Mead", ui = ui2, ci = ci2)
+
+
