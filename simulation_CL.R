@@ -210,6 +210,38 @@ ExpectedGain2 <- function(Q)
   return(EG)
 }
 ####################################################################################
+VExpectedGain3 <- function(Q)
+{
+  QJ <- Q[1]
+  QR <- Q[2]
+  QA <- Q[3]
+  QM <- Q[4]
+  
+  vJ <- 2.70
+  vR <- 2.70
+  vA <- 5
+  vM <- 8.50
+  
+  vEG <- c()
+  x <- seq(0, 1, 0.01)
+  for(p in x)
+  {
+    for(q in x)
+    {
+      for(r in x)
+      {
+        EG <- r*p*(-vJ*QJ + (QR + QA + QM))
+        EG <- EG + (1-r)*q*(-vR*QR + (QJ + QA + QM)) 
+        EG <- EG + (1-r)*(1-q)*(-vA*QA + (QJ + QR + QM)) 
+        EG <- EG + r*(1-p)*(-vM*QM + (QJ + QA + QR))
+        vEG <- c(vEG, EG)
+      }
+    }
+  }
+  
+  return(mean(vEG))
+}
+####################################################################################
 
 #solnp(c(0.25,0.25,0.25,25,25,25), ExpectedPayOff, )
 ### feasible region: ui %*% theta - ci >= 0
@@ -286,4 +318,6 @@ veg <- VExpectedGain(c(2.845611e+01, 2.784068e-02, 7.151605e+01, 1.478676e-08))
 
 constrOptim(c(10,10,10,10), ExpectedGain2, method = "Nelder-Mead", ui = ui2, ci = ci2)
 
+veg <- VExpectedGain(c(9.998531e+01, 7.341097e-10, 1.084993e-07, 1.468459e-02))
 
+constrOptim(c(10,10,10,10), VExpectedGain3, method = "Nelder-Mead", ui = ui2, ci = ci2)
