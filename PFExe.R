@@ -786,12 +786,15 @@ df2 <- Redimensioner_pkop(df2, 44.46, 47.60, "2017-03-01", "2017-03-31", "PK")
 
 df2 <- Redimensioner_pkop(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 43.40, 44.50, "2017-05-01", "2017-05-31", "PK")
-df2 <- Redimensioner_pkop(df2, 46.20, 50.00, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 44.20, 45.80, "2017-05-01", "2017-05-31", "PK")
+df2 <- Redimensioner_pkop(df2, 47.80, 51.00, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 51.30, 57.20, "2017-07-01", "2017-07-31", "PK")
-df2 <- Redimensioner_pkop(df2, 44.90, 48.00, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 50.09, 56.59, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 52.70, 58.40, "2017-07-01", "2017-07-31", "PK")
+### remaining months of Q3
+df2 <- Redimensioner_pkop(df2, 47.65, 53.00, "2017-08-01", "2017-09-30", "PK")
+######
+df2 <- Redimensioner_pkop(df2, 45.80, 49.10, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 50.17, 57.16, "2017-09-01", "2017-09-30", "PK")
 
 df2 <- Redimensioner_pkop(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK")
 df2 <- Redimensioner_pkop(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
@@ -831,7 +834,7 @@ for(m in 1:12)
 #Q3
 df2 <- Redimensioner_pkop(df2, 48.50, 53.65, "2017-07-01", "2017-09-30", "PK")
 #Q4
-df2 <- Redimensioner_pkop(df2, 48.65, 57.20, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 49.60, 58.60, "2017-10-01", "2017-12-31", "PK")
 
 plot(df2$pun, type = "l", col = "magenta")
 
