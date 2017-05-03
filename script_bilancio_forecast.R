@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report_214_05-04-2017.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report_214_2017.05.03.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -37,6 +37,7 @@ ao <- ao[rows,]                                                                 
 #########################################################################################################
 ## aggrega i prodotti
 aggregati <- compute_combinations_DEF_val(ao)
+aggregati2 <- round_date(aggregati)
 ### count PDR and IVA
 ##################################################################################################################################
 aggregaticount <- compute_combinations_DEF_val_countPDR(ao)                                                                      #
@@ -47,7 +48,7 @@ xlsx::write.xlsx(data.frame(aggregaticount), "cluster prodotti aggiornato conteg
 aggregati <- compute_combinations_DEF_val_Agenti(ao)                                                                             #
 xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato con agenzie.xlsx", row.names = FALSE, col.names = TRUE)     #
 ##################################################################################################################################
-xlsx::write.xlsx(data.frame(aggregati), "cluster prodotti aggiornato.xlsx", row.names = FALSE, col.names = TRUE)
+xlsx::write.xlsx(data.frame(aggregati2), "cluster prodotti aggiornato.xlsx", row.names = FALSE, col.names = TRUE)
 #aggregati_AP <- compute_combinations_DEF(ao_AP)
 #aggregati_fissi <- compute_combinations_DEF(ap_fissi)
 

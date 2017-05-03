@@ -1,6 +1,7 @@
 #######################################################################
 ############### FUNZIONI SPECIFICHE PER BILANCIO FORECAST #############
 #######################################################################
+library(Hmisc)
 
 read_file_anagrafica <- function(ao)
 {
@@ -45,4 +46,25 @@ extract_rc_4_clusters_shipper <- function(ao, shipper)
   
   return(ao[rows,cols])
 }
-
+##################################################################################################
+round_date <- function(aggregati)
+{
+  for(i in 1:nrow(aggregati))
+  {
+    print(i)
+    splitted <- strsplit(aggregati$`data fine`[i],"/")
+    if(as.numeric(splitted[[1]][1]) != 31 | as.numeric(splitted[[1]][1]) != 28 | as.numeric(splitted[[1]][1]) != 30)
+    {
+      if(as.numeric(splitted[[1]][1]) < 15)
+      {
+        month <- ifelse(as.numeric(splitted[[1]][2])-1 == 0, 12, as.numeric(splitted[[1]][2])-1)
+        aggregati$`data fine`[i] <- paste0(monthDays(as.Date(paste0(splitted[[1]][3],"-",month,"-01"))),"/",as.numeric(splitted[[1]][2])-1,"/",splitted[[1]][3])
+      }
+      else
+      {
+        aggregati$`data fine`[i] <- paste0(monthDays(as.Date(paste0(splitted[[1]][3],"-",as.numeric(splitted[[1]][2]),"-01"))),"/",as.numeric(splitted[[1]][2]),"/",splitted[[1]][3])
+      }
+    }
+  }
+  return(aggregati)
+}
