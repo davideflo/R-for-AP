@@ -72,7 +72,7 @@ AutomaticRicalendarizator <- function(year2, pun)
     {
       y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y) & 
                             lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == 28 & pun$Hour == h)]
-      d.f <- data.frame(date = yy, pun = y1)
+      d.f <- data.frame(date = y, pun = y1)
       l <- list(df, d.f)
       df <- rbindlist(l)
       next
@@ -86,7 +86,7 @@ AutomaticRicalendarizator <- function(year2, pun)
       y5 <- as.Date(as.Date(y) - years(1), origin = '1899-12-30')
       y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y) & 
                             lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == 30 & pun$Hour == (h-1))]
-      d.f <- data.frame(date = yy, pun = y1)
+      d.f <- data.frame(date = y, pun = y1)
       l <- list(df, d.f)
       df <- rbindlist(l)
       next
@@ -100,7 +100,7 @@ AutomaticRicalendarizator <- function(year2, pun)
     {
       y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y) & 
                         lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == lubridate::day(y) & pun$Hour == h)]
-      d.f <- data.frame(date = yy, pun = y1)
+      d.f <- data.frame(date = y, pun = y1)
       l <- list(df, d.f)
       df <- rbindlist(l)
     }
@@ -110,7 +110,7 @@ AutomaticRicalendarizator <- function(year2, pun)
       {
         y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y - 2) & 
                               lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == lubridate::day(y - 2) & pun$Hour == h)]
-        d.f <- data.frame(date = yy, pun = y1)
+        d.f <- data.frame(date = y, pun = y1)
         l <- list(df, d.f)
         df <- rbindlist(l)
       } 
@@ -118,7 +118,7 @@ AutomaticRicalendarizator <- function(year2, pun)
       {
         y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y + 1) & 
                               lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == lubridate::day(y + 1) & pun$Hour == h)]
-        d.f <- data.frame(date = yy, pun = y1)
+        d.f <- data.frame(date = y, pun = y1)
         l <- list(df, d.f)
         df <- rbindlist(l)
       }
@@ -127,7 +127,7 @@ AutomaticRicalendarizator <- function(year2, pun)
       {
         y1 <- pun$PUN[which(lubridate::month(as.Date(pun$Date, origin = '1899-12-30'))  == lubridate::month(y) & 
                               lubridate::day(as.Date(pun$Date, origin = '1899-12-30')) == lubridate::day(y) & pun$Hour == h)]
-        d.f <- data.frame(date = yy, pun = y1)
+        d.f <- data.frame(date = y, pun = y1)
         l <- list(df, d.f)
         df <- rbindlist(l)
       }
@@ -138,42 +138,42 @@ AutomaticRicalendarizator <- function(year2, pun)
           #### every time subset all the Mondays not-holidays of the month and of the following one --> take the closest one
           #### same thing for the other days
           y1 <- findClosestUsefulDay(y5, 0, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Tuesday")
         {
           y1 <- findClosestUsefulDay(y5, -1, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Wednesday")
         {
           y1 <- findClosestUsefulDay(y5, -2, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Thursday")
         {
           y1 <- findClosestUsefulDay(y5, 4, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Friday")
         {
           y1 <- findClosestUsefulDay(y5, 3, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Saturday")
         {
           y1 <- findClosestUsefulDay(y5, 2, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
@@ -181,7 +181,7 @@ AutomaticRicalendarizator <- function(year2, pun)
         else
         {
           y1 <- findClosestUsefulDay(y5, 1, "Monday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
@@ -195,42 +195,42 @@ AutomaticRicalendarizator <- function(year2, pun)
           #### every time subset all the Mondays not-holidays of the month and of the following one --> take the closest one
           #### same thing for the other days
           y1 <- findClosestUsefulDay(y5, 4, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Tuesday")
         {
           y1 <- findClosestUsefulDay(y5, 3, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Wednesday")
         {
           y1 <- findClosestUsefulDay(y5, 2, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Thursday")
         {
           y1 <- findClosestUsefulDay(y5, 1, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Friday")
         {
           y1 <- findClosestUsefulDay(y5, 0, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
         else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) == "Saturday")
         {
           y1 <- findClosestUsefulDay(y5, -1, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
@@ -238,7 +238,7 @@ AutomaticRicalendarizator <- function(year2, pun)
         else
         {
           y1 <- findClosestUsefulDay(y5, -2, "Friday", pun, h)
-          d.f <- data.frame(date = yy, pun = y1)
+          d.f <- data.frame(date = y, pun = y1)
           l <- list(df, d.f)
           df <- rbindlist(l)
         }
@@ -247,15 +247,15 @@ AutomaticRicalendarizator <- function(year2, pun)
               Is_holiday_Date(y) == 0 & as.character(lubridate::wday(y5, label = TRUE, abbr = FALSE)) %in% c("Saturday", "Sunday"))### se y giorno feriale e y5 festivo
       {
         y1 <- findClosestUsefulDay(y5, ifelse(as.character(lubridate::wday(y5, label = TRUE, abbr = FALSE)) == "Saturday", 3, 2), "Tuesday", pun, h)
-        d.f <- data.frame(date = yy, pun = y1)
+        d.f <- data.frame(date = y, pun = y1)
         l <- list(df, d.f)
         df <- rbindlist(l)
       }
       else if(as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) %in% c("Saturday", "Sunday") &
               as.character(lubridate::wday(y5, label = TRUE, abbr = FALSE)) %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))### se y giorno festivo e y5 feriale
       {
-        y1 <- findClosestUsefulFestDay(y5, as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)) %in% c("Saturday", "Sunday"), pun, h)
-        d.f <- data.frame(date = yy, pun = y1)
+        y1 <- findClosestUsefulFestDay(y5, as.character(lubridate::wday(y, label = TRUE, abbr = FALSE)), pun, h)
+        d.f <- data.frame(date = y, pun = y1)
         l <- list(df, d.f)
         df <- rbindlist(l)
       }
@@ -265,10 +265,38 @@ AutomaticRicalendarizator <- function(year2, pun)
   return(df)
 }
 #####################################################################################################
+DoneRicalendarizator <- function(mapto, pun)
+{
+  df <- data_frame()
+  for(i in 1:nrow(mapto))
+  {
+    dat <- mapto$`Prossimo anno`[i]
+    hn <- mapto$`Ora prossimo anno`[i]
+    print(dat)
+    print(hn)
+    nextpun <- pun$PUN[which(as.Date(pun$Date, origin = '1899-12-30') == mapto$`Anno precedente`[i] & pun$Hour == mapto$`Ora anno precedente`[i])]
+    d.f <- data.frame(Date = dat, Hour = hn, PUN = nextpun)
+    l <- list(df, d.f)
+    df <- rbindlist(l)
+  }
+  return(df)
+}
+#####################################################################################################
+
 
 dt <- data.table(read_excel("C:/Users/utente/Documents/DB_Borse_Elettriche.xlsx", sheet = "DB_Dati"))
 colnames(dt)[13] <- "PUN"
 
-year2016 <- seq.POSIXt(as.POSIXct('2016-01-01', origin = '1899-12-30'), as.POSIXct('2017-01-02', origin = '1899-12-30'), by = "hour") 
+year2016 <- seq.POSIXt(as.POSIXct('2016-01-01', origin = '1899-12-30'), as.POSIXct('2017-01-01', origin = '1899-12-30'), by = "hour") 
 
-AutomaticRicalendarizator(year2016, dt)
+tail(year2016)
+
+ric <- AutomaticRicalendarizator(year2016, dt)
+
+plot(ric$pun, type = "l", col = "red")
+
+mapto <- data.table(read_excel("C:/Users/utente/Documents/Ric_1617.xlsx"))
+dt2016 <- data.table(read_excel("C:/Users/utente/Documents/DB_Borse_Elettriche_PER MI.xlsx", sheet = "DB_Dati"))
+colnames(dt2016)[13] <- "PUN"
+
+first <- DoneRicalendarizator(mapto, dt2016)
