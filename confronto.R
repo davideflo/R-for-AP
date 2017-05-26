@@ -90,11 +90,17 @@ print(mean(dt$PUN[which(dt$`AEEG 181/06` == "F2" & dt$`PEAK-OFF PEAK` == "OP")])
 print(mean(dt$PUN[which(dt$`AEEG 181/06` == "F3" & (dt$`PEAK-OFF PEAK` == "PK" |dt$`PEAK-OFF PEAK` == "P"))]))
 print(mean(dt$PUN[which(dt$`AEEG 181/06` == "F3" & dt$`PEAK-OFF PEAK` == "OP")]))
 
+print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F1" & (dt$`PEAK-OFF PEAK` == "PK" |dt$`PEAK-OFF PEAK` == "P"))]))
+print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F2" & (dt$`PEAK-OFF PEAK` == "PK" |dt$`PEAK-OFF PEAK` == "P"))]))
+print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F2" & dt$`PEAK-OFF PEAK` == "OP")]))
+print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F3" & (dt$`PEAK-OFF PEAK` == "PK" |dt$`PEAK-OFF PEAK` == "P"))]))
+print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F3" & dt$`PEAK-OFF PEAK` == "OP")]))
+
 
 dtx <- data.table(read_excel("longterm_pun.xlsx"))
 
 par(mfrow = c(3,2))
-hist(dtx$pun[which(dtx$AEEG.181.06 == "F1" & (dtx$PK.OP == "PK" | dtx$PK.OP == "P"))], breaks = 20, col = 'red', main = "AP L(F1|PK)")
+hist(dtx$pun[which(dtx$AEEG.181.06 == "F1" & (dtx$PK.OP == "PK" | dtx$PK.OP == "P"))], breaks = 20, col = 'red2', main = "AP L(F1|PK)")
 hist(dtx$pun[which(dtx$AEEG.181.06 == "F2" & (dtx$PK.OP == "PK" | dtx$PK.OP == "P"))], breaks = 20, col = 'magenta', main = "AP L(F2|PK)")
 hist(dtx$pun[which(dtx$AEEG.181.06 == "F2" & dtx$PK.OP == "OP")], breaks = 20, col = 'grey', main = "AP L(F2|OP)")
 hist(dtx$pun[which(dtx$AEEG.181.06 == "F3" & (dtx$PK.OP == "PK" | dtx$PK.OP == "P"))], breaks = 20, col = 'green', main = "AP L(F3|PK)")
