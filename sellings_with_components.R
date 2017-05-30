@@ -67,12 +67,12 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
         if(vendite[i,"prodotto"] == "LG1_BP_CIES") lg <- listingG[1:12]
         
         
-        if(vendite[i,8] == "S" & vendite[i,7] == "0")
+        if(vendite[i,8] == "SI" & vendite[i,7] == "0")
         {
           ccvdvar <- as.numeric(unlist(vendite[i, 95:106]))  
         }
         
-        else if(vendite[i,8] == "0" & vendite[i,7] == "S")
+        else if(vendite[i,8] == "0" & vendite[i,7] == "SI")
         {
           qvdvar <- as.numeric(unlist(vendite[i, 83:94]))
         }
@@ -89,12 +89,12 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
         
         if(vendite[i,"prodotto"] == "LG1_BP_CIES") lg <- listingG[13:24]
         
-        if(vendite[i,8] == "S" & vendite[i,7] == "0")
+        if(vendite[i,8] == "SI" & vendite[i,7] == "0")
         {
           ccvdvar <- as.numeric(unlist(vendite[i, 191:202]))
         }
         
-        else if(vendite[i,8] == "0" & vendite[i,7] == "S")
+        else if(vendite[i,8] == "0" & vendite[i,7] == "SI")
         {
           qvdvar <- as.numeric(unlist(vendite[i, 179:190]))
         }
