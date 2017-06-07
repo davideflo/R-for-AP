@@ -235,9 +235,8 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
         }
       }
       
-      df2 <- data.frame(df$pun[i], hol, hs, mon, tues, wed, thur, fri, sat, sun, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
-      #colnames(df2) <- c("lpun","hour","weekday","day","week","holiday","ypun","thour","tweekday","tday","tweek","tholiday")
-      #d_f <- bind_rows(d_f, df2)
+      df2 <- data.frame(new_date, df$pun[i], hol, hs, mon, tues, wed, thur, fri, sat, sun, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      
       l <- list(data.frame(d_f), df2)
       d_f <- rbindlist(l)
     }
@@ -248,7 +247,7 @@ prediction_pun_forward2 <- function(df, start_date, list_ore)
     }
     
   }
-  colnames(d_f) <- c("lpun","holiday","thour","monday","tuesday","wednesday","thursday","friday","satday","sunday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+  colnames(d_f) <- c("date","lpun","holiday","thour","monday","tuesday","wednesday","thursday","friday","satday","sunday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
   
   return(d_f)
 }
@@ -377,9 +376,9 @@ list_ore <- bind_cols(list_ore, pun = data.frame(rep(0, nrow(list_ore) )))
 pred17 <- prediction_pun_forward2(data2, as.character(last_date + 2), list_ore) ### 2 days ahead from last date of PUN
 
 PFP <- c("PK", "OP")
-fasce <- c("F1", "F2", "F3")
+fasce <- c("F1", "F2")
 
-prediction <- c()
+prediction <- data_frame()
 for(m in 1:12)
 {
   for(pfp in PFP)
@@ -409,15 +408,6 @@ for(m in 1:12)
           next
         }
       }
-      else
-      {
-        mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1 & DLD2$F3 == 1),] 
-        mpred17 <- pred17[which(pred17$tmonth == m & pred17$PK ==1 & pred17$F3 == 1),]
-        if(nrow(mDLD2) == 0)
-        {
-          next
-        }
-      }
       
     }
     else 
@@ -435,15 +425,6 @@ for(m in 1:12)
       {
         mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1 & DLD2$F2 == 1),] 
         mpred17 <- pred17[which(pred17$tmonth == m & pred17$OP ==1 & pred17$F2 == 1),]
-        if(nrow(mDLD2) == 0)
-        {
-          next
-        }
-      }
-      else
-      {
-        mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1 & DLD2$F3 == 1),] 
-        mpred17 <- pred17[which(pred17$tmonth == m & pred17$OP ==1 & pred17$F3 == 1),]
         if(nrow(mDLD2) == 0)
         {
           next
@@ -472,7 +453,7 @@ for(m in 1:12)
     #modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
     
     
-    yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17))
+    yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17[,2:20]))
     yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
     
     for(i in 1:nrow(mpred17))
@@ -484,11 +465,34 @@ for(m in 1:12)
       list_ore[mlo,9] <- yhat17[i]
     }
     
+    Y <- data.frame(date = mpred17$date, hour = mpred17$thour, y = yhat17)
+    l <- list(prediction, Y)
+    prediction <- rbindlist(l)
     
-    prediction <- c(prediction, yhat17)
     }
   }
-  #print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
+  #### F3 all together --> here 
+  mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$F3 == 1),] 
+  mpred17 <- pred17[which(pred17$tmonth == m & pred17$F3 == 1),]
+  mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
+  model_name <- paste0("gbm_",m,"_",f)
+  modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
+                      ntrees = 5000, max_depth = 24)
+  
+  h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
+  print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
+  yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17[,2:20]))
+  yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
+  
+  for(i in 1:nrow(mpred17))
+  {
+    mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == (mpred17$thour[i] + 1))
+    list_ore[mlo,9] <- yhat17[i]
+  }
+  Y <- data.frame(date = mpred17$date, hour = mpred17$thour, y = yhat17)
+  l <- list(prediction, Y)
+  prediction <- rbindlist(l)
+  
 }
 
 plot(unlist(list_ore[,9]), type = 'l', col = 'blue')
