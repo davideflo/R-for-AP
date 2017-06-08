@@ -506,65 +506,44 @@ plot(prediction, type = "l")
 
 colnames(list_ore)[9] <- "pun"
 
-#################################################################################################################################
-#################################################################################################################################
-######### MONTHWISE MODELS WITH GAMM##########
-
-
-list_ore <- bind_cols(list_ore, pun = data.frame(rep(0, nrow(list_ore) ))) 
-
-pred17 <- prediction_pun_forward2(data2, as.character(last_date + 2), list_ore) ### 2 days ahead from last date of PUN
-
-PFP <- c("PK", "OP")
-
-prediction <- c()
-for(m in 1:12)
+### correct prediction:
+cpred <- rep(0, nrow(pred17))
+for(i in 1:nrow(pred17))
 {
-  for(pfp in PFP)
+  model_name <- paste0("gbm_",pred17$tmonth[i],"_")
+  pfp <- f <- 0
+  
+  if(pred17$OP[i] == 1)
   {
-    
-    
-    model_name <- paste0("gbm_",m,"_",pfp)
-    
-    if(pfp == "PK") {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$PK ==1),];
-    print(paste("PK/OP average spread in month",m," = ", mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),"lpun"])) - mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 0),"lpun"])) ))}
-    else {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$OP ==1),]}
-    
-    mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
-    
-    ctrl <- list(niterEM = 100, msVerbose = TRUE, optimMethod="L-BFGS-B")
-    
-    m3 <- eval(substitute(gamm(ypun ~ lpun + holiday + s(thour, bs = "cc") + s(tday, bs = "cc") + monday + tuesday + wednesday +
-                               thursday + friday + satday + sunday + tholiday + OP + PK +
-                               F1 + F2 + F3 , data = mDLD2,
-                                control = ctrl, niterPQL = 500)), mDLD2)
-    
-    
-    
-    #modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
-    
-    
-    yhat17 <- predict(modelgbm, newdata = mpred17)
-    yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
-    
-    for(i in 1:nrow(mpred17))
-    {
-      mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == (mpred17$thour[i] + 1))
-      # mlo <- list_ore[which(list_ore$Month == m),]
-      # dmlo <- mlo[which(mlo$Day == mpred17$day_month[i]),]
-      # hdmlo <- dmlo[which(dmlo$Hour == mpred17$thour[i])]
-      list_ore[mlo,9] <- yhat17[i]
-    }
-    
-    
-    prediction <- c(prediction, yhat17)
+    pfp <- "OP"
   }
-  #print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
+  else
+  {
+    pfp <- "PK"
+  }
+  
+  if(pred17$F1[i] == 1)
+  {
+    f <- "F1"
+  }
+  else if(pred17$F2[i] == 1)
+  {
+    f <- "F2"
+  }
+  
+  model_name <- paste0(model_name, pfp, "_",f)
+  
+  if(pred17$F3[i] == 1)
+  {
+    model_name <- paste0("gbm_",pred17$tmonth[i],"_F2") 
+  }
+  
+  modelh2o <- h2o.loadModel(paste0("C:/Users/utente/Documents/pun_forward_models/",model_name,"/",model_name))
+  yhat <- h2o.predict(modelh2o, newdata = as.h2o(pred17[i,2:20]))
+  yhat <- unlist(as.matrix(as.numeric(yhat$predict)))
+  cpred[i] <- yhat
 }
 
-plot(unlist(list_ore[,9]), type = 'l', col = 'blue')
-write.xlsx(prediction, "longterm_pun.xlsx")
-write.xlsx(list_ore, "listore.xlsx")
 
 #################################################################################
 Assembler2 <- function(real, ph)
