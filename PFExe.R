@@ -544,7 +544,7 @@ for(i in 1:nrow(pred17))
   cpred[i] <- yhat
 }
 
-
+write.xlsx(data.frame(cpred), "NEW_PREDICTION.xlsx")
 #################################################################################
 Assembler2 <- function(real, ph)
 {
@@ -790,7 +790,9 @@ real <- read_excel("DB_Borse_Elettriche_PER MI_17_conMacro - Copy.xlsm", sheet =
 #list_orep <- list_ore[1:8760,]
 #colnames(list_orep)[9] <- "pun"
 #df2 <- list_orep
+np <- data.table(read_excel("NEW_PREDICTION.xlsx"))
 
+list_orep$pun <- np$cpred 
 
 df2 <- Assembler2(real, list_orep)
 #df2 <- Assembler2(real, df2)
@@ -914,26 +916,26 @@ df2 <- Redimensioner_pkop(df2, 44.46, 47.60, "2017-03-01", "2017-03-31", "PK")
 df2 <- Redimensioner_pkop(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
 ####
 #### CURRENT
-df2 <- Redimensioner_pkop(df2, 49.95, 54.33, "2017-06-12", "2017-06-18", "PK")
-df2 <- Redimensioner_pkop(df2, 49.95, 54.33, "2017-06-19", "2017-06-25", "PK")
-df2 <- Redimensioner_pkop(df2, 49.95, 54.33, "2017-06-26", "2017-07-02", "PK")
+df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-12", "2017-06-18", "PK")
+df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-19", "2017-06-25", "PK")
+df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-26", "2017-07-02", "PK")
 ####
 
-df2 <- Redimensioner_pkop(df2, 48.40, 51.65, "2017-06-01", "2017-06-30", "PK")
+df2 <- Redimensioner_pkop(df2, 51.79, 64.6, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 56.30, 63.35, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop(df2, 58.10, 64.60, "2017-07-01", "2017-07-31", "PK")
 ### remaining months of Q3
 #df2 <- Redimensioner_pkop(df2, 49.91, 54.20, "2017-08-01", "2017-09-30", "PK")
 ######
-df2 <- Redimensioner_pkop(df2, 47.94, 50.41, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 49.6, 56.50, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 49.15, 50.60, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 50.45, 57.00, "2017-09-01", "2017-09-30", "PK")
 
 ###Q4
-df2 <- Redimensioner_pkop(df2, 49.10, 58.85, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 49.40, 58.60, "2017-10-01", "2017-12-31", "PK")
 
-df2 <- Redimensioner_pkop(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK")
-df2 <- Redimensioner_pkop(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
-df2 <- Redimensioner_pkop(df2, 49.33, 56.09, "2017-12-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 45.69, 53.17, "2017-10-01", "2017-10-31", "PK")
+df2 <- Redimensioner_pkop(df2, 52.51, 64.67, "2017-11-01", "2017-11-30", "PK")
+df2 <- Redimensioner_pkop(df2, 50.11, 57.62, "2017-12-01", "2017-12-31", "PK")
 
 write.xlsx(df2, "longterm_pun.xlsx", row.names = FALSE)
 
@@ -962,7 +964,7 @@ df2 <- Redimensioner_pkop_Fs(df2, 44.94, 51.75, "2017-10-01", "2017-10-31", "PK"
 df2 <- Redimensioner_pkop_Fs(df2, 51.64, 62.98, "2017-11-01", "2017-11-30", "PK")
 df2 <- Redimensioner_pkop_Fs(df2, 49.33, 56.09, "2017-12-01", "2017-12-31", "PK")
 
-plot(df2$pun, type = "l", col = "salmon")
+plot(df2$pun, type = "l", col = "grey")
 plot(ph$pun, type = "l", col = "gray")
 
 for(m in 1:12)
