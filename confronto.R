@@ -98,6 +98,7 @@ print(sd(dt$PUN[which(dt$`AEEG 181/06` == "F3" & dt$`PEAK-OFF PEAK` == "OP")]))
 
 
 dtx <- data.table(read_excel("longterm_pun.xlsx"))
+#dtx <- df2
 
 par(mfrow = c(3,2))
 hist(dtx$pun[which(dtx$AEEG.181.06 == "F1" & (dtx$PK.OP == "PK" | dtx$PK.OP == "P"))], breaks = 20, col = 'red2', main = "AP L(F1|PK)")
