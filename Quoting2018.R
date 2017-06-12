@@ -121,14 +121,23 @@ make_DLdataset_pun_forward2 <- function(data)
         }
         
       }
+      mon <- tues <- wed <- thur <- fri <- sat <- sun <- 0
+      twds <- as.character(lubridate::wday(new_date, label = TRUE, abbr = FALSE))
       
-      twds <- lubridate::wday(new_date)
+      if(twds == "Monday") mon <- 1
+      if(twds == "Tuesday") tues <- 1
+      if(twds == "Wednesday") wed <- 1
+      if(twds == "Thursday") thur <- 1
+      if(twds == "Friday") fri <- 1
+      if(twds == "Saturday") sat <- 1
+      if(twds == "Sunday") sun <- 1
+      
       twdys <- lubridate::yday(new_date)
       twks <-  lubridate::week(new_date)
       tmonth <- lubridate::month(new_date)
       thol <-  add_holidays_Date(new_date)
       
-      df2 <- data.frame(data$pun[i], hol, y, hs, twds, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      df2 <- data.frame(data$pun[i], hol, y, hs, mon, tues, wed, thur, fri, sat, sun, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
       l <- list(data.frame(d_f), df2)
       d_f <- rbindlist(l)
     }
@@ -144,7 +153,7 @@ make_DLdataset_pun_forward2 <- function(data)
     }
     
   }
-  colnames(d_f) <- c("lpun","holiday","ypun","thour","tweekday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+  colnames(d_f) <- c("lpun","holiday","ypun","thour","monday","tuesday","wednesday","thursday","friday","satday","sunday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
   return(d_f)
 }
 #############################################################################################################
@@ -154,53 +163,80 @@ prediction_pun_forward18 <- function(list_ore)
   
   seq18 <- seq.POSIXt(as.POSIXct('2018-01-01'), as.POSIXct('2019-01-02'), by = 'hour')[1:8760]
   
+  
   for(i in 1:nrow(list_ore))
   {
-    print(i)
-    new_date <- as.Date(list_ore$Date[i])
-    twds <- lubridate::wday(new_date)
-    twdys <- lubridate::yday(new_date)
-    twks <-  lubridate::week(new_date)
-    tmonth <- lubridate::month(new_date)
-    thol <-  add_holidays_Date(new_date)
-    tmday <- lubridate::mday(new_date)
-    hs <- list_ore$Hour[i] - 1  
+    new_date <- as.POSIXct(list_ore$Date[i], origin = '1970-01-01')
     
-    PK <- 0
-    OP <- 0
-    F1 <- 0
-    F2 <- 0
-    F3 <- 0
-  
-    if(list_ore$`PK-OP`[i] == 'OP')
+    if(!is.na(new_date))
     {
-      OP <- 1
-    }
-    else
-    {
-      PK <- 1
-    }  
-        
-    if(list_ore$`AEEG 181/06`[i] == 'F1')
-    {
-      F1 <- 1
-    }
-    else if(list_ore$`AEEG 181/06`[i] == 'F2')
-    {
-      F2 <- 1
-    }
-    else
-    {
-      F3 <- 1
-    }
-    
+      hs <-  lubridate::hour(as.POSIXct(new_date, origin = '1970-01-01'))
+
+      mon <- tues <- wed <- thur <- fri <- sat <- sun <- 0
+      twds <- as.character(lubridate::wday(new_date, label = TRUE, abbr = FALSE))
       
-    df2 <- data.frame(hs, twds, twdys, twks, thol, tmday, OP, PK, F1, F2, F3, tmonth)
-    l <- list(data.frame(d_f), df2)
-    d_f <- rbindlist(l)
-  }
+      if(twds == "Monday") mon <- 1
+      if(twds == "Tuesday") tues <- 1
+      if(twds == "Wednesday") wed <- 1
+      if(twds == "Thursday") thur <- 1
+      if(twds == "Friday") fri <- 1
+      if(twds == "Saturday") sat <- 1
+      if(twds == "Sunday") sun <- 1
+      
+      twdys <- lubridate::yday(new_date)
+      twks <-  lubridate::week(new_date)
+      tmonth <- lubridate::month(new_date)
+      thol <-  add_holidays_Date(new_date)
+      tmday <- lubridate::mday(new_date)
+      
+      PK <- 0
+      OP <- 0
+      F1 <- 0
+      F2 <- 0
+      F3 <- 0
+      
+      lo <- list_ore[which(as.Date(list_ore$Date) == as.Date(new_date, origin = '1899-12-30') & 
+                             lubridate::hour(as.POSIXct(list_ore$Date, origin = '1970-01-01')) == hs),]
+      
+      if(nrow(lo) == 1)
+      {
+        if(unlist(lo[,7]) == 'OP')
+        {
+          OP <- 1
+        }
+        else
+        {
+          PK <- 1
+        }  
+        
+        if(unlist(lo[,8]) == 'F1')
+        {
+          F1 <- 1
+        }
+        else if(unlist(lo[,8]) == 'F2')
+        {
+          F2 <- 1
+        }
+        else
+        {
+          F3 <- 1
+        }
+      }
+      
+      df2 <- data.frame(new_date, thol, hs, mon, tues, wed, thur, fri, sat, sun, twdys, twks, thol, OP, PK, F1, F2, F3, tmonth)
+      
+      l <- list(data.frame(d_f), df2)
+      d_f <- rbindlist(l)
+    }
     
-  colnames(d_f) <- c("thour","tweekday","tday","tweek","tholiday", "day_month", "OP", "PK", "F1", "F2", "F3","tmonth")
+    else
+    {
+      next
+    }
+    
+  }
+  colnames(d_f) <- c("date","holiday","thour","monday","tuesday","wednesday","thursday","friday","satday","sunday","tday","tweek","tholiday", "OP", "PK", "F1", "F2", "F3","tmonth")
+  
   return(d_f)
 }
 ##############################################################################################################################
@@ -224,102 +260,178 @@ h2o.init(nthreads = -1, max_mem_size = '20g')
 
 ######### MONTHWISE MODELS ##########
 response <- "ypun"
-regressors <- setdiff(colnames(DLD2),c(response, "tmonth", "PK", "OP", "lpun"))
+regressors <- setdiff(colnames(DLD2),c(response, "tmonth", "lpun"))
 
-list_ore <- bind_cols(list_ore, pun = data.frame(rep(0, nrow(list_ore) ))) 
+list_ore <- bind_cols(list_ore18, pun = data.frame(rep(0, nrow(list_ore18) ))) 
 
-pred17 <- prediction_pun_forward2(data2, as.character(last_date + 2), list_ore) ### 2 days ahead from last date of PUN
+#pred17 <- prediction_pun_forward2(data2, as.character(last_date + 2), list_ore) ### 2 days ahead from last date of PUN
 pred18 <- prediction_pun_forward18(list_ore18)
 
+list_ore <- data.frame(list_ore18, pun = rep(0, 8760))
+
 PFP <- c("PK", "OP")
+fasce <- c("F1", "F2")
 
-list_ore18 <- data.frame(list_ore18, pun = rep(0, 8760))
-
-#prediction <- c()
+prediction <- data_frame()
 for(m in 1:12)
 {
   for(pfp in PFP)
   {
-    
-    
-    model_name <- paste0("NP_gbm_",m,"_",pfp)
-    
-    if(pfp == "PK") {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$PK ==1),];
-    print(paste("PK/OP average spread in month",m," = ", mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 1),"lpun"])) - mean(unlist(DLD2[which(DLD2$tmonth == m & DLD2$PK == 0),"lpun"])) ))}
-    else {mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1),]; mpred17 <- pred17[which(pred17$tmonth == m & pred17$OP ==1),]}
-    
-    mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
-    
-    
-    
-    # modelgbm <- h2o.deeplearning(x = regressors, y = response, training_frame = as.h2o(DLD2),
-    #                              standardize = TRUE, activation = "Rectifier", 
-    #                              hidden = c(1000, 1000, 1000), epochs = 100, elastic_averaging = TRUE,
-    #                              elastic_averaging_regularization = 0.01)
-    # 
-    
-    modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
-                        ntrees = 5000, max_depth = 24)
-    
-    h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
-    print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
-    
-    #modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
-    
-    
-    yhat17 <- h2o.predict(modelgbm, newdata = as.h2o(mpred17))
-    yhat17 <- unlist(as.matrix(as.numeric(yhat17$predict)))
-    
-    for(i in 1:nrow(mpred17))
+    for(f in fasce)
     {
-      mlo <- which(list_ore$Month == m & list_ore$Day == mpred17$day_month[i] & list_ore$Hour == (mpred17$thour[i] + 1))
-      # mlo <- list_ore[which(list_ore$Month == m),]
-      # dmlo <- mlo[which(mlo$Day == mpred17$day_month[i]),]
-      # hdmlo <- dmlo[which(dmlo$Hour == mpred17$thour[i])]
-      list_ore[mlo,9] <- yhat17[i]
+      
+      model_name <- paste0("gbm_",m,"_",pfp,"_",f,"_2018")
+      
+      if(pfp == "PK") 
+      {
+        if(f == "F1")
+        {
+          mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1 & DLD2$F1 == 1),] 
+          mpred18 <- pred18[which(pred18$tmonth == m & pred18$PK ==1 & pred18$F1 == 1),]
+          if(nrow(mDLD2) == 0)
+          {
+            next
+          }
+        }
+        else if(f == "F2")
+        {
+          mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$PK == 1 & DLD2$F2 == 1),] 
+          mpred18 <- pred18[which(pred18$tmonth == m & pred18$PK ==1 & pred18$F2 == 1),]
+          if(nrow(mDLD2) == 0)
+          {
+            next
+          }
+        }
+        
+      }
+      else 
+      {
+        if(f == "F1")
+        {
+          mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1 & DLD2$F1 == 1),] 
+          mpred18 <- pred18[which(pred18$tmonth == m & pred18$OP ==1 & pred18$F1 == 1),]
+          if(nrow(mDLD2) == 0)
+          {
+            next
+          }
+        }
+        else if(f == "F2")
+        {
+          mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$OP == 1 & DLD2$F2 == 1),] 
+          mpred18 <- pred18[which(pred18$tmonth == m & pred18$OP ==1 & pred18$F2 == 1),]
+          if(nrow(mDLD2) == 0)
+          {
+            next
+          }
+        }
+        
+      }
+      
+      
+      mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
+      
+      
+      modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
+                          ntrees = 5000, max_depth = 24)
+      
+      h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
+      print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
+      
+      #modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
+      
+      
+      yhat18 <- h2o.predict(modelgbm, newdata = as.h2o(mpred18[,2:19]))
+      yhat18 <- unlist(as.matrix(as.numeric(yhat18$predict)))
+      
+      for(i in 1:nrow(mpred18))
+      {
+        mlo <- which(list_ore$Month == m & list_ore$Day == mpred18$day_month[i] & list_ore$Hour == (mpred18$thour[i] + 1))
+        # mlo <- list_ore[which(list_ore$Month == m),]
+        # dmlo <- mlo[which(mlo$Day == mpred17$day_month[i]),]
+        # hdmlo <- dmlo[which(dmlo$Hour == mpred17$thour[i])]
+        list_ore[mlo,9] <- yhat18[i]
+      }
+      
+      Y <- data.frame(date = mpred18$date, hour = mpred18$thour, y = yhat18)
+      l <- list(prediction, Y)
+      prediction <- rbindlist(l)
+      
     }
-    
-    
-    #prediction <- c(prediction, yhat17)
   }
-  #print(paste("mean PK/OP spread forecasted = ", mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "PK"), 9])) - mean(unlist(list_ore[which(list_ore$Month == m & list_ore$`PK-OP` == "OP"), 9])) ))
-}
-
-plot(list_ore$rep.0..nrow.list_ore.., type = "l")
-
-####### forecasting 2018 ########
-list_ore18 <- data.frame(list_ore18, pun = rep(0, 8760))
-
-
-for(m in 1:12)
-{
-  for(pfp in PFP)
+  #### F3 all together --> here 
+  mDLD2 <- DLD2[which(DLD2$tmonth == m & DLD2$F3 == 1),] 
+  mpred18 <- pred18[which(pred18$tmonth == m & pred18$F3 == 1),]
+  mDLD2 <- mDLD2[sample(nrow(mDLD2)),]
+  model_name <- paste0("gbm_",m,"_F3_2018")
+  modelgbm <- h2o.gbm(x = regressors, y = response, training_frame = as.h2o(mDLD2), model_id = model_name,
+                      ntrees = 5000, max_depth = 24)
+  
+  h2o.saveModel(modelgbm, paste0("C://Users/utente/Documents/pun_forward_models/",model_name), force = TRUE)
+  print(paste("R2 for", model_name, ":", h2o.r2(modelgbm)))
+  yhat18 <- h2o.predict(modelgbm, newdata = as.h2o(mpred18[,2:19]))
+  yhat18 <- unlist(as.matrix(as.numeric(yhat18$predict)))
+  
+  for(i in 1:nrow(mpred18))
   {
-    
-    model_name <- paste0("NP_gbm_",m,"_",pfp)
-    
-    if(pfp == "PK") {mpred18 <- pred18[which(pred18$tmonth == m & pred18$PK ==1),]}
-    else {mpred18 <- pred18[which(pred18$tmonth == m & pred18$OP ==1),]}
-    
-
-    modelgbm <- h2o.loadModel(path = paste0("C:/Users/utente/Documents/pun_forward_models/",model_name, "/", model_name))
-    
-    
-    yhat18 <- h2o.predict(modelgbm, newdata = as.h2o(mpred18))
-    yhat18 <- unlist(as.matrix(as.numeric(yhat18$predict)))
-    
-    for(i in 1:nrow(mpred18))
-    {
-      mlo <- which(list_ore18$Month == m & list_ore18$Day == mpred18$day_month[i] & list_ore18$Hour == (mpred18$thour[i] + 1))
-      list_ore18[mlo,9] <- yhat18[i]
-    }
-    
-    
+    mlo <- which(list_ore$Month == m & list_ore$Day == mpred18$day_month[i] & list_ore$Hour == (mpred18$thour[i] + 1))
+    list_ore[mlo,9] <- yhat18[i]
   }
+  Y <- data.frame(date = mpred18$date, hour = mpred18$thour, y = yhat18)
+  l <- list(prediction, Y)
+  prediction <- rbindlist(l)
+  
 }
 
-plot(list_ore18$pun, type = "l", col = "YELLOW")
-mean(list_ore18$pun)
+plot(unlist(list_ore[,9]), type = 'l', col = 'blue')
+write.xlsx(prediction, "longterm_pun.xlsx")
+write.xlsx(list_ore, "listore.xlsx")
+
+min(unlist(list_ore[,9]))
+prediction <- unlist(list_ore[,9])
+length(which(prediction == 0))
+plot(prediction, type = "l")
+
+colnames(list_ore)[9] <- "pun"
+
+### correct prediction:
+cpred <- rep(0, nrow(pred17))
+for(i in 1:nrow(pred17))
+{
+  model_name <- paste0("gbm_",pred17$tmonth[i],"_")
+  pfp <- f <- 0
+  
+  if(pred17$OP[i] == 1)
+  {
+    pfp <- "OP"
+  }
+  else
+  {
+    pfp <- "PK"
+  }
+  
+  if(pred17$F1[i] == 1)
+  {
+    f <- "F1"
+  }
+  else if(pred17$F2[i] == 1)
+  {
+    f <- "F2"
+  }
+  
+  model_name <- paste0(model_name, pfp, "_",f)
+  
+  if(pred17$F3[i] == 1)
+  {
+    model_name <- paste0("gbm_",pred17$tmonth[i],"_F2") 
+  }
+  
+  modelh2o <- h2o.loadModel(paste0("C:/Users/utente/Documents/pun_forward_models/",model_name,"/",model_name))
+  yhat <- h2o.predict(modelh2o, newdata = as.h2o(pred17[i,2:20]))
+  yhat <- unlist(as.matrix(as.numeric(yhat$predict)))
+  cpred[i] <- yhat
+}
+
+write.xlsx(data.frame(cpred), "NEW_PREDICTION.xlsx")
 
 spread <- read_excel("historical_spreads.xlsx")
 
@@ -380,23 +492,106 @@ df2 <- data.frame(df2, real = rep(0,8760))
 df3 <- df2
 
 plot(df2$pun, type = "l", col = "blue")
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
+#df2 <- df2[,-1]
+DF <- read_excel("Diff_fasce_2018.xlsx")
+df3 <- df2
+#df2 <- df3
+for(m in 1:12)
+{
+  df2m <- which(df2$Month == m)
+  mm <- mean(df2$pun[which(df2$Month == m)])
+  for(i in df2m)
+  {
+    if(df2$AEEG.181.06[i] == "F1")
+    {
+      df2$pun[i] <- df2$pun[i] + unlist(DF[m,"F1"])
+    }
+    else if(df2$AEEG.181.06[i] == "F2")
+    {
+      df2$pun[i] <- df2$pun[i] + unlist(DF[m,"F2"])
+    }
+    else
+    {
+      df2$pun[i] <- df2$pun[i] + unlist(DF[m,"F3"])
+    }
+  }
+}
+
+plot(df2$pun, type = 'l', col = "red")
+
+##### redistribuzione fasce
+diffF2 <- data.table(read_excel("diffF2_2018.xlsx"))
+df3 <- df2
+for(m in 1:12)
+{
+  dfm <- df2[which(df2$Month == m),]
+  nr <- which(df2$Month == m)
+  D2 <- mean(df2$pun[which(df2$AEEG.181.06 == "F2")]) - diffF2$F2[m]
+  
+  nF1 <- nrow(dfm[which(dfm$AEEG.181.06 == "F1"),])
+  nF3 <- nrow(dfm[which(dfm$AEEG.181.06 == "F3"),])
+  
+  for(i in nr)
+  {
+    if(df2$AEEG.181.06[i] == "F1") df2$pun[i] <- df2$pun[i] + D2*(nF1/(nF1 + nF3))
+    else if(df2$AEEG.181.06[i] == "F3") df2$pun[i] <- df2$pun[i] + D2*(nF3/(nF1 + nF3))
+    else  df2$pun[i] <- df2$pun[i] - D2
+  }
+  
+}
+
+plot(df3$pun, type = "l", col = 'gold')
+plot(df2$pun, type = "l", col = 'grey')
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+####################################################################################################
+########################################################################################################################################################
+df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
+#df2 <- df3
+
+df2 <- Redimensioner_pkop(df2, 53.09, 63.40, '2018-01-01', '2018-01-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 47.04, 54.33, '2018-02-01', '2018-02-28', 'PK')
+df2 <- Redimensioner_pkop(df2, 45.08, 50.67, '2018-03-01', '2018-03-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 37.00, 36.87, '2018-04-01', '2018-04-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 39.29, 40.92, '2018-05-01', '2018-05-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.01, 43.37, '2018-06-01', '2018-06-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 48.44, 55.22, '2018-07-01', '2018-07-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 40.51, 42.12, '2018-08-01', '2018-08-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.79, 47.33, '2018-09-01', '2018-09-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 40.97, 47.26, '2018-10-01', '2018-10-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 46.84, 57.57, '2018-11-01', '2018-11-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.99, 50.41, '2018-12-01', '2018-12-31', 'PK')
+
+df2 <- Redimensioner_pkop(df2, 44.45, 51.36, '2018-01-01', '2018-12-31', 'PK')
+
+### Q1:
+df2 <- Redimensioner_pkop(df2, 48.50, 57.40, '2018-01-01', '2018-03-31', 'PK')
+### remaining
+df2 <- Redimensioner_pkop(df2, 42.19, 47.18, '2018-04-01', '2018-12-31', 'PK')
+
+write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
 
 
 
-df2 <- Redimensioner_pkop(df2, 51.34, 61.83, '2018-01-01', '2018-01-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 45.42, 52.92, '2018-02-01', '2018-02-28', 'PK')
-df2 <- Redimensioner_pkop(df2, 43.50, 49.31, '2018-03-01', '2018-03-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 36.90, 36, '2018-04-01', '2018-04-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 39.17, 40.01, '2018-05-01', '2018-05-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 40.93, 42.44, '2018-06-01', '2018-06-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 43.92, 49.38, '2018-07-01', '2018-07-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 36.67, 37.54, '2018-08-01', '2018-08-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 37.85, 42.26, '2018-09-01', '2018-09-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 40.31, 49.64, '2018-10-01', '2018-10-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 46.28, 60.58, '2018-11-01', '2018-11-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 43.12, 52.98, '2018-12-01', '2018-12-31', 'PK')
+for(m in 1:12)
+{
+  mm <- mean(df2$pun[which(lubridate::month(as.Date(df2$date)) == m)])
+  print(mm)
+}
 
-df2 <- Redimensioner_pkop(df2, 42.00, 47.70, '2018-01-01', '2018-12-31', 'PK')
 
 ###Q1:
 df2 <- Redimensioner_pkop(df2, 46.20, 54.95, '2018-01-01', '2018-03-31', 'PK')
@@ -453,7 +648,7 @@ for(m in 1:12)
   
 }
 
-write.xlsx(df2, "pun_forward_2018.xlsx")
+write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
 df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
 
 
