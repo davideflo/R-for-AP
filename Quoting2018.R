@@ -394,13 +394,14 @@ plot(prediction, type = "l")
 colnames(list_ore)[9] <- "pun"
 
 ### correct prediction:
-cpred <- rep(0, nrow(pred17))
-for(i in 1:nrow(pred17))
+cpred <- rep(0, nrow(pred18))
+for(i in 1:nrow(pred18))
 {
-  model_name <- paste0("gbm_",pred17$tmonth[i],"_")
+  if( i %% 1000 == 0) print(i)
+  model_name <- paste0("gbm_",pred18$tmonth[i],"_")
   pfp <- f <- 0
   
-  if(pred17$OP[i] == 1)
+  if(pred18$OP[i] == 1)
   {
     pfp <- "OP"
   }
@@ -409,29 +410,29 @@ for(i in 1:nrow(pred17))
     pfp <- "PK"
   }
   
-  if(pred17$F1[i] == 1)
+  if(pred18$F1[i] == 1)
   {
     f <- "F1"
   }
-  else if(pred17$F2[i] == 1)
+  else if(pred18$F2[i] == 1)
   {
     f <- "F2"
   }
   
-  model_name <- paste0(model_name, pfp, "_",f)
+  model_name <- paste0(model_name, pfp, "_",f, "_2018")
   
-  if(pred17$F3[i] == 1)
+  if(pred18$F3[i] == 1)
   {
-    model_name <- paste0("gbm_",pred17$tmonth[i],"_F2") 
+    model_name <- paste0("gbm_",pred18$tmonth[i],"_F3_2018") 
   }
   
   modelh2o <- h2o.loadModel(paste0("C:/Users/utente/Documents/pun_forward_models/",model_name,"/",model_name))
-  yhat <- h2o.predict(modelh2o, newdata = as.h2o(pred17[i,2:20]))
+  yhat <- h2o.predict(modelh2o, newdata = as.h2o(pred18[i,2:19]))
   yhat <- unlist(as.matrix(as.numeric(yhat$predict)))
   cpred[i] <- yhat
 }
 
-write.xlsx(data.frame(cpred), "NEW_PREDICTION.xlsx")
+write.xlsx(data.frame(cpred), "NEW_PREDICTION_2018.xlsx")
 
 spread <- read_excel("historical_spreads.xlsx")
 
@@ -575,12 +576,12 @@ df2 <- Redimensioner_pkop(df2, 40.97, 47.26, '2018-10-01', '2018-10-31', 'PK')
 df2 <- Redimensioner_pkop(df2, 46.84, 57.57, '2018-11-01', '2018-11-30', 'PK')
 df2 <- Redimensioner_pkop(df2, 43.99, 50.41, '2018-12-01', '2018-12-31', 'PK')
 
-df2 <- Redimensioner_pkop(df2, 44.45, 51.36, '2018-01-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-01-01', '2018-12-31', 'PK')
 
 ### Q1:
 df2 <- Redimensioner_pkop(df2, 48.50, 57.40, '2018-01-01', '2018-03-31', 'PK')
 ### remaining
-df2 <- Redimensioner_pkop(df2, 42.19, 47.18, '2018-04-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-04-01', '2018-12-31', 'PK')
 
 write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
 
