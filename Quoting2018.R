@@ -432,6 +432,8 @@ for(i in 1:nrow(pred18))
   cpred[i] <- yhat
 }
 
+plot(cpred, type = "l", col = 'red')
+
 write.xlsx(data.frame(cpred), "NEW_PREDICTION_2018.xlsx")
 
 spread <- read_excel("historical_spreads.xlsx")
@@ -562,19 +564,20 @@ plot(df2$pun, type = "l", col = 'grey')
 ########################################################################################################################################################
 df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
 #df2 <- df3
+df2$pun <- cpred
 
-df2 <- Redimensioner_pkop(df2, 53.09, 63.40, '2018-01-01', '2018-01-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 47.04, 54.33, '2018-02-01', '2018-02-28', 'PK')
-df2 <- Redimensioner_pkop(df2, 45.08, 50.67, '2018-03-01', '2018-03-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 37.00, 36.87, '2018-04-01', '2018-04-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 39.29, 40.92, '2018-05-01', '2018-05-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 41.01, 43.37, '2018-06-01', '2018-06-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 48.44, 55.22, '2018-07-01', '2018-07-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 40.51, 42.12, '2018-08-01', '2018-08-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 41.79, 47.33, '2018-09-01', '2018-09-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 40.97, 47.26, '2018-10-01', '2018-10-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 46.84, 57.57, '2018-11-01', '2018-11-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 43.99, 50.41, '2018-12-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 52.96, 64.59, '2018-01-01', '2018-01-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 46.82, 55.28, '2018-02-01', '2018-02-28', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.82, 51.51, '2018-03-01', '2018-03-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 37.16, 38.51, '2018-04-01', '2018-04-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 39.59, 42.80, '2018-05-01', '2018-05-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.30, 45.39, '2018-06-01', '2018-06-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 50.47, 58.68, '2018-07-01', '2018-07-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 42.09, 44.62, '2018-08-01', '2018-08-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.43, 50.22, '2018-09-01', '2018-09-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.69, 49.23, '2018-10-01', '2018-10-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 47.78, 60.08, '2018-11-01', '2018-11-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.73, 52.54, '2018-12-01', '2018-12-31', 'PK')
 
 df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-01-01', '2018-12-31', 'PK')
 
@@ -584,7 +587,7 @@ df2 <- Redimensioner_pkop(df2, 48.50, 57.40, '2018-01-01', '2018-03-31', 'PK')
 df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-04-01', '2018-12-31', 'PK')
 
 write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
-
+plot(df2$pun, type = "l", col = "green")
 
 
 for(m in 1:12)
