@@ -917,21 +917,21 @@ df2 <- Redimensioner_pkop(df2, 42.40, 43.48, "2017-04-01", "2017-04-30", "PK")
 ####
 #### CURRENT
 df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-12", "2017-06-18", "PK")
-df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-19", "2017-06-25", "PK")
-df2 <- Redimensioner_pkop(df2, 52.30, 56.35, "2017-06-26", "2017-07-02", "PK")
+df2 <- Redimensioner_pkop(df2, 53.90, 57.89, "2017-06-19", "2017-06-25", "PK")
+df2 <- Redimensioner_pkop(df2, 53.90, 57.89, "2017-06-26", "2017-07-02", "PK")
 ####
 
 df2 <- Redimensioner_pkop(df2, 51.79, 64.6, "2017-06-01", "2017-06-30", "PK")
 
-df2 <- Redimensioner_pkop(df2, 58.10, 64.60, "2017-07-01", "2017-07-31", "PK")
+df2 <- Redimensioner_pkop(df2, 57.40, 65.30, "2017-07-01", "2017-07-31", "PK")
 ### remaining months of Q3
 #df2 <- Redimensioner_pkop(df2, 49.91, 54.20, "2017-08-01", "2017-09-30", "PK")
 ######
-df2 <- Redimensioner_pkop(df2, 49.15, 50.60, "2017-08-01", "2017-08-31", "PK")
-df2 <- Redimensioner_pkop(df2, 50.45, 57.00, "2017-09-01", "2017-09-30", "PK")
+df2 <- Redimensioner_pkop(df2, 49.10, 51.55, "2017-08-01", "2017-08-31", "PK")
+df2 <- Redimensioner_pkop(df2, 50.64, 57.79, "2017-09-01", "2017-09-30", "PK")
 
 ###Q4
-df2 <- Redimensioner_pkop(df2, 49.40, 58.60, "2017-10-01", "2017-12-31", "PK")
+df2 <- Redimensioner_pkop(df2, 49.40, 58.40, "2017-10-01", "2017-12-31", "PK")
 
 df2 <- Redimensioner_pkop(df2, 45.69, 53.17, "2017-10-01", "2017-10-31", "PK")
 df2 <- Redimensioner_pkop(df2, 52.51, 64.67, "2017-11-01", "2017-11-30", "PK")
@@ -967,11 +967,22 @@ df2 <- Redimensioner_pkop_Fs(df2, 49.33, 56.09, "2017-12-01", "2017-12-31", "PK"
 plot(df2$pun, type = "l", col = "grey")
 plot(ph$pun, type = "l", col = "gray")
 
-for(m in 1:12)
+fasce2017 <- data.table(read_excel("fasce.xlsx", sheet = "2017"))
+df3 <- df2
+plot(df2$pun, type = 'l', col = 'purple', main = "old")
+
+for(m in 6:12)
 {
-  mm <- mean(df2$pun[which(lubridate::month(as.Date(df2$date)) == m)])
-  print(mm)
+  mm1 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")] <- fasce2017$F1[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")]/mm1) 
+  mm2 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")] <- fasce2017$F2[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")]/mm2) 
+  mm3 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")] <- fasce2017$F1[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")]/mm3) 
 }
+plot(df2$date, df2$pun, type = 'l', col = 'red', main = "new")
+write.xlsx(df2, "longterm_pun.xlsx", row.names = FALSE)
+
 #Q3
 df2 <- Redimensioner_pkop(df2, 48.50, 53.65, "2017-07-01", "2017-09-30", "PK")
 #Q4

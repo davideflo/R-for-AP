@@ -590,6 +590,24 @@ write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
 plot(df2$pun, type = "l", col = "green")
 
 
+
+fasce2018 <- data.table(read_excel("fasce.xlsx", sheet = "2018"))
+df3 <- df2
+plot(df2$pun, type = 'l', col = 'purple', main = "old")
+
+for(m in 1:12)
+{
+  mm1 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")] <- fasce2018$F1[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")]/mm1) 
+  mm2 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")] <- fasce2018$F2[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")]/mm2) 
+  mm3 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")])
+  df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")] <- fasce2018$F1[m]*(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")]/mm3) 
+}
+plot(df2$date, df2$pun, type = 'l', col = 'red', main = "new")
+
+write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
+
 for(m in 1:12)
 {
   mm <- mean(df2$pun[which(lubridate::month(as.Date(df2$date)) == m)])
