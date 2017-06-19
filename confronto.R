@@ -241,3 +241,24 @@ HellingerDistance(filterDay(data.frame(real), 5)$PUN, filterDay(data.frame(dtk),
 HellingerDistance(filterDay(data.frame(real), 6)$PUN, filterDay(data.frame(dtk),6)$ITALIA)
 HellingerDistance(filterDay(data.frame(real), 7)$PUN, filterDay(data.frame(dtk),7)$ITALIA)
 
+
+F1 <- c() 
+pk <- c()
+bsl <- c()
+Y <- c()
+for( x in 1:200)
+{
+  y <- rnorm(n = 1, mean = 60.64, sd = 15.43)
+  if(y > 60.64)
+  {
+    df2 <- Redimensioner_pkop(df2, 60.64, y, '2018-01-01', '2018-01-31', 'PK')
+    F1 <- c(F1, mean(df2$pun[which(df2$Month == 1 & df2$AEEG.181.06 == "F2")]))
+    pk <- c(pk, mean(df2$pun[which(df2$Month == 1 & df2$PK.OP == "PK")]))
+    bsl <- c(bsl, mean(df2$pun[which(df2$Month == 1)]))
+    Y <- c(Y, y)
+  }
+}
+
+plot(bsl, F1, pch = 16, col = "red")
+plot(Y, F1, pch = 16, col = "blue")
+plot(pk, F1, pch = 16, col = "green")
