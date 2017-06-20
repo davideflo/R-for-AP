@@ -241,6 +241,42 @@ HellingerDistance(filterDay(data.frame(real), 5)$PUN, filterDay(data.frame(dtk),
 HellingerDistance(filterDay(data.frame(real), 6)$PUN, filterDay(data.frame(dtk),6)$ITALIA)
 HellingerDistance(filterDay(data.frame(real), 7)$PUN, filterDay(data.frame(dtk),7)$ITALIA)
 
+#####################################################################################################################
+Redimensioner <- function(ph, mh, mw, from, to)
+{
+  #### @BRIEF: if what == PK => mw is referring to PK
+  d_f <- data_frame()
+  from <- as.Date(from)
+  to <- as.Date(to)
+  nOP <- nrow(ph[which(as.Date(ph$Date) >= from & as.Date(ph$Date) <= to & ph$`PEAK-OFF PEAK` == "OP"),])
+  nPK <- nrow(ph[which(as.Date(ph$Date) >= from & as.Date(ph$Date) <= to & ph$`PEAK-OFF PEAK` == "PK"),])
+  rOP <- which(as.Date(ph$Date) >= from & as.Date(ph$Date) <= to & ph$`PEAK-OFF PEAK` == "OP")
+  rPK <- which(as.Date(ph$Date) >= from & as.Date(ph$Date) <= to & (ph$`PEAK-OFF PEAK` == "PK" | ph$`PEAK-OFF PEAK` == "P"))
+  M <- nOP + nPK
+  
+  periodpk <- ph[rPK,]
+  periodop <- ph[rOP,]
+ 
+  
+  opm <- (1/nOP)*((mh*M) - (mw*nPK))
+    
+    
+  pihatpk <- (mw)/((1/nPK)*sum(periodpk$PUN))
+  pihatop <- (opm)/((1/nOP)*sum(periodop$PUN))
+  for(i in 1:length(rPK))
+  {
+    ph[rPK[i], "PUN"] <- pihatpk * unlist(ph[rPK[i], "PUN"])
+  }
+  for(i in 1:length(rOP))
+  {
+    ph[rOP[i], "PUN"] <- pihatop * unlist(ph[rOP[i], "PUN"])
+  }
+  
+  
+  return(ph)
+}
+#################################################################################################################################
+
 
 F1 <- c() 
 pk <- c()
@@ -251,10 +287,10 @@ for( x in 1:200)
   y <- rnorm(n = 1, mean = 60.64, sd = 15.43)
   if(y > 60.64)
   {
-    df2 <- Redimensioner_pkop(df2, 60.64, y, '2018-01-01', '2018-01-31', 'PK')
-    F1 <- c(F1, mean(df2$pun[which(df2$Month == 1 & df2$AEEG.181.06 == "F2")]))
-    pk <- c(pk, mean(df2$pun[which(df2$Month == 1 & df2$PK.OP == "PK")]))
-    bsl <- c(bsl, mean(df2$pun[which(df2$Month == 1)]))
+    dt <- Redimensioner(dt, 60.64, y, from = '2015-01-01', to = '2015-01-31')
+    F1 <- c(F1, mean(dt$PUN[which(dt$Month == 1 & dt$`AEEG 181/06` == "F3")]))
+    pk <- c(pk, mean(dt$PUN[which(dt$Month == 1 & dt$`PEAK-OFF PEAK` == "OP")]))
+    bsl <- c(bsl, mean(dt$PUN[which(dt$Month == 1)]))
     Y <- c(Y, y)
   }
 }
@@ -262,3 +298,26 @@ for( x in 1:200)
 plot(bsl, F1, pch = 16, col = "red")
 plot(Y, F1, pch = 16, col = "blue")
 plot(pk, F1, pch = 16, col = "green")
+
+
+
+F1 <- c() 
+F2 <- c() 
+F3 <- c() 
+op <- c()
+pk <- c()
+bsl <- c()
+Y <- c()
+for(m in 1:12)
+{
+  F1 <- c(F1, mean(dt$PUN[which(dt$Month == m & dt$`AEEG 181/06` == "F1")]))
+  F2 <- c(F2, mean(dt$PUN[which(dt$Month == m & dt$`AEEG 181/06` == "F2")]))
+  F3 <- c(F3, mean(dt$PUN[which(dt$Month == m & dt$`AEEG 181/06` == "F3")]))
+  pk <- c(pk, mean(dt$PUN[which(dt$Month == m & dt$`PEAK-OFF PEAK` == "PK")]))
+  op <- c(op, mean(dt$PUN[which(dt$Month == m & dt$`PEAK-OFF PEAK` == "OP")]))
+  bsl <- c(bsl, mean(dt$PUN[which(dt$Month == m)]))
+}
+
+DF <- data.frame(f1 = F1, f2 = F2, f3 = F3, P = pk, O = op, B = bsl)
+
+pairs(DF)
