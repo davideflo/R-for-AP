@@ -15,6 +15,46 @@ library(plotly)
 # install.packages(save.pkg.list)
 # update.packages(checkBuilt=TRUE)
 
+## classes: http://www.pitt.edu/~njc23/Lecture4.pdf
+## http://adv-r.had.co.nz/OO-essentials.html
+
+#############################################################################################
+#############################################################################################
+setClass("Position", representation(Open = "numeric", Close = "numeric", PL = "numeric", DT = "data.table", atOpen = "numeric", atClose = "numeric"))
+
+setGeneric("setOpen", function(p){p@Open <- 1})
+setMethod(f = "setOpen", signature = "Position", definition = function(p){p@Open <- 1})
+
+setGeneric("setClose",function(p) {p@Close = 1})
+setMethod(f = "setClose", signature = "Position", definition = function(p) {p@Close = 1})
+
+setGeneric("set_atOpen", function(p,i) {p@atOpen = i})
+setMethod(f = "set_atOpen", signature = "Position", definition = function(p,i) {p@atOpen = i})
+
+setGeneric("set_atClose", function(p,i) {p@atClose = i})
+setMethod(f = "set_atClose", signature = "Position", definition = function(p,i) {p@atClose = i})
+
+setGeneric("setData", function(p,dt) {x@DT = dt})
+setMethod(f = "setData", signature = "Position", definition = function(p,dt) {x@DT = dt})
+
+setGeneric("computeP&L", function(p){if(p@Open + p@Close == 2){
+  return(p@DT[max(p@atOpen, p@atClose), "Last"] - p@DT[min(p@atOpen, p@atClose), "Last"] - 0.054)}
+  else
+  {
+    return(0)
+  }})
+setMethod(f = "computeP&L", signature = "Position", definition = function(p){if(p@Open + p@Close == 2){
+  return(p@DT[max(p@atOpen, p@atClose), "Last"] - p@DT[min(p@atOpen, p@atClose), "Last"] - 0.054)}
+  else
+    {
+      return(0)
+    }})
+### vettore di position diventa una list
+setClass("Portfolio", representation())
+#############################################################################################
+#############################################################################################
+
+
 ##############################################################################################
 rollstd <- function(x, n)
 {
