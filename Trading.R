@@ -24,8 +24,8 @@ library(plotly)
 setClass("Position", representation(Open = "numeric", Close = "numeric", PL = "numeric", DT = "data.table", atOpen = "numeric", atClose = "numeric",
                                     Target = "numeric", StopLoss = "numeric"))
 
-setGeneric("initialize", function(p){p@Open <- p@Close <- p@PL <- p@atOpen <- p@atClose <- p@Target <- p@StopLoss <- 0; return(p)})
-setMethod(f = "initialize", signature = "Position", definition = function(p){p@Open <- p@Close <- p@PL <- p@atOpen <- p@atClose <- p@Target <- p@StopLoss <- 0; return(p)})
+setGeneric("initialize_pos", function(p){p@Open <- p@Close <- p@PL <- p@atOpen <- p@atClose <- p@Target <- p@StopLoss <- 0; return(p)})
+setMethod(f = "initialize_pos", signature = "Position", definition = function(p){p@Open <- p@Close <- p@PL <- p@atOpen <- p@atClose <- p@Target <- p@StopLoss <- 0; return(p)})
 
 setGeneric("setOpen", function(p){p@Open <- 1; return(p)})
 setMethod(f = "setOpen", signature = "Position", definition = function(p){p@Open <- 1; return(p)})
@@ -47,21 +47,21 @@ setMethod(f = "setData", signature = "Position", definition = function(p,dt) {p@
 
 setGeneric("setTarget", function(p){
   if(p@Open == 1)
-  {p@Target <- p@DT$Last[atOpen] + 0.06;
-   p@StopLoss <- p@DT$Last[atOpen] - 0.03}
+  {p@Target <- p@DT$Last[p@atOpen] + 0.06;
+   p@StopLoss <- p@DT$Last[p@atOpen] - 0.03}
   else if(p@Close == 1)
   {
-    p@Target <- p@DT$Last[atClose] - 0.06;
-    p@StopLoss <- p@DT$Last[atClose] + 0.03
+    p@Target <- p@DT$Last[p@atClose] - 0.06;
+    p@StopLoss <- p@DT$Last[p@atClose] + 0.03
   }; return(p)})
 setMethod(f = "setTarget", signature = "Position", definition = function(p){
   if(p@Open == 1)
-  {p@Target <- p@DT$Last[atOpen] + 0.06;
-  p@StopLoss <- p@DT$Last[atOpen] - 0.03}
+  {p@Target <- p@DT$Last[p@atOpen] + 0.06;
+  p@StopLoss <- p@DT$Last[p@atOpen] - 0.03}
   else if(p@Close == 1)
   {
-    p@Target <- p@DT$Last[atClose] - 0.06;
-    p@StopLoss <- p@DT$Last[atClose] + 0.03
+    p@Target <- p@DT$Last[p@atClose] - 0.06;
+    p@StopLoss <- p@DT$Last[p@atClose] + 0.03
   }; return(p)})
 
 setGeneric("findTarget", function(p)
@@ -136,8 +136,8 @@ setClass("Portfolio", representation(LoP = "list", PLTot = "numeric", DT = "data
 setGeneric("initialize", function(p){p@LoP <- list(); p@PLTot <- p@signal <- p@val_signal <- p@target_signal <- p@move <- 0; return(p)})
 setMethod(f = "initialize", signature = "Portfolio", definition = function(p){p@LoP <- list(); p@PLTot <- p@signal <- p@val_signal <- p@target_signal <- p@move <- 0; return(p)})
 
-setGeneric("resetSignals", function(p) {p@signal <- p@val_signal <- target_signal <- p@move <- 0; return(p)})
-setMethod(f = "resetSignals", signature = "Portfolio", definition = function(p) {p@signal <- p@val_signal <- target_signal <- p@move <- 0; return(p)})
+setGeneric("resetSignals", function(p) {p@signal <- p@val_signal <- p@target_signal <- p@move <- 0; return(p)})
+setMethod(f = "resetSignals", signature = "Portfolio", definition = function(p) {p@signal <- p@val_signal <- p@target_signal <- p@move <- 0; return(p)})
 
 setGeneric("signalize", function(p, ix, valup, vallow, tau)
 {
@@ -145,6 +145,8 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
   {
     if(p@DT$Last[ix] == valup)
     {
+      print("found 1st signal to sell")
+      print(p@DT$`Date GMT`[ix])
       p@signal <- 1
       p@val_signal <- p@DT$Last[ix]
       p@target_signal <- valup - tau
@@ -152,6 +154,8 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
     }
     else if(p@DT$Last[ix] == vallow)
     {
+      print("found 1st signal to buy")
+      print(p@DT$`Date GMT`[ix])
       p@signal <- 1
       p@val_signal <- p@DT$Last[ix]
       p@target_signal <- vallow + tau
@@ -162,11 +166,15 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
   {
     if(p@move > 0 & p@DT$Last[ix] == p@target_signal)
     {
+      print("open a new sell position")
+      print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 0, 1, 0, dt = p@DT[ix:nrow(p@DT),], 0, 1, p@target_signal - 0.06, p@target_signal + 0.03)
       p <- resetSignals(p)
     }
     else if(p@move < 0 & p@DT$Last[ix] == p@target_signal)
     {
+      print("open a new buy position")
+      print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 1, 0, 0, dt = p@DT[ix:nrow(p@DT),], 1, 0, p@target_signal + 0.06, p@target_signal - 0.03)
       p <- resetSignals(p)
     }
@@ -179,6 +187,8 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
   {
     if(p@DT$Last[ix] == valup)
     {
+      print("found 1st signal to sell")
+      print(p@DT$`Date GMT`[ix])
       p@signal <- 1
       p@val_signal <- p@DT$Last[ix]
       p@target_signal <- valup - tau
@@ -186,6 +196,8 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
     }
     else if(p@DT$Last[ix] == vallow)
     {
+      print("found 1st signal to buy")
+      print(p@DT$`Date GMT`[ix])
       p@signal <- 1
       p@val_signal <- p@DT$Last[ix]
       p@target_signal <- vallow + tau
@@ -196,11 +208,15 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
   {
     if(p@move > 0 & p@DT$Last[ix] == p@target_signal)
     {
+      print("open a new sell position")
+      print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 0, 1, 0, dt = p@DT[ix:nrow(p@DT),], 0, 1, p@target_signal - 0.06, p@target_signal + 0.03)
       p <- resetSignals(p)
     }
     else if(p@move < 0 & p@DT$Last[ix] == p@target_signal)
     {
+      print("open a new buy position")
+      print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 1, 0, 0, dt = p@DT[ix:nrow(p@DT),], 1, 0, p@target_signal + 0.06, p@target_signal - 0.03)
       p <- resetSignals(p)
     }
@@ -208,11 +224,12 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
   return(p)
 })
 
-setGeneric("AddPosition", function(p, pos){p@LoP <- list(p@LoP, list(pos)); return(p)})
-setMethod(f = "AddPosition",signature = "Portfolio", definition = function(p, pos){p@LoP <- list(p@LoP, list(pos)); return(p)})
+setGeneric("AddPosition", function(p, pos){p@LoP <- c(p@LoP, pos); return(p)})
+setMethod(f = "AddPosition",signature = "Portfolio", definition = function(p, pos){p@LoP <- c(p@LoP, pos); return(p)})
 
 setGeneric("openNewPosition", function(p, open, close, pl, dt, atopen, atclose, target, stoploss){
   pos <- new("Position")
+  pos <- initialize_pos(pos)
   if(open == 1) {pos <- setOpen(pos);pos <- set_atOpen(pos, atopen)}
   else{pos <- setClose(pos);pos <- set_atClose(pos,atclose)}
   pos <- setPL(pos, pl)
@@ -222,6 +239,7 @@ setGeneric("openNewPosition", function(p, open, close, pl, dt, atopen, atclose, 
   return(p)})
 setMethod(f = "openNewPosition", signature = "Portfolio", definition = function(p, open, close, pl, dt, atopen, atclose, target, stoploss){
   pos <- new("Position")
+  pos <- initialize_pos(pos)
   if(open == 1) {pos <- setOpen(pos);pos <- set_atOpen(pos, atopen)}
   else{pos <- setClose(pos);pos <- set_atClose(pos, atclose)}
   pos <- setPL(pos, pl)
@@ -257,14 +275,14 @@ generatePortfolio <- function(P, dt)
 {
   tau <- 0.05
   P <- setData(P,dt)
-  rm <-c()
+  rm <- c()
   std5 <- c()
   up <- c()
   low <- c()
-  for(i in 6:nrow(dt))
+  for(i in 5:nrow(dt))
   {
-    rm <- c(rm, mean(dt$Last[(i-5):(i-1)]))
-    std5 <- c(std5, sd(dt$Last[(i-5):(i-1)]))
+    rm <- c(rm, mean(dt$Last[(i-4):(i)]))
+    std5 <- c(std5, sd(dt$Last[(i-4):(i)])*(2/sqrt(5)))
     up <- rm + 1.4*std5
     low <- rm - 1.4*std5
     valup <- round(up[length(up)] + 0.05,2)
@@ -291,7 +309,7 @@ rollstd <- function(x, n = 5)
 }
 ###############################################################################################
 
-ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx"))
+ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
 
 plot(ger$Last, type = "l", col = "violet")
 hist(ger$Last, breaks = 40, col = "violet")
@@ -305,10 +323,10 @@ lines(ger$Last/max(ger$Last), type = "l", col = "violet")
 mav <- function(x,n=5){stats::filter(x,rep(1/n,n), sides=1)}
 ger5 <- mav(ger$Last)
 std5 <- rollstd(ger$Last, 5)
-plot(ger$Last, type = "l", col = "violet")
-lines(ger5, type = "l", col = "royalblue4")
-lines((ger5 - 1.4*std5), type = "l", col = "orangered")
-lines((ger5 + 1.4*std5), type = "l", col = "orangered")
+plot(ger$Last, type = "l", col = "violet", lwd = 1.5)
+lines(ger5, type = "l", col = "royalblue4", lwd = 1.5)
+lines((ger5 - 1.4*std5), type = "l", col = "orangered", lwd = 1.5)
+lines((ger5 + 1.4*std5), type = "l", col = "orangered", lwd = 1.5)
 
 acf(apply(ger[,3:6],1, sd), type = "correlation", lag.max = 100)
 
