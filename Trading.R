@@ -7,6 +7,7 @@ library(data.table)
 library(lubridate)
 library(zoo)
 library(plotly)
+library(xlsx)
 
 
 # save.pkg.list <- installed.packages()[is.na(installed.packages()[ , "Priority"]), 1]
@@ -308,7 +309,83 @@ rollstd <- function(x, n = 5)
   return(rs)
 }
 ###############################################################################################
-
+get_Signals <- function(dt)
+{
+  df <- data_frame()
+  tau <- 0.05
+  rm <- c()
+  std5 <- c()
+  up <- c()
+  low <- c()
+  signal_I <- 0
+  move <- 0
+  for(i in 5:nrow(dt))
+  {
+    rm <- c(rm, mean(dt$Last[(i-4):(i)]))
+    std5 <- c(std5, sd(dt$Last[(i-4):(i)])*(2/sqrt(5)))
+    up <- rm + 1.4*std5
+    low <- rm - 1.4*std5
+    valup <- up[length(up)] + tau
+    vallow <- low[length(low)] - tau
+    valup_II <- up[length(up)] - tau
+    vallow_II <- low[length(low)] + tau
+    
+    if(signal_I == 0)
+    {
+        if(dt$Last[i] > valup)
+      {
+        print("primo segnale")
+        signal_I <- 1
+        dove_I <- dt$Last[i]
+        move <- 1
+      }
+      else if(dt$Last[i] < vallow)
+      {
+        print("primo segnale")
+        signal_I <- 1
+        dove_I <- dt$Last[i]
+        move <- -1
+      }
+      next
+    }
+    else
+    {
+      if(dt$Last[i] < valup_II & move > 0)
+      {
+        print("secondo segnale")
+        #print(i)
+        print("apro posizione in vendita")
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
+                          up = up[length(up)], low = low[length(low)])
+        l <- list(df, d.f)
+        df <- rbindlist(l)
+        signal_I <- 0
+        move <- 0
+      }
+      else if(dt$Last[i] > vallow_II & move < 0)
+      {
+        print("secondo segnale")
+        #print(i)
+        print("apro posizione in acquisto")
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
+                          up = up[length(up)], low = low[length(low)])
+        l <- list(df, d.f)
+        df <- rbindlist(l)
+        signal_I <- 0
+        move <- 0
+      }
+      next
+    }
+  }
+  plot(dt$Last, type = "l", col = "red", lwd = 1.5)
+  lines(rm, type = "l", col = "royalblue4", lwd = 1.5)
+  lines(up, type = "l", col = "orangered", lwd = 1.5)
+  lines(low, type = "l", col = "orangered", lwd = 1.5)
+  points(df$dove[which(df$posizione_vendita == 1)], dt$Last[df$dove[which(df$posizione_vendita == 1)]], pch = 16, col = "gold")
+  points(df$dove[which(df$posizione_acquisto == 1)], dt$Last[df$dove[which(df$posizione_acquisto == 1)]], pch = 16, col = "purple")
+  return(df)
+}
+###############################################################################################
 ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
 
 plot(ger$Last, type = "l", col = "violet")
@@ -338,3 +415,6 @@ p <- ger %>%
 p
 
 plot(apply(ger[,3:6],1, sd), type = "l", col = "red")
+
+
+ddf <- get_Signals(ger)
