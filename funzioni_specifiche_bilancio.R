@@ -47,23 +47,38 @@ extract_rc_4_clusters_shipper <- function(ao, shipper)
   return(ao[rows,cols])
 }
 ##################################################################################################
+IsMiddleMonth <- function(date)
+{
+  bVerbose <- 0
+  if(as.numeric(date[[1]][3]) %% 4 == 0 & as.numeric(date[[1]][2]) == 2 & as.numeric(date[[1]][1]) != 29)
+  {
+    bVerbose <- TRUE
+  }
+  else if(as.numeric(date[[1]][2]) %in% c(4,6,9,11) & as.numeric(date[[1]][1]) != 30)
+  {
+    bVerbose <- TRUE
+  }
+  else if(as.numeric(date[[1]][2]) %in% c(1,3,5,7,8,10,12) & as.numeric(date[[1]][1]) != 31)
+  {
+    bVerbose <- TRUE
+  }
+  else
+  {
+    bVerbose <- FALSE
+  }
+  return(bVerbose)
+}
+##################################################################################################
 round_date <- function(aggregati)
 {
   for(i in 1:nrow(aggregati))
   {
     print(i)
     splitted <- strsplit(aggregati$`data fine`[i],"/")
-    if(as.numeric(splitted[[1]][1]) != 31 | as.numeric(splitted[[1]][1]) != 28 | as.numeric(splitted[[1]][1]) != 30)
+    if(IsMiddleMonth(splitted))
     {
-      if(as.numeric(splitted[[1]][1]) < 15)
-      {
         month <- ifelse(as.numeric(splitted[[1]][2])-1 == 0, 12, as.numeric(splitted[[1]][2])-1)
         aggregati$`data fine`[i] <- paste0(monthDays(as.Date(paste0(splitted[[1]][3],"-",month,"-01"))),"/",as.numeric(splitted[[1]][2])-1,"/",splitted[[1]][3])
-      }
-      else
-      {
-        aggregati$`data fine`[i] <- paste0(monthDays(as.Date(paste0(splitted[[1]][3],"-",as.numeric(splitted[[1]][2]),"-01"))),"/",as.numeric(splitted[[1]][2]),"/",splitted[[1]][3])
-      }
     }
   }
   return(aggregati)
