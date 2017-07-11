@@ -144,7 +144,7 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
 {
   if(p@signal == 0)
   {
-    if(p@DT$Last[ix] == valup)
+    if(p@DT$Last[ix] > valup)
     {
       print("found 1st signal to sell")
       print(p@DT$`Date GMT`[ix])
@@ -153,7 +153,7 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
       p@target_signal <- valup - tau
       p@move <- 1
     }
-    else if(p@DT$Last[ix] == vallow)
+    else if(p@DT$Last[ix] < vallow)
     {
       print("found 1st signal to buy")
       print(p@DT$`Date GMT`[ix])
@@ -165,14 +165,14 @@ setGeneric("signalize", function(p, ix, valup, vallow, tau)
   }
   else
   {
-    if(p@move > 0 & p@DT$Last[ix] == p@target_signal)
+    if(p@move > 0 & p@DT$Last[ix] < p@target_signal)
     {
       print("open a new sell position")
       print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 0, 1, 0, dt = p@DT[ix:nrow(p@DT),], 0, 1, p@target_signal - 0.06, p@target_signal + 0.03)
       p <- resetSignals(p)
     }
-    else if(p@move < 0 & p@DT$Last[ix] == p@target_signal)
+    else if(p@move < 0 & p@DT$Last[ix] > p@target_signal)
     {
       print("open a new buy position")
       print(p@DT$`Date GMT`[ix])
@@ -186,7 +186,7 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
 {
   if(p@signal == 0)
   {
-    if(p@DT$Last[ix] == valup)
+    if(p@DT$Last[ix] > valup)
     {
       print("found 1st signal to sell")
       print(p@DT$`Date GMT`[ix])
@@ -195,7 +195,7 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
       p@target_signal <- valup - tau
       p@move <- 1
     }
-    else if(p@DT$Last[ix] == vallow)
+    else if(p@DT$Last[ix] < vallow)
     {
       print("found 1st signal to buy")
       print(p@DT$`Date GMT`[ix])
@@ -207,14 +207,14 @@ setMethod(f = "signalize", signature = "Portfolio", definition = function(p, ix,
   }
   else
   {
-    if(p@move > 0 & p@DT$Last[ix] == p@target_signal)
+    if(p@move > 0 & p@DT$Last[ix] < p@target_signal)
     {
       print("open a new sell position")
       print(p@DT$`Date GMT`[ix])
       p <- openNewPosition(p, 0, 1, 0, dt = p@DT[ix:nrow(p@DT),], 0, 1, p@target_signal - 0.06, p@target_signal + 0.03)
       p <- resetSignals(p)
     }
-    else if(p@move < 0 & p@DT$Last[ix] == p@target_signal)
+    else if(p@move < 0 & p@DT$Last[ix] > p@target_signal)
     {
       print("open a new buy position")
       print(p@DT$`Date GMT`[ix])
@@ -297,7 +297,6 @@ generatePortfolio <- function(P, dt)
   P <- computeTOTPL(P)
   return(P)
 }
-
 ##############################################################################################
 rollstd <- function(x, n = 5)
 {
@@ -356,7 +355,7 @@ get_Signals <- function(dt)
         #print(i)
         print("apro posizione in vendita")
         d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
-                          up = up[length(up)], low = low[length(low)])
+                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] - 0.6, StopLoss = dt$Last[i] + 0.3)
         l <- list(df, d.f)
         df <- rbindlist(l)
         signal_I <- 0
@@ -368,7 +367,7 @@ get_Signals <- function(dt)
         #print(i)
         print("apro posizione in acquisto")
         d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
-                          up = up[length(up)], low = low[length(low)])
+                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] + 0.6, StopLoss = dt$Last[i] - 0.3)
         l <- list(df, d.f)
         df <- rbindlist(l)
         signal_I <- 0
@@ -386,7 +385,157 @@ get_Signals <- function(dt)
   return(df)
 }
 ###############################################################################################
-ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
+orderPrices <- function(x)
+{
+  if(abs(x[2] - x[1]) < abs(x[2] - x[4]))
+  {
+    return(c(x[1], x[2], x[3], x[4]))
+  }
+  else if(abs(x[2] - x[1]) > abs(x[2] - x[4]))
+  {
+    return(c(x[1], x[3], x[2], x[4]))
+  }
+  else if(abs(x[2] - x[1]) == abs(x[2] - x[4]))
+  {
+    if(x[1] > x[4]) return(c(x[1], x[3], x[2], x[4]))
+    else return(c(x[1], x[2], x[3], x[4]))
+  }
+}
+###############################################################################################
+get_Closures <- function(dt, dts)
+{
+  ldf <- data_frame()
+  for(i in 1:nrow(dts))
+  {
+    start <- dts$dove[i]
+    target <- dts$target[i]
+    SL <- dts$StopLoss[i]
+    dt2 <- dt[start:nrow(dts),]
+    vs <- dt2$Last[1]
+    ven <- dts$posizione_vendita[i]
+    acq <- dts$posizione_acquisto[i]
+    giorno <- dts$data[i]
+    for(j in 1:nrow(dt2))
+    {
+      closure <- 0
+      pl <- 0
+      data_chiusura <- 0
+      prices <- orderPrices(c(dt2$Open[j],dt2$High[j],dt2$Low[j],dt2$Last[j]))
+      sel <- 0
+      if(ven == 1)
+      {
+        if(any(prices <= target) & !any(prices >= SL))
+        {
+          data_chiusura <- dt2$`Date GMT`[j]
+          closure <- target
+          pl <- (closure - vs - 0.054)*8760
+          d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                            d_chiusura = data_chiusura, P_L = pl)
+          l <- list(ldf, d.f)
+          ldf <- rbindlist(l)
+          break
+        }
+        else if(!any(prices <= target) & any(prices >= SL))
+        {
+          data_chiusura <- dt2$`Date GMT`[j]
+          closure <- target
+          pl <- (closure - vs - 0.054)*8760
+          d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                            d_chiusura = data_chiusura, P_L = pl)
+          l <- list(ldf, d.f)
+          ldf <- rbindlist(l)
+          break
+        }
+        else if(any(prices <= target) & any(prices >= SL))
+        {
+          if(min(which(prices <= target)) < min(prices >= SL))
+          {
+            data_chiusura <- dt2$`Date GMT`[j]
+            closure <- target
+            pl <- (closure - vs - 0.054)*8760
+            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                              d_chiusura = data_chiusura, P_L = pl)
+            l <- list(ldf, d.f)
+            ldf <- rbindlist(l)
+            break
+          }
+          else
+          {
+            data_chiusura <- dt2$`Date GMT`[j]
+            closure <- target
+            pl <- (closure - vs - 0.054)*8760
+            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                              d_chiusura = data_chiusura, P_L = pl)
+            l <- list(ldf, d.f)
+            ldf <- rbindlist(l)
+            break
+          }
+        }
+        else
+        {
+          next
+        }
+      }
+      else if(acq == 1)
+      {
+        if(any(prices >= target) & !any(prices <= SL))
+        {
+          data_chiusura <- dt2$`Date GMT`[j]
+          closure <- target
+          pl <- (closure - vs - 0.054)*8760
+          d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                            d_chiusura = data_chiusura, P_L = pl)
+          l <- list(ldf, d.f)
+          ldf <- rbindlist(l)
+          break
+        }
+        else if(!any(prices >= target) & any(prices <= SL))
+        {
+          data_chiusura <- dt2$`Date GMT`[j]
+          closure <- target
+          pl <- (closure - vs - 0.054)*8760
+          d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                            d_chiusura = data_chiusura, P_L = pl)
+          l <- list(ldf, d.f)
+          ldf <- rbindlist(l)
+          break
+        }
+        else if(any(prices >= target) & any(prices <= SL))
+        {
+          if(min(which(prices <= target)) < min(prices >= SL))
+          {
+            data_chiusura <- dt2$`Date GMT`[j]
+            closure <- target
+            pl <- (closure - vs - 0.054)*8760
+            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                              d_chiusura = data_chiusura, P_L = pl)
+            l <- list(ldf, d.f)
+            ldf <- rbindlist(l)
+            break
+          }
+          else
+          {
+            data_chiusura <- dt2$`Date GMT`[j]
+            closure <- target
+            pl <- (closure - vs - 0.054)*8760
+            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+                              d_chiusura = data_chiusura, P_L = pl)
+            l <- list(ldf, d.f)
+            ldf <- rbindlist(l)
+            break
+          }
+        }
+        else
+        {
+          next
+        }
+      }
+    }
+  }
+  return(ldf[which(ldf$data <= ldf$d_chiusura),])
+}
+###############################################################################################
+ger <- dt <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
 
 plot(ger$Last, type = "l", col = "violet")
 hist(ger$Last, breaks = 40, col = "violet")
@@ -418,3 +567,26 @@ plot(apply(ger[,3:6],1, sd), type = "l", col = "red")
 
 
 ddf <- get_Signals(ger)
+ldf <- get_Closures(ger, ddf)
+sum(ldf$P_L)
+
+library(plot3D)
+x <- seq(0, 1, by = 0.01)
+y <- seq(0, 1,by = 0.01)
+M <- mesh(x, y)
+
+alpha <- M$x
+beta <- M$y
+
+z <- matrix(0, nrow = 101, ncol = 101)
+for(i in 1:101)
+{
+  for(j in 1:101)
+  {
+    z[i,j] <- (-1) * GetOptimVals(c(x[i], y[j]))
+  }
+}
+
+surf3D(x = x,y = y,z = z,colkey=FALSE,bty="b2",main="P&L")
+
+optim(c(0.5, 0.3), GetOptimVals, method = "L-BFGS-B", lower = c(0,0), upper = c(1,1))
