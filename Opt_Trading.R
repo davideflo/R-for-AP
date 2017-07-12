@@ -10,10 +10,10 @@ get_Signals2 <- function(dt, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVe
   low <- c()
   signal_I <- 0
   move <- 0
-  for(i in max(nm, ns):nrow(dt))
+  for(i in (max(nm, ns)+1):nrow(dt))
   {
-    rm <- c(rm, mean(dt$Last[(i-nm):(i)]))
-    std5 <- c(std5, sd(dt$Last[(i-ns):(i)])*(sqrt(ns-1)/sqrt(ns)))
+    rm <- c(rm, mean(dt$Last[(i-nm+1):(i)]))
+    std5 <- c(std5, sd(dt$Last[(i-ns+1):(i)])*(sqrt(ns-1)/sqrt(ns)))
     up <- rm + tau2*std5
     low <- rm - tau2*std5
     valup <- up[length(up)] + tau
@@ -104,7 +104,7 @@ get_Closures2 <- function(dt, dts)
     start <- dts$dove[i]
     target <- dts$target[i]
     SL <- dts$StopLoss[i]
-    dt2 <- dt[start:nrow(dts),]
+    dt2 <- dt[start:nrow(dt),]
     vs <- dt2$Last[1]
     ven <- dts$posizione_vendita[i]
     acq <- dts$posizione_acquisto[i]
@@ -122,7 +122,7 @@ get_Closures2 <- function(dt, dts)
         {
           data_chiusura <- dt2$`Date GMT`[j]
           closure <- target
-          pl <- (closure - vs - 0.054)*8760
+          pl <- (-closure + vs - 0.054)*8760
           d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                             d_chiusura = data_chiusura, P_L = pl)
           l <- list(ldf, d.f)
@@ -132,8 +132,8 @@ get_Closures2 <- function(dt, dts)
         else if(!any(prices <= target) & any(prices >= SL))
         {
           data_chiusura <- dt2$`Date GMT`[j]
-          closure <- target
-          pl <- (closure - vs - 0.054)*8760
+          closure <- SL
+          pl <- (-closure + vs - 0.054)*8760
           d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                             d_chiusura = data_chiusura, P_L = pl)
           l <- list(ldf, d.f)
@@ -146,7 +146,7 @@ get_Closures2 <- function(dt, dts)
           {
             data_chiusura <- dt2$`Date GMT`[j]
             closure <- target
-            pl <- (closure - vs - 0.054)*8760
+            pl <- (-closure + vs - 0.054)*8760
             d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
             l <- list(ldf, d.f)
@@ -156,7 +156,7 @@ get_Closures2 <- function(dt, dts)
           else
           {
             data_chiusura <- dt2$`Date GMT`[j]
-            closure <- target
+            closure <- SL
             pl <- (closure - vs - 0.054)*8760
             d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
@@ -186,7 +186,7 @@ get_Closures2 <- function(dt, dts)
         else if(!any(prices >= target) & any(prices <= SL))
         {
           data_chiusura <- dt2$`Date GMT`[j]
-          closure <- target
+          closure <- SL
           pl <- (closure - vs - 0.054)*8760
           d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                             d_chiusura = data_chiusura, P_L = pl)
@@ -210,7 +210,7 @@ get_Closures2 <- function(dt, dts)
           else
           {
             data_chiusura <- dt2$`Date GMT`[j]
-            closure <- target
+            closure <- SL
             pl <- (closure - vs - 0.054)*8760
             d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
@@ -226,7 +226,8 @@ get_Closures2 <- function(dt, dts)
       }
     }
   }
-  return(ldf[which(ldf$data <= ldf$d_chiusura),])
+  #return(ldf[which(ldf$data <= ldf$d_chiusura),])
+  return(ldf)
 }
 #################################################################################################################################
 GetOptimVals <- function(X)
