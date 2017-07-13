@@ -104,11 +104,15 @@ get_Closures2 <- function(dt, dts)
     start <- dts$dove[i]
     target <- dts$target[i]
     SL <- dts$StopLoss[i]
-    dt2 <- dt[start:nrow(dt),]
-    vs <- dt2$Last[1]
+    dt2 <- dt[(start+1):nrow(dt),]
+    vs <- dt$Last[start]
     ven <- dts$posizione_vendita[i]
     acq <- dts$posizione_acquisto[i]
     giorno <- dts$data[i]
+    if(start == nrow(dt))
+    {
+      break
+    }
     for(j in 1:nrow(dt2))
     {
       closure <- 0
@@ -232,7 +236,10 @@ get_Closures2 <- function(dt, dts)
 #################################################################################################################################
 GetOptimVals <- function(X)
 {
-  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
+  
   ddf <- get_Signals2(ger, X[1], X[2])
   ldf <- get_Closures2(ger, ddf)
   return(-sum(ldf$P_L))

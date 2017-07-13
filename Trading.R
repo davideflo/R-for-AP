@@ -589,10 +589,16 @@ for(i in 1:101)
 
 surf3D(x = M$x,y = M$y, z = z, colkey=FALSE,bty="b2",main="P&L")
 
-z_max <- apply(z, 1, max) ###55 --> x
-z_max <- apply(z, 2, max) ###30 --> y
+z_max <- apply(z, 1, max) ###6 --> x
+z_max <- apply(z, 2, max) ###72 --> y
 
-x[55]
-y[30]
+x[6]
+y[72]
+
+z_max <- apply(z, 1, max) ###101 --> x
+z_max <- apply(z, 2, max) ###72 --> y
+
+x[101]
+y[93]
 
 optim(c(0.5, 0.3), GetOptimVals, method = "L-BFGS-B", lower = c(0,0), upper = c(1,1))
