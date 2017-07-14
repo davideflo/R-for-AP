@@ -238,9 +238,10 @@ GetOptimVals <- function(X)
 {
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
-  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
-  
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
   ddf <- get_Signals2(ger, X[1], X[2])
   ldf <- get_Closures2(ger, ddf)
   return(-sum(ldf$P_L))
 }
+write.xlsx(ldf, 'GER_bollinger_gior_5gg_1.4_1_0.5.xlsx', row.names = FALSE)

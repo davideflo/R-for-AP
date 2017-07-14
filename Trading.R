@@ -593,7 +593,7 @@ z_max <- apply(z, 1, max) ###6 --> x
 z_max <- apply(z, 2, max) ###72 --> y
 
 x[6]
-y[72]
+y[1]
 
 z_max <- apply(z, 1, max) ###101 --> x
 z_max <- apply(z, 2, max) ###72 --> y
