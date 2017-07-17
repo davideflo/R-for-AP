@@ -3,7 +3,7 @@
 get_SignalsMM <- function(dt, Ta, Sl, MMs = 5, MMl = 15, bVerbose = FALSE, EMA = FALSE)
 {
   df <- data_frame()
-  ms <- mean(dt$Last[(MMl-MMs+1):MMl])
+  ms <- mean(dt$Last[(MMl-MMs+2):(MMl+1)])
   ml <- mean(dt$Last[1:MMl])
   move <- 0
   
@@ -55,26 +55,28 @@ get_SignalsMM <- function(dt, Ta, Sl, MMs = 5, MMl = 15, bVerbose = FALSE, EMA =
     points(df$dove[which(df$posizione_vendita == 1)], dt$Last[df$dove[which(df$posizione_vendita == 1)]], pch = 16, col = "gold")
     points(df$dove[which(df$posizione_acquisto == 1)], dt$Last[df$dove[which(df$posizione_acquisto == 1)]], pch = 16, col = "purple")
   }
+  return(df)
+}
 ################################################################################################################
-  orderPrices <- function(x)
+orderPrices <- function(x)
+{
+  if(abs(x[2] - x[1]) < abs(x[2] - x[4]))
   {
-    if(abs(x[2] - x[1]) < abs(x[2] - x[4]))
-    {
-      return(c(x[1], x[2], x[3], x[4]))
-    }
-    else if(abs(x[2] - x[1]) > abs(x[2] - x[4]))
-    {
-      return(c(x[1], x[3], x[2], x[4]))
-    }
-    else if(abs(x[2] - x[1]) == abs(x[2] - x[4]))
-    {
-      if(x[1] > x[4]) return(c(x[1], x[3], x[2], x[4]))
-      else return(c(x[1], x[2], x[3], x[4]))
-    }
+    return(c(x[1], x[2], x[3], x[4]))
   }
-  ###############################################################################################
-  get_ClosuresMM <- function(dt, dts)
+  else if(abs(x[2] - x[1]) > abs(x[2] - x[4]))
   {
+    return(c(x[1], x[3], x[2], x[4]))
+  }
+  else if(abs(x[2] - x[1]) == abs(x[2] - x[4]))
+  {
+    if(x[1] > x[4]) return(c(x[1], x[3], x[2], x[4]))
+    else return(c(x[1], x[2], x[3], x[4]))
+  }
+}
+###############################################################################################
+get_ClosuresMM <- function(dt, dts)
+{
     ldf <- data_frame()
     for(i in 1:nrow(dts))
     {
@@ -210,17 +212,16 @@ get_SignalsMM <- function(dt, Ta, Sl, MMs = 5, MMl = 15, bVerbose = FALSE, EMA =
       }
     }
     return(ldf)
-  }
-  #################################################################################################################################
-  GetOptimValsMM <- function(X)
-  {
-    ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
-    #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
-    ddf <- get_SignalsMM(ger, X[1], X[2],MMs = 5, MMl = 15, bVerbose = TRUE, EMA = TRUE)
-    ldf <- get_ClosuresMM(ger, ddf)
-    return(-sum(ldf$P_L))
-  }
-  return(df)
+}
+#################################################################################################################################
+GetOptimValsMM <- function(X)
+{
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
+  ddf <- get_SignalsMM(ger, X[1], X[2],MMs = 5, MMl = 15, bVerbose = TRUE, EMA = TRUE)
+  ldf <- get_ClosuresMM(ger, ddf)
+  return(-sum(ldf$P_L))
 }
 ###############################################################################################
-write.xlsx(ldf, 'medie_mobili_vincente.xlsx', row.names = FALSE)
+write.xlsx(ldf, 'ger1718_gior_mmesp5st15_1&1.xlsx', row.names = FALSE)

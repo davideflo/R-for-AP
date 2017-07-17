@@ -602,3 +602,18 @@ x[101]
 y[93]
 
 optim(c(0.5, 0.3), GetOptimVals, method = "L-BFGS-B", lower = c(0,0), upper = c(1,1))
+
+
+df <- data_frame()
+ms <- mean(dt$Last[(MMl-MMs+2):(MMl+1)])
+ml <- mean(dt$Last[1:MMl])
+move <- 0
+
+for(i in (MMl+2):nrow(dt))
+{
+  ms <- c(ms, ((dt$Last[i] - ms[length(ms)])*(2/(MMs+1)) + ms[length(ms)])  )
+  #ml <- c(ml, ((dt$Last[i] - ms[length(ml)])*(2/(MMl+1)) + ml[length(ml)]))
+  ml <- c(ml, mean(dt$Last[(i-MMl+1):(i)]))
+}
+  
+df <- data.frame(data = dt$`Date GMT`[16:424], mm_lunga = ml, mm_corta = ms)
