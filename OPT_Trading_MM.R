@@ -106,9 +106,10 @@ get_ClosuresMM <- function(dt, dts)
           if(any(prices <= target) & !any(prices >= SL))
           {
             data_chiusura <- dt2$`Date GMT`[j]
+            ora_chiusura <- dt2$Time[j]
             closure <- target
             pl <- (-closure + vs - 0.054)*8760
-            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+            d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
             l <- list(ldf, d.f)
             ldf <- rbindlist(l)
@@ -117,9 +118,10 @@ get_ClosuresMM <- function(dt, dts)
           else if(!any(prices <= target) & any(prices >= SL))
           {
             data_chiusura <- dt2$`Date GMT`[j]
+            ora_chiusura <- dt2$Time[j]
             closure <- SL
             pl <- (-closure + vs - 0.054)*8760
-            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+            d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
             l <- list(ldf, d.f)
             ldf <- rbindlist(l)
@@ -130,9 +132,10 @@ get_ClosuresMM <- function(dt, dts)
             if(min(which(prices <= target)) < min(prices >= SL))
             {
               data_chiusura <- dt2$`Date GMT`[j]
+              ora_chiusura <- dt2$Time[j]
               closure <- target
               pl <- (-closure + vs - 0.054)*8760
-              d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+              d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                                 d_chiusura = data_chiusura, P_L = pl)
               l <- list(ldf, d.f)
               ldf <- rbindlist(l)
@@ -141,9 +144,10 @@ get_ClosuresMM <- function(dt, dts)
             else
             {
               data_chiusura <- dt2$`Date GMT`[j]
+              ora_chiusura <- dt2$Time[j]
               closure <- SL
               pl <- (closure - vs - 0.054)*8760
-              d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+              d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                                 d_chiusura = data_chiusura, P_L = pl)
               l <- list(ldf, d.f)
               ldf <- rbindlist(l)
@@ -160,9 +164,10 @@ get_ClosuresMM <- function(dt, dts)
           if(any(prices >= target) & !any(prices <= SL))
           {
             data_chiusura <- dt2$`Date GMT`[j]
+            ora_chiusura <- dt2$Time[j]
             closure <- target
             pl <- (closure - vs - 0.054)*8760
-            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+            d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
             l <- list(ldf, d.f)
             ldf <- rbindlist(l)
@@ -171,9 +176,10 @@ get_ClosuresMM <- function(dt, dts)
           else if(!any(prices >= target) & any(prices <= SL))
           {
             data_chiusura <- dt2$`Date GMT`[j]
+            ora_chiusura <- dt2$Time[j]
             closure <- SL
             pl <- (closure - vs - 0.054)*8760
-            d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+            d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                               d_chiusura = data_chiusura, P_L = pl)
             l <- list(ldf, d.f)
             ldf <- rbindlist(l)
@@ -184,9 +190,10 @@ get_ClosuresMM <- function(dt, dts)
             if(min(which(prices <= target)) < min(prices >= SL))
             {
               data_chiusura <- dt2$`Date GMT`[j]
+              ora_chiusura <- dt2$Time[j]
               closure <- target
               pl <- (closure - vs - 0.054)*8760
-              d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+              d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                                 d_chiusura = data_chiusura, P_L = pl)
               l <- list(ldf, d.f)
               ldf <- rbindlist(l)
@@ -195,9 +202,10 @@ get_ClosuresMM <- function(dt, dts)
             else
             {
               data_chiusura <- dt2$`Date GMT`[j]
+              ora_chiusura <- dt2$Time[j]
               closure <- SL
               pl <- (closure - vs - 0.054)*8760
-              d.f <- data.frame(data = giorno, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
+              d.f <- data.frame(data = giorno, ora = ora_chiusura, val_inizio = vs, posizione_vendita = ven, posizione_acquisto = acq, target = target, stoploss = SL, chiusura = closure, 
                                 d_chiusura = data_chiusura, P_L = pl)
               l <- list(ldf, d.f)
               ldf <- rbindlist(l)
@@ -218,10 +226,10 @@ GetOptimValsMM <- function(X)
 {
   ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
-  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
   ddf <- get_SignalsMM(ger, X[1], X[2],MMs = 5, MMl = 15, bVerbose = TRUE, EMA = TRUE)
   ldf <- get_ClosuresMM(ger, ddf)
   return(-sum(ldf$P_L))
 }
 ###############################################################################################
-write.xlsx(ldf, 'ger1718_gior_mmesp5st15_1&1.xlsx', row.names = FALSE)
+write.xlsx(ldf, 'ger17_ora_mmesp5st15_0.6&0.3.xlsx', row.names = FALSE)
