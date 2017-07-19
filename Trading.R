@@ -616,4 +616,4 @@ for(i in (MMl+2):nrow(dt))
   ml <- c(ml, mean(dt$Last[(i-MMl+1):(i)]))
 }
   
-df <- data.frame(data = dt$`Date GMT`[16:424], mm_lunga = ml, mm_corta = ms)
+df <- data.frame(data = dt$`Date GMT`[16:1301], mm_lunga = ml, mm_corta = ms)
