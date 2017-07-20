@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report_214_AXO_12-06-2017.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("Report214.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -210,7 +210,7 @@ mstok_prog <- rep(0,24)
 #term <- c(rep(pg[1], 31),rep(pg[2], 29),rep(pg[3], 31), rep(pg[4], 183), rep(pg[5], 92), rep(pg[6], 90), rep(0, 275))
 #term <- tt
 
-mmkt2 <- c(as.numeric(tot_termine[,3]), rep(0,18))
+mmkt2 <- c(as.numeric(tot_termine[,3]), rep(0,9))
 #ST <- stokm + term
 #op <- tot_fap - (mstok_prog + mmkt2)
 op <- tot_ap - (mstok_prog + mmkt2)
@@ -232,7 +232,7 @@ op <- tot_ap - (mstok_prog + mmkt2)
 #mop <- c(sum_in_year(open_position, "2016"), sum_in_year(open_position, "2017"))
 ## per lo stoccaggio il prezzo = euro/MWh. Ecco da dove arriva la discrepanza. Bisogna o calcolare il prezzo al m3 o tenere in MWh l'unita di misura
 # totale_costi <- (op * listing/100) + terzi + (mstok_prog * c_stok*1.05275/100) + c(as.numeric(tot_termine[,2]), 0,0,0,0,0,0,0,0,0) 2016
-totale_costi <- (op * listing/100) + terzi + c(as.numeric(tot_termine[,2]), rep(0,18)) 
+totale_costi <- (op * listing/100) + terzi + c(as.numeric(tot_termine[,2]), rep(0,9)) 
 
 
 tot_costi_supero_capacita <- -1.3 * tot/100
@@ -270,7 +270,7 @@ unit_comm <- (margine_comm/tot)*100
 #                        tot,
 #                        tot))         2016
 df <- data.frame(rbind(terzi,
-                       c(tot_termine[,2],rep(0,18)),
+                       c(tot_termine[,2],rep(0,9)),
                        op * listing/100,
                        mstok_prog,
                        tot_costi_supero_capacita, 
