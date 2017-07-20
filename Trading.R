@@ -605,15 +605,11 @@ optim(c(0.5, 0.3), GetOptimVals, method = "L-BFGS-B", lower = c(0,0), upper = c(
 
 
 df <- data_frame()
-ms <- mean(dt$Last[(MMl-MMs+2):(MMl+1)])
-ml <- mean(dt$Last[1:MMl])
-move <- 0
+Mom <- c()
 
-for(i in (MMl+2):nrow(dt))
+for(i in 5:nrow(dt))
 {
-  ms <- c(ms, ((dt$Last[i] - ms[length(ms)])*(2/(MMs+1)) + ms[length(ms)])  )
-  #ml <- c(ml, ((dt$Last[i] - ms[length(ml)])*(2/(MMl+1)) + ml[length(ml)]))
-  ml <- c(ml, mean(dt$Last[(i-MMl+1):(i)]))
+  Mom <- c(Mom, dt$Last[i] - dt$Last[i-4])
 }
   
-df <- data.frame(data = dt$`Date GMT`[16:1301], mm_lunga = ml, mm_corta = ms)
+df <- data.frame(data = dt$`Date GMT`[5:nrow(dt)],Momentum = Mom)

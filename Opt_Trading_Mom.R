@@ -1,36 +1,26 @@
-####### TRADING OPTIMIZATION
+###### Momentum #######
+
 
 ###########################################################################################
-get_Signals2 <- function(dt, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVerbose = FALSE)
+get_Signals_Mom <- function(dt, Ta, Sl, tau = 0.05, nmom = 5, tau2 = 1.5, bVerbose = FALSE)
 {
   df <- data_frame()
-  rm <- c()
-  std5 <- c()
-  up <- c()
-  low <- c()
+  lt <- l5 <- mom <- c()
   signal_I <- 0
   move <- 0
-  for(i in (max(nm, ns)+1):nrow(dt))
+  for(i in (nmom):nrow(dt))
   {
-    rm <- c(rm, mean(dt$Last[(i-nm+1):(i)]))
-    std5 <- c(std5, sd(dt$Last[(i-ns+1):(i)])*(sqrt(ns-1)/sqrt(ns)))
-    up <- rm + tau2*std5
-    low <- rm - tau2*std5
-    valup <- up[length(up)] + tau
-    vallow <- low[length(low)] - tau
-    valup_II <- up[length(up)] - tau
-    vallow_II <- low[length(low)] + tau
-    
+    Mom <- dt$Last[i] - dt$Last[i-4]
     if(signal_I == 0)
     {
-      if(dt$Last[i] > valup)
+      if(Mom > tau + tau2)
       {
         #print("primo segnale")
         signal_I <- 1
         dove_I <- dt$Last[i]
         move <- 1
       }
-      else if(dt$Last[i] < vallow)
+      else if(Mom < -(tau2 + tau))
       {
         #print("primo segnale")
         signal_I <- 1
@@ -41,25 +31,23 @@ get_Signals2 <- function(dt, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVe
     }
     else
     {
-      if(dt$Last[i] < valup_II & move > 0)
+      if(Mom < (tau2 - tau) & move > 0)
       {
         #print("secondo segnale")
         #print(i)
         #print("apro posizione in vendita")
-        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
-                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] - Ta, StopLoss = dt$Last[i] + Sl)
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = dove_I, dove = i, target = dt$Last[i] - Ta, StopLoss = dt$Last[i] + Sl)
         l <- list(df, d.f)
         df <- rbindlist(l)
         signal_I <- 0
         move <- 0
       }
-      else if(dt$Last[i] > vallow_II & move < 0)
+      else if(Mom > -(tau2 - tau) & move < 0)
       {
         #print("secondo segnale")
         #print(i)
         #print("apro posizione in acquisto")
-        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
-                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] + Ta, StopLoss = dt$Last[i] - Sl)
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = dove_I, dove = i, target = dt$Last[i] + Ta, StopLoss = dt$Last[i] - Sl)
         l <- list(df, d.f)
         df <- rbindlist(l)
         signal_I <- 0
@@ -69,12 +57,12 @@ get_Signals2 <- function(dt, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVe
     }
   }
   if(bVerbose){
-  plot(dt$Last, type = "l", col = "red", lwd = 1.5)
-  lines(rm, type = "l", col = "royalblue4", lwd = 1.5)
-  lines(up, type = "l", col = "orangered", lwd = 1.5)
-  lines(low, type = "l", col = "orangered", lwd = 1.5)
-  points(df$dove[which(df$posizione_vendita == 1)], dt$Last[df$dove[which(df$posizione_vendita == 1)]], pch = 16, col = "gold")
-  points(df$dove[which(df$posizione_acquisto == 1)], dt$Last[df$dove[which(df$posizione_acquisto == 1)]], pch = 16, col = "purple")
+    plot(dt$Last, type = "l", col = "red", lwd = 1.5)
+    lines(rm, type = "l", col = "royalblue4", lwd = 1.5)
+    lines(up, type = "l", col = "orangered", lwd = 1.5)
+    lines(low, type = "l", col = "orangered", lwd = 1.5)
+    points(df$dove[which(df$posizione_vendita == 1)], dt$Last[df$dove[which(df$posizione_vendita == 1)]], pch = 16, col = "gold")
+    points(df$dove[which(df$posizione_acquisto == 1)], dt$Last[df$dove[which(df$posizione_acquisto == 1)]], pch = 16, col = "purple")
   }
   return(df)
 }
@@ -96,7 +84,7 @@ orderPrices <- function(x)
   }
 }
 ###############################################################################################
-get_Closures2 <- function(dt, dts)
+get_ClosuresMom <- function(dt, dts)
 {
   ldf <- data_frame()
   for(i in 1:nrow(dts))
@@ -235,14 +223,15 @@ get_Closures2 <- function(dt, dts)
   return(ldf)
 }
 #################################################################################################################################
-GetOptimVals <- function(X)
+GetOptimValsMom <- function(X)
 {
   ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
-  ddf <- get_Signals2(ger, X[1], X[2])
-  ldf <- get_Closures2(ger, ddf)
+  ddf <- get_Signals_Mom(ger, X[1], X[2])
+  ldf <- get_ClosuresMom(ger, ddf)
   return(-sum(ldf$P_L))
 }
-write.xlsx(ldf, 'coal_bollinger_gior_5gg_1.4_1_1.xlsx', row.names = FALSE)
+#################################################################################################################################
+write.xlsx(ldf, 'ger_momentum_ora_5gg_1.5_1_1.xlsx', row.names = FALSE)
