@@ -225,13 +225,14 @@ get_ClosuresMom <- function(dt, dts)
 #################################################################################################################################
 GetOptimValsMom <- function(X)
 {
-  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/Dati_Bollinger_GER.xlsx", sheet = "DATI NEW"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx"))
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/coal.xlsx", sheet = 1))
   ddf <- get_Signals_Mom(ger, X[1], X[2])
   ldf <- get_ClosuresMom(ger, ddf)
   return(-sum(ldf$P_L))
 }
 #################################################################################################################################
-write.xlsx(ldf, 'ger_momentum_ora_5gg_1.5_1_1.xlsx', row.names = FALSE)
+write.xlsx(ldf, 'coal_momentum_ora_5gg_1.5_1_1.xlsx', row.names = FALSE)
