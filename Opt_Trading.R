@@ -78,6 +78,86 @@ get_Signals2 <- function(dt, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVe
   }
   return(df)
 }
+###########################################################################################
+get_SignalsLayers <- function(dt, dts, layer, Ta, Sl, tau = 0.05, nm = 5, ns = 5, tau2 = 1.4, bVerbose = FALSE)
+{
+  #### layer = 0, 1 o 2. funzione lanciata due volte per determinare il livello di posizione aperta.
+  #### dt = dataframe con le prime/layered posizioni aperte --> serve solo il valore di Last.
+  #### modifica dt in modo che abbia una colonna che tenga conto del layer.
+  df <- data_frame()
+  rm <- c()
+  std5 <- c()
+  up <- c()
+  low <- c()
+  
+  for(i in (max(nm, ns)+1):nrow(dt))
+  {
+    rm <- c(rm, mean(dt$Last[(i-nm+1):(i)]))
+    std5 <- c(std5, sd(dt$Last[(i-ns+1):(i)])*(sqrt(ns-1)/sqrt(ns)))
+    up <- rm + tau2*std5
+    low <- rm - tau2*std5
+    valup <- up[length(up)] + tau
+    vallow <- low[length(low)] - tau
+    valup_II <- up[length(up)] - tau
+    vallow_II <- low[length(low)] + tau
+    
+    if(signal_I == 0)
+    {
+      if(dt$Last[i] > valup)
+      {
+        #print("primo segnale")
+        signal_I <- 1
+        dove_I <- dt$Last[i]
+        move <- 1
+      }
+      else if(dt$Last[i] < vallow)
+      {
+        #print("primo segnale")
+        signal_I <- 1
+        dove_I <- dt$Last[i]
+        move <- -1
+      }
+      next
+    }
+    else
+    {
+      if(dt$Last[i] < valup_II & move > 0)
+      {
+        #print("secondo segnale")
+        #print(i)
+        #print("apro posizione in vendita")
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
+                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] - Ta, StopLoss = dt$Last[i] + Sl)
+        l <- list(df, d.f)
+        df <- rbindlist(l)
+        signal_I <- 0
+        move <- 0
+      }
+      else if(dt$Last[i] > vallow_II & move < 0)
+      {
+        #print("secondo segnale")
+        #print(i)
+        #print("apro posizione in acquisto")
+        d.f <- data.frame(data = dt$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = dove_I, dove = i, mm = rm[length(rm)], devstd = std5[length(std5)],
+                          up = up[length(up)], low = low[length(low)], target = dt$Last[i] + Ta, StopLoss = dt$Last[i] - Sl)
+        l <- list(df, d.f)
+        df <- rbindlist(l)
+        signal_I <- 0
+        move <- 0
+      }
+      next
+    }
+  }
+  if(bVerbose){
+    plot(dt$Last, type = "l", col = "red", lwd = 1.5)
+    lines(rm, type = "l", col = "royalblue4", lwd = 1.5)
+    lines(up, type = "l", col = "orangered", lwd = 1.5)
+    lines(low, type = "l", col = "orangered", lwd = 1.5)
+    points(df$dove[which(df$posizione_vendita == 1)], dt$Last[df$dove[which(df$posizione_vendita == 1)]], pch = 16, col = "gold")
+    points(df$dove[which(df$posizione_acquisto == 1)], dt$Last[df$dove[which(df$posizione_acquisto == 1)]], pch = 16, col = "purple")
+  }
+  return(df)
+}
 ###############################################################################################
 orderPrices <- function(x)
 {
