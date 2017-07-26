@@ -566,20 +566,20 @@ df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
 #df2 <- df3
 df2$pun <- cpred
 
-df2 <- Redimensioner_pkop(df2, 52.96, 64.59, '2018-01-01', '2018-01-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 46.82, 55.28, '2018-02-01', '2018-02-28', 'PK')
-df2 <- Redimensioner_pkop(df2, 44.82, 51.51, '2018-03-01', '2018-03-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 37.16, 38.51, '2018-04-01', '2018-04-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 39.59, 42.80, '2018-05-01', '2018-05-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 41.30, 45.39, '2018-06-01', '2018-06-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 50.47, 58.68, '2018-07-01', '2018-07-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 42.09, 44.62, '2018-08-01', '2018-08-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 43.43, 50.22, '2018-09-01', '2018-09-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 41.69, 49.23, '2018-10-01', '2018-10-31', 'PK')
-df2 <- Redimensioner_pkop(df2, 47.78, 60.08, '2018-11-01', '2018-11-30', 'PK')
-df2 <- Redimensioner_pkop(df2, 44.73, 52.54, '2018-12-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 60.64, 75.43, '2018-01-01', '2018-01-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 45.60, 53.90, '2018-02-01', '2018-02-28', 'PK')
+df2 <- Redimensioner_pkop(df2, 38.39, 42.61, '2018-03-01', '2018-03-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 38.51, 40.81, '2018-04-01', '2018-04-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 39.65, 43.46, '2018-05-01', '2018-05-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 40.64, 45.30, '2018-06-01', '2018-06-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 50.05, 57.06, '2018-07-01', '2018-07-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.77, 43.40, '2018-08-01', '2018-08-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 43.11, 48.85, '2018-09-01', '2018-09-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 41.43, 48.64, '2018-10-01', '2018-10-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 46.30, 56.61, '2018-11-01', '2018-11-30', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.34, 51.48, '2018-12-01', '2018-12-31', 'PK')
 
-df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-01-01', '2018-12-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 44.35, 50.50, '2018-01-01', '2018-12-31', 'PK')
 
 ### Q1:
 df2 <- Redimensioner_pkop(df2, 48.50, 57.40, '2018-01-01', '2018-03-31', 'PK')
@@ -589,7 +589,17 @@ df2 <- Redimensioner_pkop(df2, 44.40, 51.35, '2018-04-01', '2018-12-31', 'PK')
 write.xlsx(df2, "pun_forward_2018.xlsx", row.names = FALSE)
 plot(df2$pun, type = "l", col = "green")
 
+plot(df2$pun, type = "l", col = "darkolivegreen")
 
+for(m in 1:12)
+{
+  mm1 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")])
+  print(paste("F1 mese", m, mm1))
+  mm2 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F2")])
+  print(paste("F2 mese", m, mm2))
+  mm3 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F3")])
+  print(paste("F3 mese", m, mm3))
+  }
 
 fasce2018 <- data.table(read_excel("fasce.xlsx", sheet = "2018"))
 df3 <- df2
@@ -700,4 +710,22 @@ for(m in 1:12)
 # plot(df2$pun, type = "l", col = "purple")
 # df2 <- df2[,1:9]
 # df2 <- Assembler2(real, df2)
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+############################### 2019 #########################################################################################
 
+df9 <- data.table(read_excel('pun_forward_2019.xlsx'))
+
+df9$real <- rep(0, nrow(df9))
+
+colnames(df9)[1] <- 'date'
+colnames(df9)[9] <- 'pun'
+
+
+df9 <- Redimensioner_pkop(df9, 43.5, 49.25, '2019-01-01', '2019-12-31', 'PK')
+
+
+write.xlsx(df9, 'pun_forward_2019.xlsx', row.names = FALSE)
+plot(df9$date, df9$pun, type = "l", col = 'green')
