@@ -115,6 +115,7 @@ get_SignalsLayers <- function(dt, dts, layer, Ta, Sl, tau = 0.05, nm = 5, ns = 5
   
   for(j in 1:nrow(dts))
   {
+  
     da <- dts$dove[j]
     dtda <- dt[(da+1):nrow(dt), ]
     layered <- dts$Layer[j]
@@ -125,49 +126,57 @@ get_SignalsLayers <- function(dt, dts, layer, Ta, Sl, tau = 0.05, nm = 5, ns = 5
     Target <- dts$target[j]
     StopLoss <- dts$StopLoss[j]
     
-    if(da == nrow(dt)) break
-    
-    for(i in 1:nrow(dtda))
+    if(layered == (layer - 1))
     {
-      prices <- orderPrices(c(dtda$Open[i],dtda$High[i],dtda$Low[i],dtda$Last[i]))
-      if(layered < layer & buy == 1)
-      {
-        if(any(prices <= (val - threshold))) 
+      
+        if(da == nrow(dt)) break
+        
+        for(i in 1:nrow(dtda))
         {
-          d.f <- data.frame(data = dtda$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = (val - threshold), dove = (da + i), 
-                            target = Target, StopLoss = StopLoss, Layer = layer)
-          l <- list(df, d.f)
-          df <- rbindlist(l)
-          break
+          prices <- orderPrices(c(dtda$Open[i],dtda$High[i],dtda$Low[i],dtda$Last[i]))
+          if(layered < layer & buy == 1)
+          {
+            if(any(prices <= (val - threshold))) 
+            {
+              d.f <- data.frame(data = dtda$`Date GMT`[i], posizione_vendita = 0, posizione_acquisto = 1, first = (val - threshold), dove = (da + i), 
+                                target = Target, StopLoss = StopLoss, Layer = layer)
+              l <- list(df, d.f)
+              df <- rbindlist(l)
+              break
+            }
+            else if(dtda$Last[i] >= Target)
+            {
+              break
+            }
+            else
+            {
+              next
+            }
+          }
+          else if(layered < layer & sell == 1)
+          {
+            if(any(prices >= (val + threshold)))
+            { 
+              d.f <- data.frame(data = dtda$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = (val + threshold), dove = (da + i), 
+                                target = Target, StopLoss = StopLoss, Layer = layer)
+              l <- list(df, d.f)
+              df <- rbindlist(l)  
+              break
+            }
+            else if(dtda$Last[i] <= Target)
+            {
+              break
+            }
+            else
+            {
+              next
+            }
+          }
         }
-        else if(dtda$Last[i] >= Target)
-        {
-          break
-        }
-        else
-        {
-          next
-        }
-      }
-      else if(layered < layer & sell == 1)
-      {
-        if(any(prices >= (val + threshold)))
-        { 
-          d.f <- data.frame(data = dtda$`Date GMT`[i], posizione_vendita = 1, posizione_acquisto = 0, first = (val + threshold), dove = (da + i), 
-                            target = Target, StopLoss = StopLoss, Layer = layer)
-          l <- list(df, d.f)
-          df <- rbindlist(l)  
-          break
-        }
-        else if(dtda$Last[i] <= Target)
-        {
-          break
-        }
-        else
-        {
-          next
-        }
-      }
+    }
+    else
+    {
+      next
     }
   }
   if(bVerbose){
@@ -209,8 +218,8 @@ get_ClosuresLayers <- function(dt, dts)
   {
     print(i)
     start <- dts$dove[i]
-    target <- dts$target[i]
-    SL <- dts$StopLoss[i]
+    target <- round(dts$target[i],2)
+    SL <- round(dts$StopLoss[i],2)
     dt2 <- dt[(start+1):nrow(dt),]
     
     lay <- dts$Layer[i]
@@ -373,6 +382,8 @@ GetOptimValsLayered <- function(X)
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_giornaliero.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_17_CAND.xlsx"))
   #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER_1718.xlsx")); ger <- ger[,1:5]
+  #ger <- data.table(read_excel("H:/Energy Management/13. TRADING/GER18_giornaliero.xlsx")); #ger <- ger[,1:5]
+  ger <- data.table(read_excel("H:/Energy Management/13. TRADING/coal.xlsx", sheet = 1))
   
   ddf <- get_Signals2(ger, X[1], X[2])
   collist <- c(1:5, 10, 11)
@@ -393,4 +404,4 @@ GetOptimValsLayered <- function(X)
   
   return(-sum(Ldf$P_L * weights))
 }
-write.xlsx(ldf, 'ger1718_bollinger_gior_5gg_1.4_strat_1_1.1_2.xlsx', row.names = FALSE)
+write.xlsx(Ldf, 'carb_bollinger_gior_5gg_1.4_strat_1_1.1_1.xlsx', row.names = FALSE)
