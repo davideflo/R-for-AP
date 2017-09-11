@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("Report214.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("2017.09.11_Report_214.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -154,8 +154,8 @@ tot_enel <- TOT_m3(TPe,pm)
 
 prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
              "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
-             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601", "LGC_MF_1610","RGC_MF_1610")
-acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00,16.00,16.00)
+             "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601", "LGC_MF_1610","RGC_MF_1610","LGD_UF_1707")
+acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00,16.00,16.00,16.00)
 
 AC <- data.frame(t(acq))
 colnames(AC) <- prodenel
@@ -174,8 +174,8 @@ for(i in 1:nrow(mat_enel))
 
   x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
   ME[i,] <- x
-
 }
+
 ME <- ME/100
 terzi <- colSums(ME)
 
