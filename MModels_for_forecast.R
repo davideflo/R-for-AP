@@ -45,6 +45,9 @@ plot(DWT$y, type = 'l')
 
 heatmap.2(cor(DWT), dendrogram = 'none')
 
+DWTrand <- DWT[sample(nrow(DWT)),]
+
+
 ctrl <- list(niterEM = 500, msVerbose = TRUE, optimMethod="L-BFGS-B")
 
 gmodel <- eval(substitute(gamm(y ~ Lun + Mar + Mer + Gio + Ven + Sab +
@@ -55,6 +58,16 @@ gmodel <- eval(substitute(gamm(y ~ Lun + Mar + Mer + Gio + Ven + Sab +
                               s(vento, bs = "cc"), data = DWT,
                               control = ctrl, niterPQL = 500)), DWT)
 
+### this one works ans it's the best model so far
+gmodel_trial <- eval(substitute(gamm(y ~ s(tmax, bs = "cc") + s(vento) + hol +
+                                       Gen + Feb + March + Apr + Mag + Giu + Lug + Ago + Set + Ott + Nov + 
+                                       Lun + Mar + Mer + Gio + Ven + Sab, data = DWTrand,
+                               control = ctrl, niterPQL = 500)), DWTrand)
+
+summary(gmodel_trial$gam)
+plot((gmodel_trial$gam))
+acf(resid(gmodel_trial$lme))
+pacf(resid(gmodel_trial$lme))
 
 ##################################### WEEKLY CORRELATIONS ##################################################
 
