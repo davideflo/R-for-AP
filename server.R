@@ -626,6 +626,28 @@ TFileReader <- function()
     {
       if(sum(usageQ8) > 0)
       {
+        used <- paste0("Q", which(usageQ8 == 1))
+        not_used <- setdiff(c("Q1","Q2","Q3","Q4"), used)
+        month_taken <- c()
+        diff <- 0
+        diffPK <- 0
+        for(i in 1:4)
+        {
+          if(usageQ8[i] == 1)
+          {
+            month_taken <- c(month_taken, get(paste0("Q", i,"n")))
+            diff <- diff + sum(d_f$BSL[which(d_f$period %in% paste0(c("Q1","Q2","Q3","Q4")[i],"_",y))] * ore7$BSL[get(paste0("Q", i,"n"))])
+            diffPK <- diffPK + sum(d_f$PK[which(d_f$period %in% paste0(c("Q1","Q2","Q3","Q4")[i],"_",y))] * ore7$PK[get(paste0("Q", i,"n"))])
+          }
+        }
+        sum_missingQ_BSL <- (d_f$BSL[i]*sum(ore7$BSL) - diff)/sum(ore7$BSL[setdiff(1:12, month_taken)])
+        sum_missingQ_PK <- (d_f$PK[i]*sum(ore7$PK) - diffPK)/sum(ore7$PK[setdiff(1:12, month_taken)])
+
+        for(i in 1:length(not_used))
+        {
+          bsl <- sum_missingQ_BSL * (sum(ore7$BSL[get(paste0(not_used[i],"n"))]))/(sum(ore7$BSL[setdiff(1:12, month_taken)]))
+        }
+
         p <- max(which(usageQ8 == 1))
         Qp <- paste0("Q",1:p)
         Q <- get(paste0("Q", min(which(usageQ8 == 0))))
@@ -665,7 +687,7 @@ colnames(df2)[10] <- "real"
 
 df8 <- data.table(read_excel('C:/Users/utente/Documents/shinyapp/pun_forward_2018.xlsx'))
 
-mercato <- data.table(read_excel('C:/Users/utente/Documents/shinyapp/prova.xlsx'))
+mercato <- data.table(read_excel('C:/Users/utente/Documents/shinyapp/2017.11.06_mercato.xlsx'))
 
 mercato_Tecla <- TFileReader()
 # 
