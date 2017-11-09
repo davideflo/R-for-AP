@@ -95,6 +95,12 @@ PCA <- pca.fd(fWC$fd, nharm = 3)
 
 matplot(PCA$harmonics$coefs, type = 'l')
 
+PCAv <- prcomp(WC)
+
+PCAv$sdev
+plot(PCAv$sdev/sum(PCAv$sdev), type = 'b', col = 'red')
+plot(cumsum(PCAv$sdev/sum(PCAv$sdev)), type = 'b', col = 'blue', lwd = 2)
+
 
 dtc <- DailyTimeCorrelation(WC, 1)
 
@@ -115,3 +121,18 @@ for(i in 1:7)
 }
 
 surf3D(x = M$x,y = M$y, z = z, colkey=TRUE,bty="b2",main="DTC")
+
+boxplot(dtc)
+acf(dtc$cm, lag.max = 50)
+pca_dtc <- prcomp(dtc)
+plot(pca_dtc$sdev/sum(pca_dtc$sdev), type = 'b', col = 'green', lwd = 2)
+plot(cumsum(pca_dtc$sdev/sum(pca_dtc$sdev)), type = 'b', col = 'salmon', lwd = 2)
+
+for(i in 1:7)
+{
+  for(k in 1:7)
+  {
+    rho_ik <- (pca_dtc$rotation[k,i]* sqrt(pca_dtc$sdev[i]))/sqrt(var(unlist(dtc[,k])))
+    print(paste("rho", i, k, rho_ik))
+  }
+}
