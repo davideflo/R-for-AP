@@ -40,6 +40,9 @@ DailyTimeCorrelation <- function(df, lm)
 
 DWT = data.table(read_excel('C:\\Users\\utente\\Documents\\Sbilanciamento\\DWT.xlsx'))
 
+DWT[, Month := cos(c(rep(1,31),rep(2,28),rep(3,31),rep(4,30),rep(5,31),rep(6,30),
+                  rep(7,31),rep(8,31),rep(9,30),rep(10,31),rep(11,30),rep(12,31))*(pi/12))]
+
 DWT[,c('X__1','pday','pioggia','ponte','dls','edls'):= NULL]
 plot(DWT$y, type = 'l')
 
@@ -59,15 +62,76 @@ gmodel <- eval(substitute(gamm(y ~ Lun + Mar + Mer + Gio + Ven + Sab +
                               control = ctrl, niterPQL = 500)), DWT)
 
 ### this one works ans it's the best model so far
-gmodel_trial <- eval(substitute(gamm(y ~ s(tmax, bs = "cc") + s(vento) + hol +
+gmodel_trial <- eval(substitute(gamm(y ~ s(tmax, bs = "cc") + s(vento) + Month + hol +
                                        Gen + Feb + March + Apr + Mag + Giu + Lug + Ago + Set + Ott + Nov + 
                                        Lun + Mar + Mer + Gio + Ven + Sab, data = DWTrand,
                                control = ctrl, niterPQL = 500)), DWTrand)
+
+DWTest <- DWT[,'y' := NULL]
 
 summary(gmodel_trial$gam)
 plot((gmodel_trial$gam))
 acf(resid(gmodel_trial$lme))
 pacf(resid(gmodel_trial$lme))
+
+yhat = predict(gmodel_trial$gam,  newdata = DWTest, type = "terms", se.fit = TRUE)
+
+chat <- rowSums(yhat$fit) + 12.53449
+shat <- rowSums(yhat$se.fit) + 12.53449
+
+plot(chat, type = 'b', col = 'black')
+lines(DWT$y, type = 'b', pch = '16', col = 'red')
+
+
+errors = DWT$y - chat
+plot(errors, type = 'b', col = 'blue')
+
+mean(errors)
+var(errors)
+max(errors)
+min(errors)
+median(errors)
+
+sbil = errors/chat
+plot(sbil, type = 'b', col = 'grey')
+abline(h = 0.15)
+abline(h = -0.15)
+
+
+mean(sbil)
+var(sbil)
+max(sbil)
+min(sbil)
+median(sbil)
+
+(length(which(sbil >= 0.15)) + length(which(sbil <= -0.15)))/length(sbil)
+plot(density(sbil))
+
+
+serrors = DWT$y - shat
+plot(serrors, type = 'b', col = 'orange')
+
+mean(errors)
+var(errors)
+max(errors)
+min(errors)
+median(errors)
+
+sbil = errors/chat
+plot(sbil, type = 'b', col = 'grey')
+abline(h = 0.15)
+abline(h = -0.15)
+
+
+
+mean(sbil)
+var(sbil)
+max(sbil)
+min(sbil)
+median(sbil)
+
+(length(which(sbil >= 0.15)) + length(which(sbil <= -0.15)))/length(sbil)
+plot(density(sbil))
 
 ##################################### WEEKLY CORRELATIONS ##################################################
 
