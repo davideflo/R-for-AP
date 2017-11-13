@@ -61,8 +61,15 @@ gmodel <- eval(substitute(gamm(y ~ Lun + Mar + Mer + Gio + Ven + Sab +
                               s(vento, bs = "cc"), data = DWT,
                               control = ctrl, niterPQL = 500)), DWT)
 
-### this one works ans it's the best model so far
-gmodel_trial <- eval(substitute(gamm(y ~ s(tmax, bs = "cc") + s(vento) + Month + hol +
+##################################
+DWTrand2 <- DWTrand[, c("Dom", "Dic") := NULL]
+fit <- lm(y ~ . + I(tmax^2), data = DWTrand2)
+
+summary(fit)
+##################################
+
+### this one works and it's the best model so far
+gmodel_trial <- eval(substitute(gamm(y ~ s(tmax, bs = "cc") + s(vento) + hol +
                                        Gen + Feb + March + Apr + Mag + Giu + Lug + Ago + Set + Ott + Nov + 
                                        Lun + Mar + Mer + Gio + Ven + Sab, data = DWTrand,
                                control = ctrl, niterPQL = 500)), DWTrand)
@@ -85,6 +92,32 @@ lines(DWT$y, type = 'b', pch = '16', col = 'red')
 
 errors = DWT$y - chat
 plot(errors, type = 'b', col = 'blue')
+hist(errors, breaks = 20, col = 'skyblue3')
+
+
+mean(errors)
+var(errors)
+sd(errors)
+max(errors)
+min(errors)
+median(errors)
+
+sbil = errors/chat
+plot(sbil, type = 'b', col = 'grey')
+abline(h = 0.15)
+abline(h = -0.15)
+
+
+mean(sbil)
+var(sbil)
+sd(sbil)
+max(sbil)
+min(sbil)
+median(sbil)
+
+(length(which(sbil >= 0.15)) + length(which(sbil <= -0.15)))/length(sbil)
+plot(density(sbil))
+
 
 mean(errors)
 var(errors)
@@ -98,8 +131,10 @@ abline(h = 0.15)
 abline(h = -0.15)
 
 
+
 mean(sbil)
 var(sbil)
+sd(sbil)
 max(sbil)
 min(sbil)
 median(sbil)
@@ -107,32 +142,22 @@ median(sbil)
 (length(which(sbil >= 0.15)) + length(which(sbil <= -0.15)))/length(sbil)
 plot(density(sbil))
 
+more = DWT[which(sbil >= 0.15),]
+less = DWT[which(sbil <= -0.15),]
 
-serrors = DWT$y - shat
-plot(serrors, type = 'b', col = 'orange')
+nrow(more[which(more$hol == 1)])/nrow(more)
+nrow(less[which(less$hol == 1)])/nrow(less)
+length(which(DWT$hol == 1))/length(DWT$hol)
 
-mean(errors)
-var(errors)
-max(errors)
-min(errors)
-median(errors)
+dwt = data.table(read_excel('C:\\Users\\utente\\Documents\\Sbilanciamento\\prev_meteo.xlsx'))
+dwt[,c('X__1','pday','pioggia','ponte','dls','edls'):= NULL]
+phat <- predict(gmodel_trial$gam,  newdata = dwt, type = "terms", se.fit = TRUE)
 
-sbil = errors/chat
-plot(sbil, type = 'b', col = 'grey')
-abline(h = 0.15)
-abline(h = -0.15)
+Chat <- sum(phat$fit) + 12.53449
 
+dwt2 <- dwt[, tmax2 := tmax^2]
 
-
-mean(sbil)
-var(sbil)
-max(sbil)
-min(sbil)
-median(sbil)
-
-(length(which(sbil >= 0.15)) + length(which(sbil <= -0.15)))/length(sbil)
-plot(density(sbil))
-
+predict(fit, newdata = dwt)
 ##################################### WEEKLY CORRELATIONS ##################################################
 
 
