@@ -225,3 +225,31 @@ for(i in 1:7)
     print(paste("rho", i, k, rho_ik))
   }
 }
+
+#######################################################################################
+# https://www.r-bloggers.com/kaggles-advanced-regression-competition-predicting-housing-prices-in-ames-iowa/
+# https://www.r-bloggers.com/smooth-package-for-r-common-ground-part-ii-estimators/
+# https://www.r-bloggers.com/predict-customer-churn-logistic-regression-decision-tree-and-random-forest/
+
+R <- data.table(read_excel('C:/Users/utente/R.xlsx'))
+
+n <- ncol(R)
+corrs <- rep(0,((n-1)*n/2))
+R <- as.data.frame(R)
+k <- 1
+for(j in 1:ncol(R))
+{
+  if(j == ncol(R)) break
+  else
+  {
+    for(i in (j+1):ncol(R))
+    {
+      
+      CCF <- c(ccf(unlist(R[,j]), unlist(R[,i]), plot = FALSE)$acf)
+      lag0 <- CCF[floor(length(CCF)/2) + 1]
+      print(lag0)
+      corrs[k] <- corrs[k] + lag0
+      k <- k+1
+    }
+  }
+}
