@@ -244,12 +244,12 @@ for(j in 1:ncol(R))
   {
     for(i in (j+1):ncol(R))
     {
-      
       CCF <- c(ccf(unlist(R[,j]), unlist(R[,i]), plot = FALSE)$acf)
       lag0 <- CCF[floor(length(CCF)/2) + 1]
-      print(lag0)
-      corrs[k] <- corrs[k] + lag0
+      #print(lag0)
+      corrs[k] <- lag0
       k <- k+1
+      if(k%%50000 == 0) print(paste("avanzamento:",k/length(corrs)))
     }
   }
 }
