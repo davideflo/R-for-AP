@@ -2,6 +2,8 @@
 ############### FUNZIONI SPECIFICHE PER BILANCIO FORECAST #############
 #######################################################################
 library(Hmisc)
+library(lubridate)
+library(plyr)
 
 read_file_anagrafica <- function(ao)
 {
@@ -83,3 +85,36 @@ round_date <- function(aggregati)
   }
   return(aggregati)
 }
+################################################################################################
+AggiornaVendite <- function(filename)
+{
+  vendite <- openxlsx::read.xlsx(paste0("C:/Users/d_floriello/Documents/",filename), sheet = 1, colNames = TRUE, startRow = 6)
+  vendite <- vendite[,c(3,6:14,18:209,4,5)]
+  vdi <- as.Date(vendite$data.inizio, origin = '1899-12-30')
+  vdf <- as.Date(vendite$data.fine, origin = '1899-12-30')
+  
+  vendite$data.inizio <- maply(1:length(vendite$data.inizio), function(n) paste0(ifelse(lubridate::day(vdi[n]) < 10, paste0("0",lubridate::day(vdi[n])), lubridate::day(vdi[n])), "/", 
+                                                          ifelse(lubridate::month(vdi[n]) < 10, paste0("0",lubridate::month(vdi[n])), lubridate::month(vdi[n])), "/", 
+                                                          lubridate::year(vdi[n])))
+  vendite$data.fine <- maply(1:length(vendite$data.fine), function(n) paste0(ifelse(lubridate::day(vdf[n]) < 10, paste0("0",lubridate::day(vdf[n])), lubridate::day(vdf[n])), "/", 
+                                                                                 ifelse(lubridate::month(vdf[n]) < 10, paste0("0",lubridate::month(vdf[n])), lubridate::month(vdf[n])), "/", 
+                                                                                 lubridate::year(vdf[n])))
+  return(vendite)
+}
+############################################################################################
+AggiornaTP <- function(filename)
+{
+  vendite <- openxlsx::read.xlsx(paste0("C:/Users/d_floriello/Documents/",filename), sheet = 1, colNames = TRUE, startRow = 6)
+  vendite <- vendite[,c(3,6:17,210:233,4,5)]
+  vdi <- as.Date(vendite$data.inizio, origin = '1899-12-30')
+  vdf <- as.Date(vendite$data.fine, origin = '1899-12-30')
+  
+  vendite$data.inizio <- maply(1:length(vendite$data.inizio), function(n) paste0(ifelse(lubridate::day(vdi[n]) < 10, paste0("0",lubridate::day(vdi[n])), lubridate::day(vdi[n])), "/", 
+                                                                                 ifelse(lubridate::month(vdi[n]) < 10, paste0("0",lubridate::month(vdi[n])), lubridate::month(vdi[n])), "/", 
+                                                                                 lubridate::year(vdi[n])))
+  vendite$data.fine <- maply(1:length(vendite$data.fine), function(n) paste0(ifelse(lubridate::day(vdf[n]) < 10, paste0("0",lubridate::day(vdf[n])), lubridate::day(vdf[n])), "/", 
+                                                                             ifelse(lubridate::month(vdf[n]) < 10, paste0("0",lubridate::month(vdf[n])), lubridate::month(vdf[n])), "/", 
+                                                                             lubridate::year(vdf[n])))
+  return(vendite)
+}
+############################################################################################
