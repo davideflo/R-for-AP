@@ -18,7 +18,7 @@ file <- "Z:/AREA ENERGY MANAGEMENT GAS/Davide_temp/160413-150847-214.xlsx"
 
 ## importa anagrafica
 #ao <- openxlsx::read.xlsx("anagrafica_originale.xlsx", sheet = 1, colNames = TRUE)
-ao <- openxlsx::read.xlsx("2017.09.27_Report_214.xlsx", sheet = 1, colNames = TRUE)
+ao <- openxlsx::read.xlsx("2017.11.06_Report_214.xlsx", sheet = 1, colNames = TRUE)
 ao <- read_file_anagrafica(ao)
 
 ## sistema anagrafica in modo leggibile per R
@@ -36,7 +36,7 @@ rows <- which(!(unlist(ao["CODICE_PRODOTTO"]) %in% c("SUPERI_E_QFISSA","P_FISSO_
 ao <- ao[rows,]                                                                                        ##
 #########################################################################################################
 ## aggrega i prodotti
-aggregati <- compute_combinations_DEF_val(ao)
+aggregati <- compute_combinations_DEF_val(ao, 2017)
 aggregati2 <- round_date(aggregati)
 ### count PDR and IVA
 ##################################################################################################################################
@@ -105,7 +105,7 @@ termine <- data.frame(t(termine))
 
 
 ## parte di vendita
-pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 2, colNames = TRUE)
+pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 1, colNames = TRUE)
 listing <- openxlsx::read.xlsx("listing.xlsx", sheet = 1, colNames = TRUE)
 listing <- unlist(listing[[1]])
 head(pm)
@@ -123,7 +123,7 @@ listingG <- rep(0, 24)
 #vendite <- vendite[2:nrow(vendite),] 
 #head(vendite)
 
-TM <- total_sellings_per_components(vendite, pm, listing, listingG)
+TM <- total_sellings_per_components(vendite, pm, listing, listingG, 2017)
 #tm <- total_selling(vendite,pm,listing)
 TM <- data.frame(TM)
 

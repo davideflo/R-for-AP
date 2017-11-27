@@ -73,10 +73,10 @@ extract_relevant_val <- function(ao)
   rows <- unique(rows)
   return(ao[rows,])
 }
-
 ###########################################################################################
-month13_in_interval <- function(string_date)
+month13_in_interval <- function(string_date, year)
 {
+  ### @BRIEF: year is the current year
   print(string_date)
   bool <- FALSE
   splitted_date <- as.numeric(unlist(strsplit(as.character(string_date), "/")))
@@ -90,7 +90,7 @@ month13_in_interval <- function(string_date)
   
   new_date <- ""
   
-  if((fm <= 12) & (fy %in% c(2017, 2018))) 
+  if((fm <= 12) & (fy %in% c(year, year+1))) 
   {
     bool <- TRUE
     if(fm < 10) new_month <- paste0("0", fm)
@@ -102,7 +102,7 @@ month13_in_interval <- function(string_date)
   
   return(list(bool, new_date))
 }
-
+#######################################################################################
 check_enddate <- function(enddate)
 {
   bool <- FALSE
@@ -116,7 +116,7 @@ check_enddate <- function(enddate)
   
   return(bool)
 }
-
+#######################################################################################
 day_before <- function(string_date)
 {
   splitted_date <- as.numeric(unlist(strsplit(as.character(string_date), "/")))
@@ -143,13 +143,13 @@ day_before <- function(string_date)
   new_date <- paste0(new_day, "/", new_month, "/", new_year)
   return(new_date)
 }
-
+#######################################################################################
 transform_date <- function(date)
 {
   dv <- strsplit(date, "/")
   return(as.numeric(unlist(dv)))
 }
-
+#########################################################################################
 compare_dates <- function(date_pc, date) 
 {
   ## returns TRUE if date <= date_pc 
@@ -161,7 +161,7 @@ compare_dates <- function(date_pc, date)
   else if((dv[3] == dv_pc[3]) & (dv[2] == dv_pc[2]) & (dv[1] <= dv_pc[1])) {bool <- TRUE}
   return(bool)
 }
-
+##############################################################################################
 anni_competenza <- function(attivi, date)
 {
   idlist <- c()
@@ -171,19 +171,18 @@ anni_competenza <- function(attivi, date)
   }
   return(attivi[idlist,])
 }
-
+#############################################################################################
 take_maximum_date <- function(date_pc, date)
 {
   if(compare_dates(date_pc,date)) return(date_pc)
   else return(date)
 }
-
+#############################################################################################
 take_minimum_date <- function(date_pc, date)
 {
   if(!compare_dates(date_pc,date)) return(date_pc)
   else return(date)
 }
-
 ##########################################################################################################################################################################
 change_F_to_V <- function(row, tab)
 {
@@ -222,12 +221,13 @@ change_F_to_V2 <- function(row, tab)
  return(list(bool, prima_f, ultima_f, prima_v)) 
 }
 ##########################################################################################################################################################################
-isolate_fixes <- function(ao)
+isolate_fixes <- function(ao, year)
 {
+  ### @BRIEF: year is the current year
   fix <- data_frame()
   unfixlist <- c()
   # check:
-  ao <- anni_competenza(ao, "01/01/2017")
+  ao <- anni_competenza(ao, paste0("01/01/", year))
   ao <- extract_relevant_val(ao)
   for(i in 1:nrow(ao))
   {
@@ -238,7 +238,7 @@ isolate_fixes <- function(ao)
     cfv <- change_F_to_V2(i, ao)  
     if(cfv[[1]] & let1 == "L" & let6 == "F")
     {
-      min_fin <- take_minimum_date("31/12/2018", df)
+      min_fin <- take_minimum_date(paste0("31/12/",year+1), df)
       new_fix <- ao[i,]
       new_fix["CODICE_PRODOTTO"] <- change_name(prod)
       new_fix["D_VALIDO_DAL_T"] <- cfv[[4]]
@@ -455,7 +455,6 @@ compute_profiles_DEF15 <- function(M, prof_consumo)
 }
 
 ######################################################################################################
-
 change_name <- function(name)
 {
   split <- c()
@@ -496,14 +495,13 @@ change_name <- function(name)
   else {return(name)}
 }
 ##########################################################################################################################################################################
-
-Change_Name <- function(prod, cfv2, cfv3, df, p, sf, sv, cfv4)
+Change_Name <- function(prod, cfv2, cfv3, df, p, sf, sv, cfv4, year)
 {
   cn <- data_frame()
   
   new_prod_name <- change_name(prod)
-  tkm <- take_maximum_date("01/01/2017",cfv2)
-  min_fin <- take_minimum_date("31/12/2018", df)
+  tkm <- take_maximum_date(paste0("01/01/", year),cfv2)
+  min_fin <- take_minimum_date(paste0("31/12/", year+1), df)
   if(as.numeric(split_date(min_fin))[1] == 29 & as.numeric(split_date(min_fin))[2] == 2 & as.numeric(split_date(min_fin))[3] %% 4 != 0)
   {
     min_fin <- paste0("28/02/",split_date(min_fin)[3])
@@ -545,7 +543,6 @@ Change_Name <- function(prod, cfv2, cfv3, df, p, sf, sv, cfv4)
   return(cn)
 }
 ##########################################################################################################################################################################
-
 compute_combinations2 <- function(attivi)
 {
   aggregati <- data_frame()
@@ -730,10 +727,11 @@ compute_combinations_DEF <- function(attivi)
   return(aggregati)
 }
 ###############################################################################################################################
-compute_combinations_DEF_val <- function(attivi)
+compute_combinations_DEF_val <- function(attivi, year)
 {
+  ### @BIREF: year is the first of the two years for the budget --> basically, the current year
   aggregati <- data_frame()
-  attivi2 <- anni_competenza(attivi, "01/01/2017")
+  attivi2 <- anni_competenza(attivi, paste0("01/01/", year))
   prodotti <- unique(unlist(attivi2["CODICE_PRODOTTO"]))
   #prodotti <- prodotti[-which(prodotti %in% c("SUPERI_E_QFISSA","P_FISSO_DIR","P_FISSO_IND"))]
   no_distr <- union(which(is.na(attivi2["CONSUMO_DISTRIBUTORE"])),which(attivi2["CONSUMO_DISTRIBUTORE"] == "0"))
@@ -775,12 +773,12 @@ compute_combinations_DEF_val <- function(attivi)
           sv <- sum(as.numeric(data4[rest,"CONSUMO_DISTRIBUTORE"]), na.rm = TRUE) + sum(as.numeric(data4[union(nas,zeri),"CONSUMO_CONTR_ANNUO"]), na.rm = TRUE)
           #print(paste("sf:", sf))  
           cfv <- change_F_to_V2(j, data4)
-          print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
-          if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,"31/12/2018"))
+          print(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,paste0("31/12/", year+1)))
+          if(cfv[[1]] & first_letter == "L" & FV == "F" & compare_dates(df,paste0("31/12/", year+1)))
           {
-            CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]])
+            CN <- Change_Name(prod, cfv[[2]], cfv[[3]], df, p, sf, sv, cfv[[4]], year)
             print(CN)
-            if(compare_dates(cfv[[3]],"01/01/2017"))
+            if(compare_dates(cfv[[3]],paste0("01/01/", year)))
             {
               aggregati2 <- bind_rows(aggregati2, CN)
             }
@@ -794,9 +792,9 @@ compute_combinations_DEF_val <- function(attivi)
           }
           else
           {
-            tkm <- take_maximum_date("01/01/2017",di)
+            tkm <- take_maximum_date(paste0("01/01/", year),di)
             ## se non tkm metti di
-            min_fin <- take_minimum_date("31/12/2018", df)
+            min_fin <- take_minimum_date(paste0("31/12/", year+1), df)
             fisso <- data.frame(cbind(prod, tkm, min_fin, as.character(p), as.character(as.numeric(sf))))
             
             colnames(fisso) <- c("prodotto","data inizio", "data fine", "profilo", "consumo")
@@ -821,7 +819,6 @@ compute_combinations_DEF_val <- function(attivi)
   print(paste("il consumo totale e' rispettato:", (as.numeric(check) - as.numeric(tot_consumo)) == 0))
   return(aggregati)
 }
-
 ###############################################################################################################################
 find_FFs <- function(subvec)
 {
@@ -1263,7 +1260,6 @@ total_sellings <- function(vendite, pm, listing)
   return(DF)
 }
 #######################################################################################################################
-
 TOT_m3 <- function(prod, pm)
 {
   tot_m3 <- rep(0, 24)
@@ -1288,7 +1284,7 @@ TOT_m3 <- function(prod, pm)
   
   return(tot_m3)
 }
-
+########################################################################################################################
 compute_TP <- function(TP, pm)
 {
   totm3 <- TOT_m3(TP, pm)
@@ -1320,7 +1316,7 @@ compute_TP <- function(TP, pm)
   #print(mat)
   return(TP2)
 }
-
+################################################################################################################
 aggregate_consumi <- function(prod, jan)
 {
   mat <- matrix(0, nrow = length(prod), ncol=2)

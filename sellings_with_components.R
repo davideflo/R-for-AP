@@ -18,11 +18,12 @@ find_active_in_month <- function(date, vendite)
 }
 
 
-total_sellings_per_components <- function(vendite, pm, listing, listingG)
+total_sellings_per_components <- function(vendite, pm, listing, listingG, year)
 {
+  ### @PARAM: year is the current year
   #total <- rep(0, nrow(vendite))
   total_matrix <- matrix(0, nrow = 10, ncol = 24)
-  months <- c(paste0("01/","0",1:9,"/",2017), paste0("01/",10:12,"/",2017), paste0("01/","0",1:9,"/",2018), paste0("01/",10:12,"/",2018)) 
+  months <- c(paste0("01/","0",1:9,"/",year), paste0("01/",10:12,"/",year), paste0("01/","0",1:9,"/",year+1), paste0("01/",10:12,"/",year+1)) 
   
   for(m in months)
   {
@@ -54,7 +55,7 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG)
       YEAR <- split_date(m)[3]
       MONTH <- as.numeric(split_date(m)[2])
       
-      if(YEAR == "2017")
+      if(YEAR == as.character(year))
       {
         qtmvc <- as.numeric(unlist(vendite[i, 11:22]))
         cpr <- as.numeric(unlist(vendite[i, 23:34]))
