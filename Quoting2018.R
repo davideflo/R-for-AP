@@ -591,6 +591,17 @@ plot(df2$pun, type = "l", col = "green")
 
 plot(df2$pun, type = "l", col = "darkolivegreen")
 
+
+df9 <- data.table(read_excel("C://Users/utente//pun_forward_2019.xlsx"))
+colnames(df9) <- colnames(df2)
+df9 <- Redimensioner_pkop(df9, 50.00, 57.70, '2019-01-01', '2019-12-31', 'PK')
+
+plot(df9$pun, type = 'l', col = 'salmon')
+mean(df9$pun)
+mean(df9$pun[which(df9$PK.OP == 'PK')])
+write.xlsx(df9, "pun_forward_2019.xlsx", row.names = FALSE)
+
+
 for(m in 1:12)
 {
   mm1 <- mean(df2$pun[which(df2$Month == m & df2$AEEG.181.06 == "F1")])
