@@ -9,7 +9,14 @@ library(dplyr)
 library(reshape)
 library(stringi)
 library(xlsx)
+library(Hmisc)
 
+###########################################################################################
+read_file_anagrafica <- function(ao)
+{
+  ao[is.na(ao)] <- 0
+  return(ao)
+}
 ###########################################################################################
 month13_in_interval <- function(string_date, year)
 {
@@ -214,6 +221,55 @@ isolate_fixes <- function(ao, year)
     }
   }
   return(AO[nf,])
+}
+##########################################################################################################################################################################
+split_date <- function(string_date)
+{
+  splitted_date <- as.character(unlist(strsplit(as.character(string_date), "/")))
+  day <- splitted_date[1]
+  month <- splitted_date[2]
+  year <- splitted_date[3]
+  return(c(day, month, year))
+}
+######################################################################################################
+change_name <- function(name)
+{
+  split <- c()
+  if(name == "LGR_MF_DIRI") {return(name)}
+  for(i in 1:nchar(name))
+  {split <- c(split, stri_sub(name, i, i))}
+  
+  let <- c("A", "B", "C", "D")        
+  if( split[1] == "L" & split[6] == "F" & split[3] %in% let)
+  {
+    if(paste0(split[8],split[9],split[10],split[11]) == "R508")
+    {
+      newname <-  paste0("R", stri_sub(name, 2, nchar(name)))
+    }
+    else
+    {
+      anno <- as.numeric(paste0(split[8],split[9],split[10],split[11]))
+      if(anno <= 1501 & split[3] != "D")
+      {
+        newname <- paste0("LG",split[3],"_MF_R508")
+      }
+      else if(anno < 1501 & split[3] == "D")
+      {
+        newname <- "LGC_MF_R508"
+      }
+      else if(anno == 1501 & split[3] == "D")
+      {
+        newname <- "LGD_MF_R508"
+      }
+      else if(anno > 1501)
+      {
+        newname <- paste0("R", stri_sub(name, 2, nchar(name)))
+      }
+    }
+    return(newname)
+  }
+  
+  else {return(name)}
 }
 ##########################################################################################################################################################################
 Change_Name <- function(prod, cfv2, cfv3, df, p, sf, sv, cfv4, year)
@@ -606,6 +662,28 @@ total_sellings_per_components <- function(vendite, pm, listing, listingG, year)
   return(TM)
 }  
 #############################################################################################################
-
+##################################################################################################
+IsMiddleMonth <- function(date)
+{
+  bVerbose <- 0
+  if(as.numeric(date[[1]][3]) %% 4 == 0 & as.numeric(date[[1]][2]) == 2 & as.numeric(date[[1]][1]) != 29)
+  {
+    bVerbose <- TRUE
+  }
+  else if(as.numeric(date[[1]][2]) %in% c(4,6,9,11) & as.numeric(date[[1]][1]) != 30)
+  {
+    bVerbose <- TRUE
+  }
+  else if(as.numeric(date[[1]][2]) %in% c(1,3,5,7,8,10,12) & as.numeric(date[[1]][1]) != 31)
+  {
+    bVerbose <- TRUE
+  }
+  else
+  {
+    bVerbose <- FALSE
+  }
+  return(bVerbose)
+}
+##################################################################################################
 
 

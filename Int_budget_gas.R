@@ -40,7 +40,6 @@ MakeGASBudget <- function(filename, year)
   ## stoccaggio
   
   ## parte di vendita
-  pm <- openxlsx::read.xlsx("profili_mensili.xlsx", sheet = 1, colNames = TRUE)
   listing <- openxlsx::read.xlsx("listing.xlsx", sheet = 1, colNames = TRUE)
   listing <- unlist(listing[[1]])
   head(pm)
