@@ -685,5 +685,35 @@ IsMiddleMonth <- function(date)
   return(bVerbose)
 }
 ##################################################################################################
+TOT_m3g <- function(prod, pm)
+{
+  tot_m3 <- rep(0, 731)
+  x16 <- c(31,29,31,30,31,30,31,31,30,31,30,31)
+  x17 <- c(31,28,31,30,31,30,31,31,30,31,30,31)
+  for(i in 1:nrow(prod))
+  {
+    prof <- prod[i,"profilo"]
+    cons <- prod[i,"consumo"]
+    col <- which(colnames(pm) == prof)
+    c2y <- as.numeric(prod[i,14:37] > 0)
+    m2y <- rep(c2y, c(x16, x17))
+    tot_m3 <- tot_m3 + (pm[,col]/100 * m2y * cons)
+  }
+  
+  return(tot_m3)
+}
+##################################################################################
+TOT_m3mat <- function(prod, pm)
+{
+  
+  totm <- matrix(0,nrow=nrow(prod), ncol=24)
+  for(i in 1:nrow(prod))
+  {
+    col <- which(colnames(pm) == prod[i,"profilo"])
+    c2y <- as.numeric(prod[i,14:37] > 0)
+    totm[i,] <- as.numeric(pm[,col]) * as.numeric(prod[i,"consumo"]) * c2y
+  }
+  return(totm)
+}
 
 

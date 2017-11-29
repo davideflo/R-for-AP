@@ -30,8 +30,9 @@ MakeGASBudget <- function(filename, year)
   ## scorciatoia:
   vendite <- AggiornaVendite(filename)
   vendite[is.na(vendite)] <- 0
+  vendite <- vendite[which(vendite$prodotto != "0"),]
   aggregati <- vendite[,1:5]
-
+  
   ## acquisti a termine
   tot_termine <- openxlsx::read.xlsx("tot_mercato_termine.xlsx", sheet = 1)
   termine <- tot_termine[,3]
