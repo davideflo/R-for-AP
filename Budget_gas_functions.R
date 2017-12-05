@@ -18,10 +18,10 @@ read_file_anagrafica <- function(ao)
   vdi <- as.Date(ao$D_VALIDO_DAL, origin = '1899-12-30')
   vdf <- as.Date(ao$D_VALIDO_AL, origin = '1899-12-30')
   ao$D_VALIDO_DAL_T <- maply(1:length(vdi), function(n) paste0(  ifelse(lubridate::day(vdi[n]) < 10, paste0("0",lubridate::day(vdi[n])), lubridate::day(vdi[n])), "/",
-                                                              ifelse(lubridate::month(vdi[n]) < 10, paste0("0",lubridate::day(vdi[n])), lubridate::day(vdi[n])),"/",
+                                                              ifelse(lubridate::month(vdi[n]) < 10, paste0("0",lubridate::month(vdi[n])), lubridate::month(vdi[n])),"/",
                                                               lubridate::year(vdi[n])))
   ao$D_VALIDO_AL_T <- maply(1:length(vdf), function(n) paste0(  ifelse(lubridate::day(vdf[n]) < 10, paste0("0",lubridate::day(vdf[n])), lubridate::day(vdf[n])), "/",
-                                                                 ifelse(lubridate::month(vdf[n]) < 10, paste0("0",lubridate::day(vdf[n])), lubridate::day(vdf[n])),"/",
+                                                                 ifelse(lubridate::month(vdf[n]) < 10, paste0("0",lubridate::month(vdf[n])), lubridate::month(vdf[n])),"/",
                                                                  lubridate::year(vdf[n])))
   ao <- ao[,c(1:28,68,29,69,30:67)]
   return(ao)
