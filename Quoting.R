@@ -90,9 +90,10 @@ Redimensioner_pkop <- function(ph, mh, mw, from, to, what)
 
 df9 <- data.table(read_excel("C://Users//utente//Documents//pun_forward_2019.xlsx"))
 colnames(df9) <- c("date","Month","Day","Hour","Week.Day","Quarter","PK.OP","AEEG.181.06","pun","real")
-df9 <- Redimensioner_pkop(df9, 49.75, 57.30, '2019-01-01', '2019-12-31', 'PK')
+df9 <- Redimensioner_pkop(df9, 49.85, 57.50, '2019-01-01', '2019-12-31', 'PK')
 
 plot(df9$pun, type = 'l', col = 'salmon')
 mean(df9$pun)
 mean(df9$pun[which(df9$PK.OP == 'PK')])
 write.xlsx(df9, "C://Users//utente//Documents//pun_forward_2019.xlsx", row.names = FALSE)
+mean(df9$pun[df9$Month == 3])

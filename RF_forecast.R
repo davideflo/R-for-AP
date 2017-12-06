@@ -28,3 +28,9 @@ plot(rfpv$pred, type = 'l', col = 'black', lwd = 2)
 lines(DWT$y, type = 'l', col = 'purple')
 lines(rfpv$l.ci, type = 'l', col = 'red')
 lines(rfpv$u.ci, type = 'l', col = 'black')
+
+plot(DWT$y - rfpv$pred, pch = 16, col = 'green')
+
+residuals = DWT$y - rfpv$pred
+mean(residuals)
+sd(residuals)

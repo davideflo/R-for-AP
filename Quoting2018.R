@@ -566,7 +566,7 @@ df2 <- data.table(read_excel("pun_forward_2018.xlsx"))
 #df2 <- df3
 df2$pun <- cpred
 
-df2 <- Redimensioner_pkop(df2, 60.64, 75.43, '2018-01-01', '2018-01-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 66.90, 78.40, '2018-01-01', '2018-01-31', 'PK')
 df2 <- Redimensioner_pkop(df2, 45.60, 53.90, '2018-02-01', '2018-02-28', 'PK')
 df2 <- Redimensioner_pkop(df2, 38.39, 42.61, '2018-03-01', '2018-03-31', 'PK')
 df2 <- Redimensioner_pkop(df2, 38.51, 40.81, '2018-04-01', '2018-04-30', 'PK')
@@ -581,6 +581,9 @@ df2 <- Redimensioner_pkop(df2, 44.34, 51.48, '2018-12-01', '2018-12-31', 'PK')
 
 df2 <- Redimensioner_pkop(df2, 44.35, 50.50, '2018-01-01', '2018-12-31', 'PK')
 
+df2 <- Redimensioner_pkop(df2, 57.82, 66.59, '2018-02-01', '2018-03-31', 'PK')
+df2 <- Redimensioner_pkop(df2, 51.26, 57.67, '2018-04-01', '2018-12-31', 'PK')
+
 ### Q1:
 df2 <- Redimensioner_pkop(df2, 48.50, 57.40, '2018-01-01', '2018-03-31', 'PK')
 ### remaining
@@ -591,10 +594,18 @@ plot(df2$pun, type = "l", col = "green")
 
 plot(df2$pun, type = "l", col = "darkolivegreen")
 
+for(m in 1:12)
+{
+  print(m)
+print(mean(df2$pun[which(df2$Month == m)]))
+  print(mean(df2$pun[which(df2$Month == m & df2$PK.OP == 'PK')]))
+  print(mean(df2$pun[which(df2$Month == m & df2$PK.OP == 'OP')]))
+  print('------------')
+}
 
-df9 <- data.table(read_excel("C://Users/utente//pun_forward_2019.xlsx"))
+df9 <- data.table(read_excel("C://Users/utente//Documents//pun_forward_2019.xlsx"))
 colnames(df9) <- colnames(df2)
-df9 <- Redimensioner_pkop(df9, 50.00, 57.70, '2019-01-01', '2019-12-31', 'PK')
+df9 <- Redimensioner_pkop(df9, 49.75, 57.30, '2019-01-01', '2019-12-31', 'PK')
 
 plot(df9$pun, type = 'l', col = 'salmon')
 mean(df9$pun)
