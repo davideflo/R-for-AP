@@ -248,7 +248,7 @@ change_name <- function(name)
   for(i in 1:nchar(name))
   {split <- c(split, stri_sub(name, i, i))}
   
-  let <- c("A", "B", "C", "D")        
+  let <- c("A", "B", "C", "D", "L")        
   if( split[1] == "L" & split[6] == "F" & split[3] %in% let)
   {
     if(paste0(split[8],split[9],split[10],split[11]) == "R508")
@@ -484,7 +484,7 @@ round_date <- function(aggregati)
 {
   for(i in 1:nrow(aggregati))
   {
-    print(i)
+    #print(i)
     splitted <- strsplit(aggregati$`data fine`[i],"/")
     if(IsMiddleMonth(splitted))
     {

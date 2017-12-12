@@ -17,7 +17,6 @@ MakeCluster <- function(filename, year)
   print("Cluster fatti")
   
 }
-
 ###########################################################################################################
 
 MakeGASBudget <- function(filename, year)
