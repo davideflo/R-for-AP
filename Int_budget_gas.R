@@ -95,10 +95,10 @@ MakeGASBudget <- function(filename, year)
   
   mstok_prog <- rep(0,24)
   
-  mmkt2 <- c(as.numeric(tot_termine[,3]), rep(0,9))
+  mmkt2 <- c(as.numeric(tot_termine[,3]), rep(0,24 - nrow(tot_termine)))
   op <- tot_ap - (mstok_prog + mmkt2)
   
-  totale_costi <- (op * listing/100) + terzi + c(as.numeric(tot_termine[,2]), rep(0,9)) 
+  totale_costi <- (op * listing/100) + terzi + c(as.numeric(tot_termine[,2]), rep(0,24 - nrow(tot_termine)))
   
   
   tot_costi_supero_capacita <- -1.3 * tot/100
@@ -122,7 +122,7 @@ MakeGASBudget <- function(filename, year)
   unit_comm <- (margine_comm/tot)*100
   
   df <- data.frame(rbind(terzi,
-                         c(tot_termine[,2],rep(0,9)),
+                         c(as.numeric(tot_termine[,2]), rep(0,24 - nrow(tot_termine))),
                          op * listing/100,
                          mstok_prog,
                          tot_costi_supero_capacita, 
