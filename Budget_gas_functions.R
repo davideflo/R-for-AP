@@ -497,7 +497,7 @@ round_date <- function(aggregati)
 ################################################################################################
 AggiornaVendite <- function(filename)
 {
-  vendite <- openxlsx::read.xlsx(paste0("C:/Users/d_floriello/Documents/",filename), sheet = 1, colNames = TRUE, startRow = 6)
+  vendite <- openxlsx::read.xlsx(filename, sheet = 1, colNames = TRUE, startRow = 6)
   vendite <- vendite[,c(3,6:14,18:209,4,5)]
   vdi <- as.Date(vendite$data.inizio, origin = '1899-12-30')
   vdf <- as.Date(vendite$data.fine, origin = '1899-12-30')
@@ -513,7 +513,7 @@ AggiornaVendite <- function(filename)
 ############################################################################################
 AggiornaTP <- function(filename)
 {
-  vendite <- openxlsx::read.xlsx(paste0("C:/Users/d_floriello/Documents/",filename), sheet = 1, colNames = TRUE, startRow = 6)
+  vendite <- openxlsx::read.xlsx(filename, sheet = 1, colNames = TRUE, startRow = 6)
   vendite <- vendite[,c(3,6:17,210:233,4,5)]
   vdi <- as.Date(vendite$data.inizio, origin = '1899-12-30')
   vdf <- as.Date(vendite$data.fine, origin = '1899-12-30')

@@ -57,37 +57,41 @@ MakeGASBudget <- function(filename, year)
   tot <- TOT_m3(TP, pm)
   tp <- compute_TP(TP,pm)
 
-    TPe <- TP[which(TP["shipper"] == "ENEL TRADE"),]
-  
-  tot_enel <- TOT_m3(TPe,pm)
-  
-  
-  prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
-                "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
-                "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601", "LGC_MF_1610","RGC_MF_1610","LGD_UF_1707")
-  acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00,16.00,16.00,16.00)
-  
-  AC <- data.frame(t(acq))
-  colnames(AC) <- prodenel
-  ## acquisto da shipper terzi GIUSTO:
-  mat_enel <- cbind(TPe["prodotto"],TOT_m3mat(TPe,pm))
-  
-  ### missing products:
-  pe <- unique(unlist(mat_enel[,1]))
-  print(paste0("mancano ",length(pe) - sum(pe%in%prodenel)," prodotti di ENEL"))
-  
-  ME <- matrix(0,nrow=nrow(mat_enel),ncol=24)
-  for(i in 1:nrow(mat_enel))
+  TPe <- TP[which(TP["shipper"] == "ENEL TRADE"),]
+  tot_enel <- terzi <- rep(0,24)
+  if(nrow(TPe) > 0)
   {
-    print(i)
-    print(mat_enel[i,1])
     
-    x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
-    ME[i,] <- x
+    tot_enel <- TOT_m3(TPe,pm)
+    
+    
+    prodenel <- c("LGB_MF_1502","RGB_MF_1502","LGD_MF_1506","RGD_MF_1506","LGC_MF_1510","RGC_MF_1510","LGA_MF_1603","RGA_MF_1603","LG1_BF_BRED","LG1_BI_BRED","LG1-BF-LIFE","LG1-BF-POPL","LG1_BF_SIPA",
+                  "LG0-BI-CGNX","LGP-BI-TCNR","LG0-BI-VRGN","LG1-BI-KONE","LGP-BI-SPIC","LGP-BI-IVEF", "LGB_MF_1603","LGP-BI-FERR","LGP-BI-VALR", "LGD_MF_1510", "LGB_MF_1601", "LGD_MF_1508","LGP-BI-PIUS",
+                  "RGD_MF_1510","LGC_MF_1612","RGC_MF_1612", "RGB_MF_1601", "LGC_MF_1610","RGC_MF_1610","LGD_UF_1707")
+    acq <- c(18.26,18.26,24.05,24.05,24.65,24.65,24.65,24.65,23.10,23.10,24.73,24.65,24.75,23.65,23.12,22.30,25.50,16.11,16.60,24.65,17.30,16.00,16.90,16.90,16.90,17.23,16.90,16.90,16.90,16.00,16.00,16.00,16.00)
+    
+    AC <- data.frame(t(acq))
+    colnames(AC) <- prodenel
+    ## acquisto da shipper terzi GIUSTO:
+    mat_enel <- cbind(TPe["prodotto"],TOT_m3mat(TPe,pm))
+    
+    ### missing products:
+    pe <- unique(unlist(mat_enel[,1]))
+    print(paste0("mancano ",length(pe) - sum(pe%in%prodenel)," prodotti di ENEL"))
+    
+    ME <- matrix(0,nrow=nrow(mat_enel),ncol=24)
+    for(i in 1:nrow(mat_enel))
+    {
+      print(i)
+      print(mat_enel[i,1])
+      
+      x <- as.matrix(as.numeric(mat_enel[i,2:25]) * AC[,which(colnames(AC) == mat_enel[i,1])])
+      ME[i,] <- x
+    }
+    
+    ME <- ME/100
+    terzi <- colSums(ME)
   }
-  
-  ME <- ME/100
-  terzi <- colSums(ME)
   
   ## solo AP
   tp_ap <- compute_TP(TP[which(TP["shipper"] == "AXOPOWER"),],pm) # solo AP shipper fissi
